@@ -7,7 +7,7 @@
 - Dependencias iniciales del cliente instaladas.
 - Documentación inicial creada en `docs/`.
 - Reglas de mentoría creadas en `AGENTS.md`.
-- Tailwind CSS definido como sistema de estilos previsto, pero aún no instalado.
+- Tailwind CSS v4 instalado en `client/` y configurado con el plugin oficial `@tailwindcss/vite`.
 - Se registró el nivel previo del estudiante basado en el proyecto Mesa de Servicio.
 
 ## Trabajo completado
@@ -31,7 +31,7 @@ Primera tarea para el estudiante:
 
 Revisar la estructura generada por Vite y limpiar la pantalla inicial para crear una primera vista estática del planificador de viajes, sin Redux todavía.
 
-Antes o durante esa tarea se deberá instalar y configurar Tailwind CSS, porque será el sistema principal de estilos del proyecto.
+Tailwind ya quedo conectado al build de Vite y sera el sistema principal de estilos del proyecto.
 
 ## Bloqueos
 

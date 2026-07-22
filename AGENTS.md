@@ -170,3 +170,25 @@ La documentación debe cubrir:
 - tarea activa;
 - próximo paso.
 
+## Ubicación definitiva del código
+
+Cada archivo, componente, hook, slice, servicio, esquema, ruta y utilidad debe crearse desde el principio en la ubicación que le corresponda según la arquitectura acordada.
+
+Evita estrategias temporales como:
+
+- crear lógica dentro de un componente para moverla después;
+- colocar archivos en una carpeta provisional;
+- implementar una funcionalidad en `App.tsx` y reorganizarla posteriormente;
+- mezclar responsabilidades con la intención de separarlas en otra tarea;
+- usar una estructura simplificada que luego deba reemplazarse por la estructura definitiva.
+
+Antes de crear un archivo o implementar una responsabilidad:
+
+1. Determina cuál es su ubicación definitiva.
+2. Explica por qué pertenece allí.
+3. Comprueba que no rompe la arquitectura acordada.
+4. Registra la decisión si introduce una nueva convención estructural.
+
+El aprendizaje debe ser progresivo, pero la estructura no debe ser deliberadamente incorrecta o provisional. Las tareas pueden implementar solo una parte pequeña de una funcionalidad, pero esa parte debe quedar ubicada y organizada correctamente desde el principio.
+
+No uses enfoques como «lo hacemos aquí por ahora y después lo movemos», salvo que exista una razón técnica real, se explique claramente y se registre como deuda técnica en la documentación.
