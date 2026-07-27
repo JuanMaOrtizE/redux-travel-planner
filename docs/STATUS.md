@@ -37,3 +37,47 @@ Tailwind ya quedo conectado al build de Vite y sera el sistema principal de esti
 
 Ninguno.
 
+## Actualizacion 2026-07-22
+
+- Redux Toolkit instalado en el cliente:
+  - `@reduxjs/toolkit`;
+  - `react-redux`.
+- Carpeta `client/src/app/` creada.
+- Archivos creados:
+  - `client/src/app/store.ts`;
+  - `client/src/app/hooks.ts`.
+- Ambos archivos todavia estan vacios.
+- `npm run build` y `npm run lint` pasan despues de la instalacion.
+
+## Tarea activa
+
+Conectar Redux de forma minima:
+
+- definir el store en `client/src/app/store.ts`;
+- crear hooks tipados en `client/src/app/hooks.ts`;
+- envolver `<App />` con `<Provider>` en `client/src/main.tsx`.
+
+## Actualizacion 2026-07-27
+
+- Conexion base de Redux completada:
+  - `store.ts` crea y exporta `store`;
+  - `store.ts` exporta `RootState`;
+  - `store.ts` exporta `AppDispatch`;
+  - `hooks.ts` exporta `useAppSelector`;
+  - `hooks.ts` exporta `useAppDispatch`;
+  - `main.tsx` envuelve `<App />` con `<Provider store={store}>`.
+- `npm run build` pasa.
+- `npm run lint` pasa.
+
+## Proxima tarea
+
+Crear el primer slice pequeño de UI para practicar:
+
+- `initialState`;
+- `reducers`;
+- `actions`;
+- `dispatch`;
+- `selector`;
+- cambio real en el estado global.
+
+El estudiante pidio explicaciones detalladas de TypeScript y Redux sin asumir conocimiento previo de TS. Cada linea nueva debe explicarse antes de avanzar.
