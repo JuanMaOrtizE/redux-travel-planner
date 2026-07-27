@@ -1,10 +1,17 @@
 import StatCard from "../components/StatCard";
+import { useAppSelector } from "../app/hooks";
+import { selectViewMode } from "../features/ui/uiSlice";
 
 export default function HomePage() {
+  const viewMode = useAppSelector(selectViewMode);
+
   return (
     <main className="min-h-screen bg-slate-50 px-6 py-10 text-slate-900">
       <section className="mx-auto flex max-w-6xl flex-col gap-10">
         <header className="max-w-3xl">
+          <p className="mt-5 text-sm font-medium text-slate-500">
+            vistaActual: {viewMode}
+          </p>
           <p className="mb-3 text-sm font-semibold text-teal-700">
             Travel Planner
           </p>
