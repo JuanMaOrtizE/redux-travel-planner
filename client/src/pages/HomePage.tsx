@@ -1,17 +1,14 @@
-import StatCard from "../components/StatCard";
 import { useAppSelector } from "../app/hooks";
+import StatCard from "../components/StatCard";
 import { selectViewMode } from "../features/ui/uiSlice";
+import ViewModeToggle from "../features/ui/ViewModeToggle";
 
 export default function HomePage() {
   const viewMode = useAppSelector(selectViewMode);
-
   return (
     <main className="min-h-screen bg-slate-50 px-6 py-10 text-slate-900">
-      <section className="mx-auto flex max-w-6xl flex-col gap-10">
-        <header className="max-w-3xl">
-          <p className="mt-5 text-sm font-medium text-slate-500">
-            vistaActual: {viewMode}
-          </p>
+      <section className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(360px,520px)] lg:items-start">
+        <header className="max-w-2xl">
           <p className="mb-3 text-sm font-semibold text-teal-700">
             Travel Planner
           </p>
@@ -43,23 +40,39 @@ export default function HomePage() {
           </div>
         </header>
 
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <StatCard
-            label="Viajes próximos"
-            value="3"
-            description="Planes activos para las prócximas semanas."
-          />
-          <StatCard
-            label="Presupuesto estimado"
-            value="$1.250"
-            description="uma inicial de transporte, hospedaje y actividades."
-          />
-          <StatCard
-            label="Destinos guardados"
-            value="8"
-            description="Ciudades candidatas para próximos itinerarios."
-          />
-        </section>
+        <aside className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-base font-semibold text-slate-900">Resumen</h2>
+            <ViewModeToggle />
+          </div>
+
+          <section
+            className={
+              viewMode === "grid"
+                ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2"
+                : "flex flex-col gap-4"
+            }
+          >
+            <StatCard
+              label="Viajes próximos"
+              value="3"
+              variant={viewMode}
+              description="Planes activos para las prócximas semanas."
+            />
+            <StatCard
+              label="Presupuesto estimado"
+              value="$1.250"
+              variant={viewMode}
+              description="Suma inicial de transporte, hospedaje y actividades."
+            />
+            <StatCard
+              label="Destinos guardados"
+              value="8"
+              variant={viewMode}
+              description="Ciudades candidatas para próximos itinerarios."
+            />
+          </section>
+        </aside>
       </section>
     </main>
   );

@@ -81,3 +81,71 @@ Crear el primer slice pequeño de UI para practicar:
 - cambio real en el estado global.
 
 El estudiante pidio explicaciones detalladas de TypeScript y Redux sin asumir conocimiento previo de TS. Cada linea nueva debe explicarse antes de avanzar.
+
+## Actualizacion 2026-07-27 - uiSlice
+
+- Primer slice de Redux creado en `client/src/features/ui/uiSlice.ts`.
+- Estado global registrado:
+  - `state.ui.viewMode`;
+  - valores permitidos: `"grid"` o `"list"`;
+  - valor inicial: `"grid"`.
+- Action creada:
+  - `setViewMode`.
+- Selector creado:
+  - `selectViewMode`.
+- `uiReducer` conectado en `client/src/app/store.ts`.
+- `HomePage` ya lee `viewMode` con `useAppSelector`.
+- `HomePage` ya cambia `viewMode` con `useAppDispatch` y `setViewMode`.
+- Se agrego un control visual minimo para cambiar entre Grid y Lista.
+- `npm run build` pasa.
+- `npm run lint` pasa.
+
+## Proxima tarea sugerida
+
+Refactorizar el control de cambio de vista a un componente pequeño, por ejemplo:
+
+- `client/src/features/ui/ViewModeToggle.tsx`.
+
+Objetivo:
+
+- separar UI reutilizable de la pagina;
+- practicar props vs Redux;
+- decidir que responsabilidades quedan en el componente y cuales siguen en el slice.
+
+## Actualizacion 2026-07-27 - ViewModeToggle
+
+- Control de cambio de vista extraido a `client/src/features/ui/ViewModeToggle.tsx`.
+- `HomePage` ya no importa hooks de Redux ni actions/selectors del slice.
+- `ViewModeToggle` concentra:
+  - lectura de `viewMode` con `useAppSelector`;
+  - cambio de `viewMode` con `useAppDispatch`;
+  - dispatch de `setViewMode("grid")`;
+  - dispatch de `setViewMode("list")`;
+  - estilos del boton activo.
+- `npm run build` pasa.
+- `npm run lint` pasa.
+
+## Proxima tarea sugerida
+
+Usar `viewMode` para cambiar el layout real de las tarjetas:
+
+- modo `"grid"`: tarjetas en grilla;
+- modo `"list"`: tarjetas en columna.
+
+Objetivo:
+
+- practicar lectura de Redux para decidir clases de Tailwind;
+- diferenciar estado global de UI vs datos de dominio;
+- evitar que Redux sea solo un texto de depuracion.
+
+## Actualizacion 2026-07-27 - Layout dos columnas
+
+- `HomePage` ahora usa layout responsive de dos columnas en desktop:
+  - hero y acciones principales a la izquierda;
+  - resumen, toggle y tarjetas a la derecha.
+- `ViewModeToggle` se ubico dentro de la columna de resumen.
+- `viewMode` sigue controlando la presentacion de las tarjetas:
+  - grilla;
+  - lista.
+- `npm run build` pasa.
+- `npm run lint` pasa.
