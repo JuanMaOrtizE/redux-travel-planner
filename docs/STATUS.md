@@ -248,12 +248,44 @@ Esta separación evita mezclar la construcción de la aplicación con su ejecuci
 
 ## Tarea actual
 
-La instancia mínima de Express fue creada en `server/src/app.ts` y pasa `npx tsc --noEmit`.
+La instancia mínima de Express y las exclusiones del backend están configuradas:
+
+- `server/src/app.ts` pasa `npx tsc --noEmit`;
+- `server/.gitignore` excluye `node_modules/`, `dist/` y `.env`.
 
 ## Próximo paso
 
-Crear `server/.gitignore` antes de introducir variables de entorno o archivos compilados.
+Crear `server/src/server.ts`, importar la aplicación y abrir el puerto configurado.
 
 ## Bloqueos
 
 Ninguno.
+
+## Decisión sobre variables de entorno
+
+- El proyecto no utilizará `.env.example`.
+- Las variables requeridas se documentarán en `docs/ENVIRONMENT.md`.
+- `server/.env` seguirá siendo local y permanecerá excluido de Git.
+- Toda variable nueva deberá agregarse a la documentación en la misma tarea en que se incorpore al código.
+
+## Configuración de entorno completada
+
+- `server/src/config/env.ts` carga `server/.env` mediante dotenv.
+- `PORT` se convierte de texto a número.
+- El valor se valida como entero entre 1 y 65535.
+- Si `PORT` no está definido, se usa `4000`.
+- `npx tsc --noEmit` pasa.
+- La carga real de la configuración devuelve el puerto `4000`.
+
+## Inicio del servidor completado
+
+- `server/src/server.ts` importa la aplicación desde `app.ts`.
+- Importa el puerto validado desde `config/env.ts`.
+- Inicia Express mediante `app.listen`.
+- Los imports relativos utilizan extensión `.js` por la configuración ESM con NodeNext.
+- `npx tsc --noEmit` pasa.
+- Una prueba real en `http://localhost:4000` devuelve `404`, respuesta esperada mientras no existan rutas.
+
+## Tarea actual
+
+Configurar scripts de desarrollo, comprobación, compilación y ejecución en `server/package.json`.
