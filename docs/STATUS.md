@@ -149,3 +149,111 @@ Objetivo:
   - lista.
 - `npm run build` pasa.
 - `npm run lint` pasa.
+
+## Actualización 2026-07-28 - React Router y layout principal
+
+- React Router está instalado y configurado mediante Data Router:
+  - `createBrowserRouter`;
+  - `RouterProvider`.
+- `App.tsx` delega la navegación en `client/src/router/AppRouter.tsx`.
+- `client/src/layouts/MainLayout.tsx` contiene:
+  - encabezado y navegación compartidos;
+  - `Outlet` para renderizar la página que corresponde a la URL.
+- Páginas base creadas:
+  - `HomePage`;
+  - `TripsPage`;
+  - `TripDetailPage`;
+  - `LoginPage`;
+  - `NotFoundPage`.
+- Rutas disponibles:
+  - `/`;
+  - `/trips`;
+  - `/trips/:tripId`;
+  - `/login`;
+  - ruta comodín `*`.
+- `TripDetailPage` lee el parámetro dinámico `tripId` con `useParams`.
+- `npm run build` pasa.
+- `npm run lint` pasa.
+
+## Tarea actual
+
+Fase 3 completada. No hay una tarea de implementación activa.
+
+## Próximo paso
+
+Iniciar la fase 4 con el backend Express base:
+
+- decidir y crear la ubicación definitiva del servidor;
+- inicializar el proyecto del servidor;
+- explicar cada dependencia antes de instalarla;
+- crear posteriormente un endpoint de salud, CORS y variables de entorno.
+
+## Bloqueos
+
+Ninguno.
+
+## Actualización 2026-07-28 - Dependencias base del servidor
+
+- La carpeta definitiva del backend es `server/`.
+- `server/package.json` ya estaba inicializado.
+- Dependencias de ejecución instaladas:
+  - `express`;
+  - `cors`;
+  - `dotenv`.
+- Dependencias de desarrollo instaladas:
+  - `typescript`;
+  - `tsx`;
+  - `@types/node`;
+  - `@types/express`;
+  - `@types/cors`.
+- Entorno comprobado:
+  - Node.js 24;
+  - TypeScript 7.
+- Las dependencias aparecen en el grupo correcto dentro de `server/package.json`.
+
+## Tarea actual
+
+Crear y comprender la configuración de TypeScript del servidor antes de agregar código Express.
+
+## Próximo paso
+
+Generar `server/tsconfig.json`, revisar sus opciones y ajustarlo a la estructura definitiva `src/` → `dist/`.
+
+## Bloqueos
+
+Ninguno.
+
+## Actualización 2026-07-28 - TypeScript del servidor
+
+- Se creó `server/tsconfig.json`.
+- Código fuente configurado en `server/src/`.
+- Salida compilada configurada en `server/dist/`.
+- El servidor usa módulos ESM:
+  - `type: "module"` en `server/package.json`;
+  - `module: "nodenext"` en TypeScript.
+- Objetivo de compilación configurado en ES2022.
+- Tipos globales de Node habilitados.
+- Comprobación estricta de TypeScript habilitada.
+- Se eliminaron opciones generadas que pertenecían a JSX o publicación de librerías.
+- `npx tsc --showConfig` confirma que la configuración es válida.
+
+## Decisión estructural
+
+El servidor separará:
+
+- `src/app.ts`: configuración de Express, middlewares y rutas;
+- `src/server.ts`: inicio del proceso y apertura del puerto.
+
+Esta separación evita mezclar la construcción de la aplicación con su ejecución y permite probar `app` posteriormente sin abrir un puerto real.
+
+## Tarea actual
+
+La instancia mínima de Express fue creada en `server/src/app.ts` y pasa `npx tsc --noEmit`.
+
+## Próximo paso
+
+Crear `server/.gitignore` antes de introducir variables de entorno o archivos compilados.
+
+## Bloqueos
+
+Ninguno.
