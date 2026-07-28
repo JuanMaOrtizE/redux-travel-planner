@@ -9,10 +9,6 @@ export default function HomePage() {
     <main className="min-h-screen bg-slate-50 px-6 py-10 text-slate-900">
       <section className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(360px,520px)] lg:items-start">
         <header className="max-w-2xl">
-          <p className="mb-3 text-sm font-semibold text-teal-700">
-            Travel Planner
-          </p>
-
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
             Planifica tus viajes en un solo lugar
           </h1>
