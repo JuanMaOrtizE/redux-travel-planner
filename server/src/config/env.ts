@@ -17,4 +17,18 @@ const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
   throw new Error("DATABASE_URL es obligatoria");
 }
-export { PORT, CLIENT_URL, DATABASE_URL };
+
+const rawJwtSecret = process.env.JWT_SECRET;
+const NODE_ENV = process.env.NODE_ENV ?? "development";
+
+if (!rawJwtSecret || rawJwtSecret.length < 64) {
+  throw new Error("JWT_SECRET debe contener al menos 64 caracteres");
+}
+
+if (!["development", "test", "production"].includes(NODE_ENV)) {
+  throw new Error("NODE_ENV debe ser development, test o production");
+}
+
+const JWT_SECRET = rawJwtSecret;
+
+export { PORT, CLIENT_URL, DATABASE_URL, JWT_SECRET, NODE_ENV };

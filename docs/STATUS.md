@@ -364,3 +364,35 @@ Iniciar la fase 5 definiendo el modelo inicial `User` y las decisiones de autent
 
 Instalar Prisma y Prisma Client en `server/`, inicializar su configuración para
 PostgreSQL y comenzar con el modelo `User`.
+
+## Prisma y modelo User completados
+
+- Prisma ORM `7.9.1` está configurado para PostgreSQL.
+- `prisma.config.ts` carga la conexión desde `DATABASE_URL`.
+- `schema.prisma` contiene el modelo `User`.
+- La migración `init_user` está aplicada.
+- La tabla `users` y su índice único de email existen en PostgreSQL.
+- Prisma Client se genera en `server/src/generated/prisma`.
+- `server/src/lib/prisma.ts` exporta una única instancia con `PrismaPg`.
+- Una consulta real `prisma.user.count()` devuelve `0`.
+- `npm run typecheck` pasa.
+
+## Tarea actual
+
+Preparar las dependencias y variables necesarias para registro, login, logout y
+consulta de sesión actual.
+
+## Base de autenticación preparada
+
+- Se instalaron `bcryptjs`, `cookie-parser`, `jsonwebtoken` y `zod`.
+- `JWT_SECRET` es obligatorio y se valida con una longitud mínima de 64
+  caracteres.
+- `NODE_ENV` acepta `development`, `test` o `production`.
+- CORS permite credenciales para el origen configurado.
+- `cookieParser()` se ejecuta antes de las rutas.
+- La prueba HTTP confirma `Access-Control-Allow-Credentials: true`.
+- El valor real de `JWT_SECRET` permanece únicamente en `server/.env`.
+
+## Próximo paso
+
+Definir los esquemas Zod de registro y login en el módulo de autenticación.
