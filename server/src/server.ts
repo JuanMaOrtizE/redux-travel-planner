@@ -2,5 +2,5 @@ import app from "./app.js";
 import { PORT } from "./config/env.js";
 
 app.listen(PORT, () => {
-  console.log(`Servidor ejecutandose en http://localhost:${PORT}`);
+  console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
 });

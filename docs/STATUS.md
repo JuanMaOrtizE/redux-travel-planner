@@ -289,3 +289,78 @@ Ninguno.
 ## Tarea actual
 
 Configurar scripts de desarrollo, comprobación, compilación y ejecución en `server/package.json`.
+
+## Scripts del servidor completados
+
+- `npm run dev` ejecutará `tsx` en modo observación.
+- `npm run typecheck` revisa tipos sin generar archivos.
+- `npm run build` compila `src/` dentro de `dist/`.
+- `npm start` ejecuta `dist/server.js`.
+- `main` apunta a `dist/server.js`.
+- La compilación genera JavaScript ESM y source maps.
+- `dist/` permanece excluido de Git.
+- El JavaScript compilado inicia Express correctamente en el puerto `4000`.
+
+## Tarea actual
+
+La ruta de salud está creada y validada en `server/src/routes/health.routes.ts`.
+
+## Próximo paso
+
+Montar la ruta en `app.ts` bajo `/api/health` y comprobar una respuesta JSON con estado HTTP 200.
+
+## Endpoint de salud completado
+
+- `healthRouter` está montado en `app.ts` bajo `/api/health`.
+- `GET /api/health` responde HTTP 200.
+- La respuesta usa `Content-Type: application/json`.
+- El cuerpo de la respuesta es `{ "status": "ok" }`.
+- `npm run typecheck` pasa.
+
+## Próximo paso
+
+Configurar los middlewares globales `cors` y `express.json()` antes de agregar rutas de dominio.
+
+## Configuración del origen del cliente completada
+
+- `CLIENT_URL` está definida en `server/.env`.
+- `env.ts` carga la variable y utiliza `http://localhost:5173` como valor predeterminado.
+- La URL se valida durante el inicio del servidor.
+- `CLIENT_URL` está documentada en `docs/ENVIRONMENT.md`.
+- `npm run typecheck` pasa.
+
+## Tarea actual
+
+Configurar `cors` y el parser JSON como middlewares globales en `server/src/app.ts`.
+
+## Fase 4 completada - Backend Express base
+
+- `cors` está configurado con el origen validado en `CLIENT_URL`.
+- `express.json()` está configurado antes de las rutas.
+- Los middlewares globales se ejecutan antes de `healthRouter`.
+- `GET /api/health` responde HTTP 200 con `{ "status": "ok" }`.
+- La respuesta incluye `Access-Control-Allow-Origin: http://localhost:5173`.
+- `npm run typecheck` pasa.
+- `npm run build` pasa.
+
+## Tarea actual
+
+Ninguna tarea de implementación activa. Fase 4 completada.
+
+## Próximo paso
+
+Iniciar la fase 5 definiendo el modelo inicial `User` y las decisiones de autenticación antes de instalar y configurar Prisma.
+
+## Diseño relacional definido
+
+- `docs/DATA_MODEL.md` registra las entidades previstas y sus relaciones.
+- `User` será la raíz de propiedad de los viajes, no solo una credencial.
+- Las relaciones muchos a muchos con datos propios usarán tablas puente
+  explícitas.
+- Las relaciones se implementarán en Prisma de forma incremental, incluyendo
+  claves foráneas, restricciones únicas y reglas `onDelete`.
+
+## Próximo paso
+
+Instalar Prisma y Prisma Client en `server/`, inicializar su configuración para
+PostgreSQL y comenzar con el modelo `User`.

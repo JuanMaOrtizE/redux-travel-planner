@@ -13,11 +13,15 @@ Variables disponibles:
 | Variable | Descripción | Valor de desarrollo |
 | --- | --- | --- |
 | `PORT` | Puerto HTTP en el que escucha el servidor Express. | `4000` |
+| `CLIENT_URL` | Origen del cliente autorizado para comunicarse con la API. | `http://localhost:5173` |
+| `DATABASE_URL` | Conexión privada a PostgreSQL utilizada por Prisma. | Configuración local |
 
 Configuración local actual:
 
 ```env
 PORT=4000
+CLIENT_URL=http://localhost:5173
+DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/redux_travel_planner?schema=public"
 ```
 
 Cuando se agregue una variable nueva al servidor, debe documentarse aquí en la
