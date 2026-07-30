@@ -490,3 +490,64 @@ la cookie de autenticacion y el error HTTP 409 al repetir el email.
 
 Implementar el servicio de login: buscar el usuario por email, comprobar la
 contrasena y devolver los datos publicos sin revelar cual credencial fallo.
+
+## Servicio de login completado
+
+- `loginUser` busca el usuario por email.
+- La contrasena se compara de forma asincrona mediante bcrypt.
+- Un email inexistente y una contrasena incorrecta producen el mismo
+  `AppError` con estado HTTP 401.
+- El resultado publico excluye `passwordHash`.
+- Una prueba directa confirma el rechazo de una contrasena incorrecta y la
+  aceptacion de la contrasena correcta.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Crear el controlador HTTP de login. El controlador validara `req.body`,
+llamara a `loginUser`, creara un JWT, configurara la cookie y respondera con
+los datos publicos del usuario.
+
+## Controlador de login completado
+
+- `loginUserController` valida el cuerpo con `loginSchema`.
+- El controlador espera el resultado de `loginUser`.
+- Un login exitoso crea un JWT con el identificador del usuario.
+- El JWT se configura en la cookie de autenticacion.
+- La respuesta HTTP 200 contiene los datos publicos del usuario.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Registrar `POST /login` en `auth.routes.ts` y probar por HTTP el login
+correcto, la contrasena incorrecta y la cookie de autenticacion.
+
+## Endpoint de login completado
+
+- `authRouter` registra `POST /login`.
+- El endpoint final es `POST /api/auth/login`.
+- Las credenciales correctas responden HTTP 200 con el usuario publico.
+- La respuesta configura una cookie JWT `HttpOnly`.
+- Una contrasena incorrecta responde HTTP 401.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Crear el controlador y la ruta de logout. El endpoint eliminara la cookie de
+autenticacion y respondera HTTP 204 sin contenido.
+
+## Endpoint de logout completado
+
+- `authRouter` registra `POST /logout`.
+- El endpoint final es `POST /api/auth/logout`.
+- `clearAuthCookie` responde con una cookie vacia y expirada.
+- El endpoint responde HTTP 204 sin cuerpo.
+- El controlador es sincrono porque no realiza operaciones asincronas.
+- Una prueba HTTP confirma la expiracion de la cookie y un cuerpo de longitud
+  cero.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Crear el middleware de autenticacion que lea la cookie, verifique el JWT y
+asocie el identificador del usuario autenticado con la peticion.
