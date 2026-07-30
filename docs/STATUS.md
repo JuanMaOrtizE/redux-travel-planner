@@ -396,3 +396,97 @@ consulta de sesión actual.
 ## Próximo paso
 
 Definir los esquemas Zod de registro y login en el módulo de autenticación.
+
+## Utilidades de autenticación completadas
+
+- `auth.schemas.ts` valida registro y login con Zod 4.
+- Los emails se normalizan antes de validarse.
+- Los objetos rechazan propiedades no declaradas.
+- `auth.password.ts` genera y verifica hashes bcrypt de forma asíncrona.
+- `auth.token.ts` crea JWT con `sub` y rechaza tokens alterados.
+- `auth.cookie.ts` configura una cookie `httpOnly`, `sameSite: "lax"` y
+  `secure` en producción.
+- La duración de la cookie coincide con los siete días del JWT.
+- `npm run typecheck` pasa.
+
+## Próximo paso
+
+Crear un error de aplicación y un middleware global que convierta errores de
+dominio y Zod en respuestas JSON consistentes.
+
+## Manejo global de errores completado
+
+- `AppError` representa errores esperados de la aplicacion con estado HTTP,
+  codigo y mensaje.
+- `errorMiddleware` convierte errores de Zod en respuestas HTTP 400.
+- Los errores `AppError` conservan su estado HTTP, codigo y mensaje.
+- Los errores inesperados se registran en el servidor y responden HTTP 500 sin
+  exponer detalles internos.
+- El middleware esta registrado despues de las rutas en `app.ts`.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Crear el servicio de registro de usuarios dentro del modulo de autenticacion.
+Este servicio comprobara si el email ya existe, generara el hash de la
+contrasena y creara el usuario mediante Prisma.
+
+## Servicio de registro completado
+
+- `registerUser` recibe datos de registro ya validados.
+- Comprueba mediante Prisma si el email ya existe.
+- Un email ocupado produce `AppError` con estado HTTP 409.
+- La contrasena se transforma en hash antes de persistirse.
+- Prisma retorna solo `id`, `name`, `email` y `createdAt`.
+- `passwordHash` no forma parte del resultado publico.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Crear el controlador HTTP de registro. El controlador validara `req.body`,
+llamara a `registerUser`, creara el JWT, configurara la cookie y respondera
+HTTP 201 con los datos publicos del usuario.
+
+## Controlador de registro completado
+
+- `registerUserController` valida `req.body` con Zod.
+- El controlador llama al servicio de registro y espera su resultado.
+- Un registro exitoso crea un JWT con el identificador del usuario.
+- El JWT se configura en la cookie de autenticacion.
+- La respuesta HTTP 201 contiene los datos publicos del usuario.
+- Los errores asincronos se propagan al middleware global de Express 5.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Crear el router del modulo de autenticacion, registrar
+`POST /register` y montarlo en `app.ts` bajo `/api/auth`.
+
+## Ruta de registro completada
+
+- `authRouter` registra `POST /register`.
+- El router esta montado bajo `/api/auth`.
+- El endpoint final es `POST /api/auth/register`.
+- Las rutas de autenticacion se ejecutan antes de `errorMiddleware`.
+- Una peticion con datos invalidos responde HTTP 400.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Probar el registro exitoso contra PostgreSQL y comprobar la respuesta publica,
+la cookie de autenticacion y el error HTTP 409 al repetir el email.
+
+## Flujo de registro verificado
+
+- Un registro valido responde HTTP 201.
+- La respuesta contiene los datos publicos del usuario y excluye
+  `passwordHash`.
+- La respuesta configura la cookie `travel_planner_token`.
+- La cookie usa `HttpOnly`, `SameSite=Lax` y una duracion de siete dias.
+- Repetir el mismo email responde HTTP 409.
+- La prueba creo un usuario de prueba en la base de desarrollo.
+
+## Proximo paso
+
+Implementar el servicio de login: buscar el usuario por email, comprobar la
+contrasena y devolver los datos publicos sin revelar cual credencial fallo.

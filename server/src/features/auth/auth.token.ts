@@ -10,7 +10,7 @@ export function createAuthToken(userId: string): string {
   });
 }
 
-export function verifyToken(token: string): string {
+export function verifyAuthToken(token: string): string {
   const payload = jwt.verify(token, JWT_SECRET);
 
   if (typeof payload === "string" || typeof payload.sub !== "string") {
