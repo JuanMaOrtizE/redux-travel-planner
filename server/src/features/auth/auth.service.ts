@@ -84,3 +84,22 @@ export async function loginUser(input: LoginInput): Promise<AuthUser> {
 
   return publicUser;
 }
+
+export async function getCurrentUser(userId: string): Promise<AuthUser> {
+  const currentUser = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      createdAt: true,
+    },
+  });
+
+  if (!currentUser) {
+    throw new AppError(401, "AUTHENTICATION_REQUIRED", "Debes iniciar sesion");
+  }
+  return currentUser;
+}

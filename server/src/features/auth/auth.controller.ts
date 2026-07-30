@@ -1,8 +1,9 @@
 import type { RequestHandler } from "express";
 import { loginSchema, registerSchema } from "./auth.schemas.js";
-import { loginUser, registerUser } from "./auth.service.js";
+import { getCurrentUser, loginUser, registerUser } from "./auth.service.js";
 import { createAuthToken } from "./auth.token.js";
 import { clearAuthCookie, setAuthCookie } from "./auth.cookie.js";
+import { AppError } from "../../common/errors/AppError.js";
 
 export const registerUserController: RequestHandler = async (req, res) => {
   const parsedData = registerSchema.parse(req.body);
@@ -38,4 +39,18 @@ export const logoutUserController: RequestHandler = (_req, res) => {
   clearAuthCookie(res);
 
   res.status(204).send();
+};
+
+export const getCurrentUserController: RequestHandler = async (req, res) => {
+  const auth = req.auth;
+
+  if (!auth) {
+    throw new AppError(401, "AUTHENTICATION_REQUIRED", "Debes iniciar sesion");
+  }
+
+  const user = await getCurrentUser(auth.userId);
+
+  return res.status(200).json({
+    data: { user },
+  });
 };

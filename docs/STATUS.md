@@ -551,3 +551,71 @@ autenticacion y respondera HTTP 204 sin contenido.
 
 Crear el middleware de autenticacion que lea la cookie, verifique el JWT y
 asocie el identificador del usuario autenticado con la peticion.
+
+## Middleware de autenticacion completado
+
+- `Express.Request` fue ampliado con `auth?: { userId: string }`.
+- `requireAuth` lee la cookie de autenticacion como un valor desconocido.
+- La ausencia de cookie produce `AppError` con estado HTTP 401.
+- Los JWT invalidos o vencidos se traducen a HTTP 401.
+- Un JWT valido agrega el identificador a `req.auth`.
+- El middleware ejecuta `next()` solamente despues de autenticar la peticion.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Crear el servicio de sesion actual que busque por `userId` los datos publicos
+del usuario. Luego se conectara a `GET /api/auth/me` mediante `requireAuth`.
+
+## Servicio de sesion actual completado
+
+- `getCurrentUser` recibe el identificador obtenido del JWT.
+- Prisma busca el usuario por su campo `id`.
+- La consulta selecciona solamente datos publicos.
+- Un usuario inexistente invalida la sesion con HTTP 401.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Crear el controlador de sesion actual. Este leera `req.auth.userId`, llamara a
+`getCurrentUser` y respondera con los datos publicos del usuario.
+
+## Controlador de sesion actual completado
+
+- `getCurrentUserController` comprueba que `req.auth` exista.
+- TypeScript estrecha la propiedad opcional antes de leer `userId`.
+- El controlador consulta los datos actuales mediante `getCurrentUser`.
+- La respuesta HTTP 200 contiene el usuario publico.
+- El endpoint no renueva el JWT ni modifica la cookie.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Registrar `GET /me` con `requireAuth` antes de `getCurrentUserController` y
+probar los flujos con cookie ausente, invalida y valida.
+
+## Sesion actual y middleware verificados
+
+- `authRouter` registra `GET /me`.
+- `requireAuth` se ejecuta antes de `getCurrentUserController`.
+- Una peticion sin cookie responde HTTP 401.
+- Una cookie con un JWT manipulado responde HTTP 401.
+- Una cookie obtenida mediante login responde HTTP 200 con el usuario publico.
+- `npm run typecheck` pasa.
+- `npm run build` pasa.
+
+## Fase 5 completada - Base de datos y autenticacion
+
+- El modelo `User` y su migracion existen en PostgreSQL.
+- El registro crea el usuario, el JWT y la cookie.
+- El login verifica credenciales y crea la sesion.
+- El logout elimina la cookie.
+- `GET /api/auth/me` recupera la sesion actual mediante un middleware
+  reutilizable.
+- Los errores de validacion, dominio y autenticacion usan respuestas JSON
+  consistentes.
+
+## Proximo paso
+
+Iniciar la fase 6 revisando el modelo relacional previsto para `Trip` antes de
+agregarlo al esquema Prisma y crear su migracion.
