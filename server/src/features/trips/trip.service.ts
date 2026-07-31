@@ -1,6 +1,7 @@
 import prisma from "../../lib/prisma.js";
 import type { CreateTripInput } from "./trip.schemas.js";
 import { toTripResponse, type TripResponse } from "./trip.mapper.js";
+import { AppError } from "../../common/errors/AppError.js";
 
 function toUtcDate(value: string): Date {
   return new Date(`${value}T00:00:00.000Z`);
@@ -40,4 +41,19 @@ export async function listTrips(userId: string): Promise<TripResponse[]> {
   });
 
   return trips.map(toTripResponse);
+}
+
+export async function getTripById(
+  userId: string,
+  tripId: string,
+): Promise<TripResponse> {
+  const trip = await prisma.trip.findFirst({
+    where: { id: tripId, userId },
+  });
+
+  if (!trip) {
+    throw new AppError(404, "TRIP_NOT_FOUND", "Viaje no encontrado");
+  }
+
+  return toTripResponse(trip);
 }

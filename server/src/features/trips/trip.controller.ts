@@ -1,7 +1,7 @@
 import type { RequestHandler } from "express";
 import { AppError } from "../../common/errors/AppError.js";
-import { createTripSchema } from "./trip.schemas.js";
-import { createTrip, listTrips } from "./trip.service.js";
+import { createTripSchema, tripParamsSchema } from "./trip.schemas.js";
+import { createTrip, getTripById, listTrips } from "./trip.service.js";
 
 export const createTripController: RequestHandler = async (req, res) => {
   const auth = req.auth;
@@ -29,4 +29,18 @@ export const listTripsController: RequestHandler = async (req, res) => {
       trips,
     },
   });
+};
+
+export const getTripByIdController: RequestHandler = async (req, res) => {
+  const auth = req.auth;
+  if (!auth) {
+    throw new AppError(401, "AUTHENTICATION_REQUIRED", "Debes iniciar sesion");
+  }
+
+  const parsedData = tripParamsSchema.parse(req.params);
+  const { tripId } = parsedData;
+
+  const trip = await getTripById(auth.userId, tripId);
+
+  return res.status(200).json({ data: { trip } });
 };

@@ -22,4 +22,9 @@ export const createTripSchema = z
     path: ["endDate"],
   });
 
+export const tripParamsSchema = z.strictObject({
+  tripId: z.uuid("El identificador del viaje debe ser un UUID válido"),
+});
+
 export type CreateTripInput = z.infer<typeof createTripSchema>;
+export type TripParams = z.infer<typeof tripParamsSchema>;

@@ -778,3 +778,67 @@ Registrar `GET /` con `requireAuth` en `trip.routes.ts` y probar el endpoint
 
 Crear el esquema Zod para validar `tripId` como UUID antes de implementar
 `GET /api/trips/:tripId`.
+
+## Esquema de parametros del detalle de viaje completado
+
+- `tripParamsSchema` valida el parametro `tripId` como UUID.
+- El esquema rechaza propiedades adicionales.
+- `TripParams` se infiere directamente desde el esquema.
+- Se comprobaron un UUID valido, un texto invalido y una propiedad adicional.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Implementar el servicio que obtiene un viaje mediante `tripId` y el
+identificador del usuario autenticado. La consulta debe comprobar propiedad y
+devolver una respuesta publica sin revelar viajes de otros usuarios.
+
+## Servicio de detalle de viaje completado
+
+- `getTripById` recibe `userId` y `tripId`.
+- Prisma filtra simultaneamente por el identificador del viaje y su propietario.
+- Un viaje inexistente o ajeno produce HTTP 404 con `TRIP_NOT_FOUND`.
+- El resultado se transforma mediante `toTripResponse`.
+- Una consulta real confirmo el error esperado para un viaje no encontrado.
+- Se eliminaron dos imports sin uso y se ajusto el nombre del servicio.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Crear el controlador de detalle: comprobar `req.auth`, validar `req.params` con
+`tripParamsSchema`, llamar a `getTripById` y responder HTTP 200 con
+`{ data: { trip } }`.
+
+## Controlador de detalle de viaje completado
+
+- `getTripByIdController` comprueba la autenticacion disponible en `req.auth`.
+- Los parametros de la URL se validan mediante `tripParamsSchema`.
+- El servicio recibe `userId` y el `tripId` ya validado.
+- La respuesta usa HTTP 200 y `{ data: { trip } }`.
+- Se corrigio la propiedad inicial `tripDetails` para conservar el contrato
+  publico uniforme.
+- El controlador no accede directamente a Prisma.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Registrar `GET /:tripId` con `requireAuth` en `trip.routes.ts` y probar por HTTP
+los casos sin autenticacion, UUID invalido, viaje inexistente y viaje propio.
+
+## Endpoint de detalle de viaje completado
+
+- `tripRouter` registra `GET /:tripId` con `requireAuth`.
+- El endpoint final es `GET /api/trips/:tripId`.
+- Una peticion sin cookie responde HTTP 401.
+- Un `tripId` con formato invalido responde HTTP 400.
+- Un UUID valido sin viaje accesible responde HTTP 404.
+- El viaje propio responde HTTP 200 con `{ data: { trip } }`.
+- La prueba confirmo que el identificador devuelto coincide con el solicitado.
+- El usuario y el viaje temporales se eliminaron al finalizar.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Definir el contrato de actualizacion parcial de viajes antes de implementar
+`PATCH /api/trips/:tripId`, decidiendo que campos son editables y validando que
+el cuerpo contenga al menos un cambio.
