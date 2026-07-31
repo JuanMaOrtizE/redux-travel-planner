@@ -61,6 +61,18 @@ Campos previstos:
 Pertenece a un usuario y contiene destinos, actividades y elementos de
 presupuesto.
 
+Decisiones implementadas:
+
+- `startDate` y `endDate` se almacenan como fechas sin hora mediante
+  `@db.Date`;
+- `status` usa `TripStatus` con `PLANNING`, `CONFIRMED`, `COMPLETED` y
+  `CANCELLED`;
+- `currency` usa un texto de tres caracteres;
+- `budgetLimit` usa `Decimal(12, 2)` y es opcional;
+- `userId` es una clave foranea UUID obligatoria;
+- eliminar un usuario elimina sus viajes mediante `onDelete: Cascade`;
+- existe un indice compuesto por `userId` y `startDate`.
+
 ### Destination
 
 Campos previstos:

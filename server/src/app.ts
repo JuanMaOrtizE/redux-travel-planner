@@ -4,7 +4,9 @@ import cookieParser from "cookie-parser";
 import { CLIENT_URL } from "./config/env.js";
 import healthRouter from "./routes/health.routes.js";
 import { errorMiddleware } from "./middlewares/error.middleware.js";
+
 import authRouter from "./features/auth/auth.routes.js";
+import tripRouter from "./features/trips/trip.routes.js";
 
 const app = express();
 
@@ -13,6 +15,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use("/api/health", healthRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/trips", tripRouter);
 app.use(errorMiddleware);
 
 export default app;

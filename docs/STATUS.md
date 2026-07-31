@@ -619,3 +619,162 @@ probar los flujos con cookie ausente, invalida y valida.
 
 Iniciar la fase 6 revisando el modelo relacional previsto para `Trip` antes de
 agregarlo al esquema Prisma y crear su migracion.
+
+## Esquema Trip definido
+
+- `TripStatus` limita los estados posibles del viaje.
+- `User` tiene una relacion uno-a-muchos con `Trip`.
+- `Trip.userId` es una clave foranea UUID obligatoria.
+- La eliminacion de un usuario aplica `onDelete: Cascade` sobre sus viajes.
+- Las fechas generales del viaje se almacenan sin hora.
+- El presupuesto limite usa un decimal opcional.
+- Existe un indice compuesto por `userId` y `startDate`.
+- `prisma format` y `prisma validate` pasan.
+- Todavia no se ha creado una migracion nueva.
+
+## Proximo paso
+
+Crear la migracion `add_trip`, revisar el SQL generado y confirmar que la tabla,
+el enum, la clave foranea y el indice se aplicaron correctamente.
+
+## Migracion Trip completada
+
+- La migracion `20260730214003_add_trip` crea `TripStatus`.
+- La tabla `trips` usa UUID, fechas `DATE` y presupuesto `DECIMAL(12,2)`.
+- La clave foranea apunta a `users.id` con `ON DELETE CASCADE`.
+- Existe el indice compuesto `trips_userId_startDate_idx`.
+- `prisma migrate status` confirma dos migraciones aplicadas.
+- Prisma Client fue regenerado y expone `Trip` y `TripStatus`.
+- Una consulta real `prisma.trip.count()` devuelve `0`.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Crear el esquema Zod para alta de viajes dentro de `features/trips`, definiendo
+la transformacion de fechas, moneda y presupuesto antes del servicio CRUD.
+
+## Esquema de creacion de viajes completado
+
+- `createTripSchema` usa un objeto estricto.
+- El titulo, la descripcion y la moneda se normalizan y limitan.
+- Las fechas exigen el formato ISO `YYYY-MM-DD`.
+- La fecha final no puede ser anterior a la inicial.
+- El presupuesto opcional conserva una representacion decimal en texto.
+- Propiedades controladas por el servidor, como `userId`, son rechazadas.
+- `CreateTripInput` se infiere directamente desde el esquema.
+- Las validaciones fueron comprobadas con casos validos e invalidos.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Definir la representacion publica de un viaje y su transformacion desde los
+tipos de Prisma antes de implementar el servicio de creacion.
+
+## Mapper publico de viajes completado
+
+- `TripResponse` define el contrato estable que consumira el frontend.
+- `toTripResponse` recibe el modelo `Trip` generado por Prisma.
+- Las fechas del viaje se convierten a `YYYY-MM-DD`.
+- Las fechas de auditoria conservan su representacion ISO completa.
+- `Decimal` se convierte a texto con dos decimales.
+- `userId` no se expone en la respuesta.
+- Una prueba directa confirma el formato y los campos resultantes.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Crear el servicio de alta de viajes, asociando el viaje al usuario autenticado,
+convirtiendo las fechas de entrada y retornando `TripResponse`.
+
+## Servicio de creacion de viajes completado
+
+- `createTrip` recibe el usuario autenticado y `CreateTripInput`.
+- Las fechas de calendario se convierten a objetos `Date` en UTC.
+- Prisma conecta el viaje con `User` mediante la relacion.
+- Descripcion y presupuesto ausentes se almacenan como `null`.
+- El estado inicial procede del valor predeterminado `PLANNING`.
+- El resultado se transforma mediante `toTripResponse`.
+- Una prueba real confirmo relacion, fechas, decimal, estado y respuesta.
+- El viaje utilizado por la prueba fue eliminado al finalizar.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Crear el controlador protegido de alta de viajes: comprobar `req.auth`, validar
+`req.body`, llamar a `createTrip` y responder HTTP 201.
+
+## Controlador de creacion de viajes completado
+
+- `createTripController` comprueba la autenticacion disponible en `req.auth`.
+- El cuerpo se valida y normaliza con `createTripSchema`.
+- El servicio recibe el identificador autenticado, no un `userId` externo.
+- La respuesta usa HTTP 201 y `{ data: { trip } }`.
+- El controlador no accede directamente a Prisma ni repite el mapper.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Crear `trip.routes.ts`, registrar `POST /` con `requireAuth` y montar el router
+en `app.ts` bajo `/api/trips`.
+
+## Endpoint de creacion de viajes completado
+
+- `tripRouter` esta montado bajo `/api/trips`.
+- `POST /api/trips` ejecuta `requireAuth` antes del controlador.
+- Una peticion sin cookie responde HTTP 401.
+- Un cuerpo con fechas invalidas responde HTTP 400.
+- Un cuerpo valido responde HTTP 201 con `TripResponse`.
+- La moneda, las fechas, el estado y el presupuesto conservan el contrato
+  publico acordado.
+- El viaje utilizado por la prueba fue eliminado al finalizar.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Implementar el listado protegido de viajes del usuario autenticado, ordenado
+por fecha de inicio y transformado mediante el mapper.
+
+## Servicio de listado de viajes completado
+
+- `listTrips` recibe el identificador del usuario autenticado.
+- Prisma filtra mediante `where: { userId }`.
+- Los resultados se ordenan por `startDate` ascendente.
+- Cada viaje se transforma mediante `toTripResponse`.
+- Una lista vacia se representa con `[]`.
+- Una prueba con dos viajes confirmo orden, formato publico y limpieza.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Crear el controlador de listado, leer `req.auth.userId`, llamar a `listTrips` y
+responder HTTP 200 con `{ data: { trips } }`.
+
+## Controlador de listado de viajes completado
+
+- `listTripsController` comprueba `req.auth`.
+- El servicio recibe el identificador del usuario autenticado.
+- La respuesta usa HTTP 200 y `{ data: { trips } }`.
+- El controlador no valida cuerpo ni accede directamente a Prisma.
+- Se corrigio el estado inicial 201 a 200 porque el listado no crea recursos.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Registrar `GET /` con `requireAuth` en `trip.routes.ts` y probar el endpoint
+`GET /api/trips`.
+
+## Endpoint de listado de viajes completado
+
+- `tripRouter` registra `GET /` con `requireAuth`.
+- El endpoint final es `GET /api/trips`.
+- Una peticion sin cookie responde HTTP 401.
+- Un usuario sin viajes recibe HTTP 200 con una lista vacia.
+- Los viajes se devuelven ordenados por fecha de inicio.
+- Los objetos usan el contrato `TripResponse`.
+- Los viajes utilizados por la prueba fueron eliminados.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Crear el esquema Zod para validar `tripId` como UUID antes de implementar
+`GET /api/trips/:tripId`.
