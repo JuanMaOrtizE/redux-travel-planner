@@ -919,3 +919,56 @@ falta de autenticacion.
 Implementar el servicio de eliminacion de un viaje propio. Debe comprobar
 `tripId` y `userId`, ocultar la existencia de viajes ajenos y eliminar el
 registro antes de conectar `DELETE /api/trips/:tripId`.
+
+## Servicio de eliminacion de viajes completado
+
+- `deleteTrip` recibe `userId` y `tripId`.
+- `deleteMany` filtra simultaneamente por el viaje y su propietario.
+- La operacion se espera antes de comprobar su resultado.
+- Un contador igual a cero produce HTTP 404 con `TRIP_NOT_FOUND`.
+- Un usuario ajeno no elimina el viaje ni descubre si existe.
+- El propietario elimina exactamente el viaje solicitado.
+- Repetir la eliminacion produce el mismo HTTP 404.
+- Los datos temporales se limpiaron al finalizar.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Crear el controlador de eliminacion: comprobar `req.auth`, validar `req.params`,
+llamar a `deleteTrip` y responder HTTP 204 sin cuerpo.
+
+## Controlador de eliminacion de viajes completado
+
+- `deleteTripController` comprueba la autenticacion disponible en `req.auth`.
+- Los parametros se validan mediante `tripParamsSchema`.
+- El controlador no valida cuerpo porque el recurso se identifica en la URL.
+- El servicio recibe `userId` y `tripId` en el orden acordado.
+- La eliminacion se espera antes de responder.
+- La respuesta usa HTTP 204 mediante `send()` y no incluye cuerpo.
+- El controlador no accede directamente a Prisma.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Registrar `DELETE /:tripId` con `requireAuth` en `trip.routes.ts` y probar por
+HTTP falta de autenticacion, UUID invalido, viaje inexistente, eliminacion
+propia y segundo intento de eliminacion.
+
+## Endpoint de eliminacion y CRUD de viajes completados
+
+- `tripRouter` registra `DELETE /:tripId` con `requireAuth`.
+- El endpoint final es `DELETE /api/trips/:tripId`.
+- Una peticion sin cookie responde HTTP 401.
+- Un `tripId` invalido responde HTTP 400.
+- Un viaje inexistente responde HTTP 404.
+- El propietario elimina el viaje y recibe HTTP 204 sin cuerpo.
+- Un segundo intento de eliminacion responde HTTP 404.
+- El usuario temporal se elimino al finalizar.
+- El backend ya expone crear, listar, consultar, actualizar y eliminar viajes.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Iniciar la integracion del cliente con RTK Query. Primero se definira el API
+slice base, su `baseUrl`, el envio de la cookie mediante credenciales y su
+registro en el store antes de agregar endpoints de viajes.

@@ -7,6 +7,7 @@ import {
 } from "./trip.schemas.js";
 import {
   createTrip,
+  deleteTrip,
   getTripById,
   listTrips,
   updateTrip,
@@ -68,4 +69,19 @@ export const updateTripController: RequestHandler = async (req, res) => {
   const trip = await updateTrip(auth.userId, tripId, parsedBodyData);
 
   return res.status(200).json({ data: { trip } });
+};
+
+export const deleteTripController: RequestHandler = async (req, res) => {
+  const auth = req.auth;
+  if (!auth) {
+    throw new AppError(401, "AUTHENTICATION_REQUIRED", "Debes iniciar sesion");
+  }
+
+  const parsedTripIdData = tripParamsSchema.parse(req.params);
+
+  const { tripId } = parsedTripIdData;
+
+  await deleteTrip(auth.userId, tripId);
+
+  return res.status(204).send();
 };

@@ -124,3 +124,19 @@ export async function updateTrip(
 
   return toTripResponse(updatedTrip);
 }
+
+export async function deleteTrip(
+  userId: string,
+  tripId: string,
+): Promise<void> {
+  const deleteResult = await prisma.trip.deleteMany({
+    where: {
+      id: tripId,
+      userId,
+    },
+  });
+
+  if (deleteResult.count === 0) {
+    throw new AppError(404, "TRIP_NOT_FOUND", "Viaje no encontrado");
+  }
+}
