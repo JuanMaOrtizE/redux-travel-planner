@@ -842,3 +842,80 @@ los casos sin autenticacion, UUID invalido, viaje inexistente y viaje propio.
 Definir el contrato de actualizacion parcial de viajes antes de implementar
 `PATCH /api/trips/:tripId`, decidiendo que campos son editables y validando que
 el cuerpo contenga al menos un cambio.
+
+## Esquema de actualizacion parcial de viajes completado
+
+- `updateTripSchema` permite actualizar solamente los campos enviados.
+- `description` y `budgetLimit` aceptan `null` para eliminar su valor.
+- `status` usa el enum `TripStatus` generado por Prisma.
+- El esquema rechaza cuerpos vacios y propiedades no declaradas.
+- Si ambas fechas llegan juntas, comprueba que el rango sea valido.
+- Una sola fecha se acepta para validarla posteriormente contra el viaje actual.
+- `UpdateTripInput` se infiere directamente desde el esquema.
+- Se comprobaron cambios parciales, valores nulos, estados, fechas y campos
+  externos.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Implementar el servicio de actualizacion. Debe localizar el viaje mediante
+`tripId` y `userId`, combinar las fechas enviadas con las existentes, validar
+el rango final y actualizar solamente los campos presentes.
+
+## Servicio de actualizacion de viajes completado
+
+- `updateTrip` localiza el viaje mediante `tripId` y `userId`.
+- Los campos omitidos conservan su valor almacenado.
+- `description` y `budgetLimit` pueden eliminarse mediante `null`.
+- Las fechas enviadas se combinan con las existentes antes de validar el rango.
+- Un rango final invalido produce HTTP 400 con `INVALID_TRIP_DATE_RANGE`.
+- Un viaje inexistente o ajeno produce HTTP 404 con `TRIP_NOT_FOUND`.
+- La actualizacion utiliza spreads condicionales para no enviar propiedades
+  omitidas a Prisma.
+- El resultado se transforma mediante `toTripResponse`.
+- Las pruebas reales confirmaron actualizacion parcial, valores nulos, fechas,
+  propiedad del viaje y limpieza de datos temporales.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Crear el controlador de actualizacion: comprobar `req.auth`, validar
+`req.params` y `req.body`, llamar a `updateTrip` y responder HTTP 200 con
+`{ data: { trip } }`.
+
+## Controlador de actualizacion de viajes completado
+
+- `updateTripController` comprueba la autenticacion disponible en `req.auth`.
+- Los parametros se validan mediante `tripParamsSchema`.
+- El cuerpo se valida mediante `updateTripSchema`.
+- El servicio recibe `userId`, `tripId` y los cambios ya validados.
+- La respuesta usa HTTP 200 y `{ data: { trip } }`.
+- Se corrigieron el orden de los identificadores, la espera asincrona y el
+  nombre de la propiedad publica.
+- El controlador no accede directamente a Prisma.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Registrar `PATCH /:tripId` con `requireAuth` en `trip.routes.ts` y probar por
+HTTP actualizacion parcial, valores nulos, rango invalido, viaje inexistente y
+falta de autenticacion.
+
+## Endpoint de actualizacion de viajes completado
+
+- `tripRouter` registra `PATCH /:tripId` con `requireAuth`.
+- El endpoint final es `PATCH /api/trips/:tripId`.
+- Una peticion sin cookie responde HTTP 401.
+- Una actualizacion parcial responde HTTP 200 y conserva campos omitidos.
+- `description` y `budgetLimit` pueden eliminarse mediante `null`.
+- Un cuerpo vacio responde HTTP 400.
+- Un rango final de fechas invalido responde HTTP 400.
+- Un viaje inexistente responde HTTP 404.
+- El usuario y el viaje temporales se eliminaron al finalizar.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Implementar el servicio de eliminacion de un viaje propio. Debe comprobar
+`tripId` y `userId`, ocultar la existencia de viajes ajenos y eliminar el
+registro antes de conectar `DELETE /api/trips/:tripId`.
