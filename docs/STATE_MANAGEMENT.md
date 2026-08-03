@@ -77,6 +77,73 @@ En vez de manejar manualmente:
 
 RTK Query dará hooks generados para consultar o modificar datos.
 
+## Punto de partida del estudiante para RTK Query
+
+El estudiante comienza esta etapa sin conocimiento previo de RTK Query. Su
+enseñanza debe comenzar desde cero y avanzar como un curso práctico guiado. No
+se asumirá que términos como API slice, endpoint, query, mutation, caché,
+suscripción, tag, invalidación o hook generado ya son conocidos.
+
+Conocer Redux Toolkit básico no implica conocer RTK Query. Se explicará la
+diferencia entre:
+
+- estado local del componente;
+- estado global de cliente administrado por slices;
+- estado remoto o de servidor administrado por RTK Query.
+
+## Método de enseñanza de RTK Query
+
+Cada microtarea seguirá este orden:
+
+1. Presentar el problema observable en la aplicación.
+2. Mostrar cómo se resolvería conceptualmente con `fetch`, `useEffect` y
+   `useState`.
+3. Explicar qué parte repetitiva asumirá RTK Query.
+4. Dibujar o describir el flujo completo de datos.
+5. Introducir una sola pieza nueva siempre que sea posible.
+6. Explicar línea por línea los elementos nuevos, incluidos los tipos de
+   TypeScript.
+7. Permitir que el estudiante escriba el código.
+8. Revisar primero el comportamiento y después el estilo.
+9. Ejecutar las comprobaciones correspondientes.
+10. Cerrar con una recapitulación y conectar la pieza con la siguiente lección.
+
+No se entregarán fragmentos para copiar sin explicar:
+
+- por qué el archivo existe;
+- por qué está en esa ubicación;
+- qué recibe cada función;
+- qué devuelve;
+- qué se registra en el store;
+- qué queda almacenado en caché;
+- qué provoca un nuevo renderizado.
+
+## Recorrido previsto de RTK Query
+
+1. Problema del manejo HTTP manual y concepto de estado del servidor.
+2. `createApi` como definición central de una API.
+3. `fetchBaseQuery` y configuración de `baseUrl` y cookies.
+4. `reducerPath` y reducer generado.
+5. Middleware de RTK Query y ciclo de vida de las peticiones.
+6. Registro del API slice en el store.
+7. Primer endpoint de tipo `query`.
+8. Hook generado y estados de una consulta.
+9. Diferencia entre `isLoading` e `isFetching`.
+10. Claves de caché, suscripciones y reutilización de resultados.
+11. Primera `mutation`.
+12. Tags, invalidación y refetch.
+13. Manejo y presentación de errores.
+14. Integración completa del CRUD de viajes.
+
+Antes de cada punto se explicará qué problema resuelve y cómo se conecta con lo
+aprendido anteriormente. El recorrido puede dividirse todavía más si una pieza
+no está comprendida.
+
+La comprensión se comprobará principalmente mediante la implementación y la
+revisión del código. No se exigirán cuestionarios teóricos para desbloquear el
+siguiente paso; las explicaciones se repetirán en contexto cuando aparezca cada
+pieza.
+
 ## Nivel de explicación esperado
 
 Cada concepto nuevo de Redux Toolkit debe explicarse con:
@@ -96,4 +163,3 @@ Cada concepto nuevo de Redux Toolkit debe explicarse con:
 4. Cambio con dispatch.
 5. RTK Query para datos de backend.
 6. Estados derivados y selectores más útiles.
-

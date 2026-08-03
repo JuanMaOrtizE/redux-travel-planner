@@ -30,3 +30,24 @@ NODE_ENV=development
 
 Cuando se agregue una variable nueva al servidor, debe documentarse aquí en la
 misma tarea en que se incorpora al código.
+
+## Cliente
+
+El archivo local debe crearse en `client/.env`. Este archivo está excluido de
+Git mediante `client/.gitignore`.
+
+Variables disponibles:
+
+| Variable | Descripción | Valor de desarrollo |
+| --- | --- | --- |
+| `VITE_API_URL` | URL base pública utilizada por el cliente para comunicarse con el backend. | `http://localhost:4000/api/` |
+
+Configuración local actual:
+
+```env
+VITE_API_URL=http://localhost:4000/api/
+```
+
+Las variables cuyo nombre comienza con `VITE_` pueden quedar incluidas en el
+código que recibe el navegador y nunca deben contener secretos. Después de
+modificar `client/.env`, se debe reiniciar Vite para cargar el nuevo valor.

@@ -174,6 +174,62 @@ Explica con ejemplos pequeños:
 
 Redux Toolkit debe explicarse comparándolo con conceptos que el estudiante ya conoce: `useState`, `useReducer` y Context API.
 
+## Protocolo pedagógico obligatorio para RTK Query
+
+El estudiante no tiene conocimiento previo de RTK Query. A partir del inicio de
+esta etapa, no se debe asumir familiaridad con ninguno de sus conceptos,
+funciones, tipos, convenciones o archivos.
+
+Cada tarea de RTK Query debe tratarse como una lección de un curso guiado:
+
+1. Explicar primero qué problema concreto se está resolviendo.
+2. Comparar el enfoque manual conocido (`fetch`, `useEffect`, `useState`) con
+   la responsabilidad que asumirá RTK Query.
+3. Definir cada término antes de utilizarlo.
+4. Mostrar el flujo completo antes de introducir código:
+   componente, hook, endpoint, petición HTTP, backend, respuesta, caché y nuevo
+   renderizado.
+5. Introducir preferiblemente un solo concepto nuevo por microtarea.
+6. Explicar cada import, propiedad, función y tipo de TypeScript que aparezca
+   por primera vez.
+7. No entregar bloques para copiar sin explicar qué recibe cada pieza, qué
+   devuelve y qué cambia en el store.
+8. Explicar siempre qué ocurre antes, durante y después de una petición.
+9. Diferenciar datos del servidor en caché de estado global creado con un
+   slice tradicional.
+10. Cerrar cada microtarea con criterios de aceptación, errores comunes,
+    comprobaciones y un resumen del concepto aprendido.
+
+Antes de usarlos en una implementación, deben enseñarse de forma explícita:
+
+- `createApi`;
+- `fetchBaseQuery`;
+- `reducerPath`;
+- reducer del API slice;
+- middleware de RTK Query;
+- `endpoints`;
+- `builder`;
+- `query`;
+- `mutation`;
+- hooks generados;
+- estados `isUninitialized`, `isLoading`, `isFetching`, `isSuccess` e
+  `isError`;
+- caché y claves de caché;
+- suscripciones;
+- invalidación;
+- tags mediante `providesTags` e `invalidatesTags`;
+- refetch;
+- tratamiento de errores;
+- envío de cookies mediante `credentials`.
+
+La velocidad de avance debe adaptarse a la comprensión del estudiante. Si una
+tarea combina demasiadas piezas nuevas, debe dividirse antes de continuar.
+
+El estudiante prefiere demostrar la comprensión durante la implementación y la
+revisión. No se debe detener el avance con cuestionarios teóricos obligatorios;
+los conceptos deben volver a explicarse en contexto mientras se desarrolla cada
+bloque y al revisar su comportamiento.
+
 ## UI/UX y estilos
 
 Los estilos del proyecto se harán principalmente con Tailwind CSS.

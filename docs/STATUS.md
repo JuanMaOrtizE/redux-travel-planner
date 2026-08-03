@@ -972,3 +972,234 @@ propia y segundo intento de eliminacion.
 Iniciar la integracion del cliente con RTK Query. Primero se definira el API
 slice base, su `baseUrl`, el envio de la cookie mediante credenciales y su
 registro en el store antes de agregar endpoints de viajes.
+
+## Acuerdo pedagogico para RTK Query
+
+- El estudiante indico que comienza sin conocimientos de RTK Query.
+- La etapa se tratara como un curso practico guiado desde cero.
+- No se asumira conocimiento de API slices, queries, mutations, cache, tags,
+  invalidacion, middleware ni hooks generados.
+- Cada pieza nueva se explicara antes de escribir codigo y se comparara con el
+  manejo manual mediante `fetch`, `useEffect` y `useState`.
+- Las tareas se dividiran en microlecciones y cada elemento nuevo de
+  TypeScript sera explicado.
+- El protocolo permanente quedo registrado en `AGENTS.md`.
+- El recorrido de aprendizaje quedo registrado en `docs/STATE_MANAGEMENT.md`.
+
+## Proximo paso
+
+Comenzar con una leccion conceptual sobre el problema que resuelve RTK Query y
+la diferencia entre estado del cliente y estado del servidor. No se creara
+codigo hasta comprender ese flujo general.
+
+## RTK Query - Leccion 1 completada
+
+- Se distinguio estado local, estado global del cliente y estado del servidor.
+- `viewMode` se identifico como estado del cliente administrado por un slice.
+- Los viajes se identificaron como estado remoto cuya fuente de verdad es
+  PostgreSQL.
+- La cache se comprendio como una copia temporal que puede desaparecer o quedar
+  desactualizada.
+- Una `query` se comprendio como una operacion de lectura.
+- Una `mutation` se comprendio como una operacion que crea, modifica o elimina
+  datos remotos.
+- Todavia no se ha creado codigo de RTK Query.
+
+## Proximo paso
+
+Explicar `createApi` como definicion central de las operaciones HTTP del
+frontend, su ubicacion definitiva y que piezas genera. No se configurara aun
+`fetchBaseQuery`, el store ni endpoints reales.
+
+## RTK Query - Leccion 2 completada
+
+- `createApi` se comprendio como una funcion que define un API slice.
+- Definir el API slice no ejecuta peticiones HTTP.
+- Las operaciones se inician posteriormente mediante un hook o `dispatch`.
+- Se comparo un slice tradicional de estado del cliente con un API slice de
+  estado remoto.
+- Se identificaron las piezas principales de configuracion:
+  - `reducerPath`: donde se guarda el estado;
+  - `baseQuery`: como se realizan las peticiones;
+  - `endpoints`: que operaciones existen.
+- Se decidio usar un API slice base compartido para el backend Express.
+- La ubicacion definitiva de la infraestructura sera
+  `client/src/services/api.ts`.
+- Todavia no se ha creado codigo de RTK Query.
+
+## Proximo paso
+
+Explicar `fetchBaseQuery`, como compone la URL de cada endpoint y por que
+`credentials: "include"` es necesario para enviar la cookie de autenticacion.
+No se creara aun el API slice.
+
+## RTK Query - Leccion 3 completada
+
+- `fetchBaseQuery` se comprendio como una adaptacion de `fetch` para RTK Query.
+- Se distinguio la configuracion base de la ejecucion posterior de peticiones.
+- `baseUrl` se comprendio como el prefijo compartido que se combina con la ruta
+  de cada endpoint.
+- Se identifico que cliente y servidor tienen origenes distintos por sus
+  puertos.
+- `credentials: "include"` se comprendio como requisito para incluir cookies
+  en las peticiones entre esos origenes.
+- El navegador, no RTK Query, adjunta la cookie correspondiente.
+- `httpOnly` impide que JavaScript lea el token, pero no que el navegador envie
+  la cookie.
+- Se distinguio la ejecucion HTTP de `fetchBaseQuery` del almacenamiento
+  temporal administrado por la cache de RTK Query.
+- Todavia no se ha creado codigo de RTK Query.
+
+## Proximo paso
+
+Explicar las variables de entorno del cliente en Vite y definir el contrato de
+`VITE_API_URL`, diferenciando configuracion publica del navegador y secretos
+privados del servidor. Luego el estudiante preparara la variable antes de crear
+el API slice.
+
+## RTK Query - Leccion 4 completada
+
+- Se distinguieron variables privadas del servidor y configuracion publica del
+  cliente.
+- `VITE_API_URL` se comprendio como una direccion publica necesaria para hacer
+  peticiones.
+- `JWT_SECRET` se identifico como un secreto que nunca debe llegar al navegador.
+- Por decision del estudiante, `client/.env` contendra el valor real usado en
+  la maquina local.
+- `docs/ENVIRONMENT.md` documentara el contrato compartido.
+- Las variables del cliente se leen mediante `import.meta.env`.
+- Se comprendio que Vite debe reiniciarse despues de cambiar su archivo de
+  entorno.
+- Todavia no se ha creado codigo de RTK Query.
+
+## Proximo paso
+
+Crear `client/.env` con `VITE_API_URL`, excluirlo explicitamente en
+`client/.gitignore` y documentar la variable del cliente en
+`docs/ENVIRONMENT.md`. No se leera todavia desde TypeScript ni se creara el API
+slice.
+
+## Configuracion de `VITE_API_URL` completada
+
+- `client/.env` define `VITE_API_URL=http://localhost:4000/api/`.
+- `client/.gitignore` excluye explicitamente el archivo `.env`.
+- `git check-ignore` confirma que la configuracion local no se versiona.
+- `docs/ENVIRONMENT.md` documenta el archivo, la variable, el valor de
+  desarrollo y su caracter publico.
+- Se registro que Vite debe reiniciarse despues de cambiar la variable.
+- Todavia no se ha creado codigo de RTK Query.
+
+## Proximo paso
+
+Explicar por que TypeScript no garantiza que una variable de entorno exista en
+ejecucion y crear posteriormente `client/src/config/env.ts` para leer y validar
+`VITE_API_URL` antes de entregarla a `fetchBaseQuery`.
+
+## Ajuste del metodo de aprendizaje
+
+- El estudiante prefiere continuar mediante implementacion guiada.
+- No se usaran cuestionarios teoricos obligatorios para desbloquear tareas.
+- Los conceptos se explicaran nuevamente mientras se escribe y revisa cada
+  bloque.
+
+## Proximo paso
+
+Crear `client/src/config/env.ts` para leer `VITE_API_URL` como un valor externo,
+validar que sea texto no vacio y comprobar que represente una URL valida.
+
+## Validacion del entorno del cliente completada
+
+- `client/src/config/env.ts` lee `import.meta.env.VITE_API_URL` como `unknown`.
+- La configuracion rechaza valores ausentes, no textuales o vacios.
+- El valor se limpia mediante `trim()`.
+- La clase `URL` comprueba el formato antes de exportarlo.
+- El resto del cliente consumira `API_URL` sin depender directamente de Vite.
+- Se comprobaron por ejecucion una URL valida, un valor vacio y una URL
+  invalida.
+- `npm run build` y `npm run lint` pasan.
+
+## Proximo paso
+
+Crear `client/src/services/api.ts` con el primer `createApi`. Se configuraran
+`reducerPath`, `fetchBaseQuery`, `API_URL`, credenciales y una coleccion de
+endpoints vacia. Todavia no se registrara el API slice en el store ni se haran
+peticiones.
+
+## API slice base creado
+
+- `client/src/services/api.ts` es la infraestructura compartida de RTK Query.
+- `createApi` crea y exporta el objeto `api`.
+- `reducerPath` usa la clave `"api"`.
+- `fetchBaseQuery` recibe la `API_URL` validada.
+- `credentials: "include"` prepara el envio de la cookie por el navegador.
+- `endpoints` devuelve un objeto vacio y `_builder` queda marcado como no usado.
+- TypeScript infiere los tipos de `api`, `baseQuery` y `_builder`; no se
+  agregaron anotaciones manuales ni `any`.
+- El store todavia contiene solamente el reducer `ui`.
+- No existen endpoints ni peticiones HTTP.
+- `npm run build` y `npm run lint` pasan.
+
+## Proximo paso
+
+Explicar el reducer generado por RTK Query y conectar solamente
+`api.reducer` en `store.ts` usando la clave dinamica `api.reducerPath`. El
+middleware se estudiara y registrara en una microtarea posterior.
+
+## Reducer del API slice registrado
+
+- `store.ts` importa el API slice compartido.
+- `[api.reducerPath]` evalua la clave dinamica `"api"`.
+- `api.reducer` administra la nueva rama `state.api`.
+- El reducer tradicional de UI permanece en `state.ui`.
+- `RootState` incorpora ambas ramas mediante inferencia y no se modifico
+  manualmente.
+- Una inspeccion del store en ejecucion confirmo las claves `ui` y `api`.
+- El middleware de RTK Query todavia no esta registrado.
+- No existen endpoints ni peticiones HTTP.
+- `npm run build` y `npm run lint` pasan.
+
+## Proximo paso
+
+Explicar el papel de un middleware entre `dispatch` y los reducers, distinguir
+efectos secundarios de cambios de estado y registrar `api.middleware` en el
+store conservando el middleware predeterminado de Redux Toolkit.
+
+## Middleware de RTK Query registrado
+
+- Se distinguio un reducer puro de un middleware que coordina efectos
+  secundarios.
+- El store conserva los middlewares predeterminados mediante
+  `getDefaultMiddleware()`.
+- `concat(api.middleware)` agrega la infraestructura de RTK Query al final.
+- Se corrigio una funcion flecha que usaba llaves sin devolver la coleccion; el
+  `return` evita que su tipo sea `void`.
+- `api.reducer` puede almacenar el estado y `api.middleware` puede coordinar el
+  ciclo de futuras peticiones.
+- Todavia no existen endpoints ni peticiones HTTP.
+- `npm run build` y `npm run lint` pasan.
+
+## Proximo paso
+
+Definir los tipos del contrato publico de viajes en el cliente antes de crear
+la primera `query`. Se explicara la diferencia entre el modelo de Prisma, el
+JSON recibido y los genericos que usara `builder.query`.
+
+## Tipos publicos de viajes definidos en el cliente
+
+- `client/src/features/trips/trip.types.ts` pertenece al dominio de viajes.
+- `TripStatus` limita los cuatro estados publicos conocidos.
+- `Trip` representa el JSON recibido y no el modelo interno de Prisma.
+- Fechas, UUID y moneda se representan como textos.
+- `budgetLimit` conserva el decimal como `string | null`.
+- `description` usa `string | null` porque la propiedad existe aun sin valor.
+- `ListTripsResponse` representa la envoltura real
+  `{ data: { trips: Trip[] } }`.
+- No se importaron tipos generados desde el servidor.
+- Estos tipos ayudan durante desarrollo pero no validan el JSON en ejecucion.
+- `npm run build` y `npm run lint` pasan.
+
+## Proximo paso
+
+Crear `client/src/features/trips/tripsApi.ts` e inyectar el primer endpoint de
+lectura en el API slice compartido. Se explicaran por partes `injectEndpoints`,
+`builder.query`, el tipo del resultado y el tipo del argumento.
