@@ -1203,3 +1203,124 @@ JSON recibido y los genericos que usara `builder.query`.
 Crear `client/src/features/trips/tripsApi.ts` e inyectar el primer endpoint de
 lectura en el API slice compartido. Se explicaran por partes `injectEndpoints`,
 `builder.query`, el tipo del resultado y el tipo del argumento.
+
+## Primera query de viajes definida
+
+- `client/src/features/trips/tripsApi.ts` pertenece al dominio de viajes.
+- `injectEndpoints` amplia el API slice compartido sin crear otro reducer,
+  middleware ni sistema de cache.
+- `getTrips` usa `builder.query` porque lee datos remotos.
+- El primer generico, `ListTripsResponse`, describe el resultado exitoso.
+- El segundo generico, `void`, indica que la consulta no recibe argumentos.
+- La ruta relativa `"trips"` se combina con la base
+  `http://localhost:4000/api/`.
+- Al no declarar metodo, `fetchBaseQuery` utilizara GET.
+- RTK Query genero y se exporto `useGetTripsQuery`.
+- Ningun componente usa todavia el hook, por lo que no se ejecutan peticiones.
+- `npm run build` y `npm run lint` pasan.
+
+## Proximo paso
+
+Explicar que ocurre cuando `TripsPage` usa `useGetTripsQuery`, como el hook crea
+una suscripcion y por que `data` puede ser `undefined`. Integrar primero los
+estados de carga y error antes de renderizar la lista.
+
+## Suscripcion y estado inicial de carga integrados
+
+- `TripsPage` importa y ejecuta `useGetTripsQuery()` sin argumentos.
+- Al renderizarse, el hook crea una suscripcion a la clave
+  `getTrips(undefined)`.
+- `isLoading` controla un retorno temprano mientras no existen datos iniciales.
+- El hook se ejecuta antes de cualquier retorno condicional y respeta las
+  reglas de React.
+- Una prueba del flujo Redux confirmo el estado `pending`.
+- Sin cookie, la consulta termino en `rejected` con HTTP 401, comportamiento
+  esperado mientras el frontend no implemente login.
+- El navegador integrado no estuvo disponible para la comprobacion visual.
+- `npm run build` y `npm run lint` pasan.
+
+## Limitacion actual
+
+Despues de un error, `isLoading` pasa a `false` y la pagina muestra el estado
+vacio aunque la consulta haya fallado. Todavia no se debe interpretar esa
+pantalla como una lista vacia real.
+
+## Proximo paso
+
+Extraer `isError` y `error` del hook y renderizar un estado de error antes del
+contenido principal. Se explicara la diferencia entre ausencia de datos y
+fallo de la peticion, comenzando por un mensaje general antes de tipar detalles
+especificos del error.
+
+## Estado general de error integrado
+
+- `TripsPage` extrae `isError` desde el mismo hook de consulta.
+- El retorno de carga se evalua antes que el retorno de error.
+- Un fallo ya no se representa mediante el estado vacio.
+- El mensaje es general porque todavia no se inspecciona si el error fue HTTP,
+  de red o de serializacion.
+- `role="alert"` comunica semanticamente el problema a tecnologias de
+  asistencia.
+- La estructura detallada de `error` se estudiara cuando sea necesario
+  distinguir respuestas como HTTP 401.
+- `npm run build` y `npm run lint` pasan.
+
+## Proximo paso
+
+Extraer `data` del hook y explicar su tipo
+`ListTripsResponse | undefined`. Obtener la lista mediante encadenamiento
+opcional y distinguir una respuesta exitosa vacia de una respuesta exitosa con
+viajes antes de renderizar elementos.
+
+## Datos y lista de viajes integrados
+
+- `TripsPage` renombra `data` como `tripsResponse` para distinguir la respuesta
+  HTTP de la lista interna.
+- Antes de completarse correctamente la consulta, `tripsResponse` puede ser
+  `undefined`.
+- `tripsResponse?.data.trips ?? []` obtiene los viajes disponibles y usa una
+  lista vacia como valor seguro mientras no hay datos.
+- Una respuesta exitosa sin viajes muestra un estado vacio.
+- Una respuesta exitosa con viajes recorre `Trip[]` mediante `map`.
+- Cada elemento usa `trip.id` como clave estable y muestra titulo y fechas.
+- Se corrigio mecanicamente una clase `bg-white` que habia quedado dividida y
+  no podia ser reconocida por Tailwind.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Limitacion actual
+
+- El flujo exitoso todavia no se ha comprobado visualmente con una sesion
+  autenticada en el cliente.
+- Sin cookie, el backend responde HTTP 401 y la pagina muestra correctamente el
+  estado general de error.
+
+## Proximo paso
+
+Aprender a leer el valor `error` de la query y distinguir un HTTP 401 de otros
+fallos. La pagina podra explicar que el usuario necesita iniciar sesion sin
+confundir una falta de autenticacion con un problema general del servidor.
+
+## Tarea activa
+
+En `TripsPage`, extraer `error` de `useGetTripsQuery()` y usar estrechamiento de
+tipos para reconocer el estado HTTP 401. Se agregara un mensaje especifico para
+la falta de autenticacion y se conservara el mensaje general para cualquier
+otro error.
+
+## Tratamiento de HTTP 401 completado
+
+- `TripsPage` extrae `error` del resultado de `useGetTripsQuery()`.
+- `error !== undefined` evita inspeccionar un valor ausente.
+- `"status" in error` estrecha la union de tipos antes de acceder a `status`.
+- `error.status === 401` identifica una respuesta sin autenticacion valida.
+- El estado HTTP 401 muestra un mensaje especifico para iniciar sesion.
+- El retorno de autenticacion se evalua antes del error general porque un 401
+  tambien establece `isError` en `true`.
+- Los demas errores conservan el mensaje general.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Aprender `refetch`, la funcion que permite solicitar nuevamente los datos de
+una query existente. Se agregara un control de reintento solamente al estado de
+error general; un HTTP 401 seguira requiriendo autenticacion.
