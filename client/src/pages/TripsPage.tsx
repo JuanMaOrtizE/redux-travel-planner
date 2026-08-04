@@ -1,7 +1,14 @@
 import { useGetTripsQuery } from "../features/trips/tripsApi";
 
 export default function TripsPage() {
-  const { isLoading, isError, error, data: tripsResponse } = useGetTripsQuery();
+  const {
+    isLoading,
+    isFetching,
+    isError,
+    error,
+    data: tripsResponse,
+    refetch,
+  } = useGetTripsQuery();
 
   const trips = tripsResponse?.data.trips ?? [];
   const isUnauthorized =
@@ -11,6 +18,14 @@ export default function TripsPage() {
     return (
       <main className="mx-auto max-w-6xl px-6 py-10">
         <p>Cargando viajes...</p>
+      </main>
+    );
+  }
+
+  if (isFetching && tripsResponse === undefined) {
+    return (
+      <main className="mx-auto max-w-6xl px-6 py-10">
+        <p>Reintentando viajes...</p>
       </main>
     );
   }
@@ -46,6 +61,13 @@ export default function TripsPage() {
           <p className="mt-2 text-sm text-red-700">
             Intenta nuevamente en unos momentos.
           </p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="mt-4 rounded-lg bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800"
+          >
+            Reintentar
+          </button>
         </section>
       </main>
     );

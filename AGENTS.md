@@ -230,6 +230,54 @@ revisión. No se debe detener el avance con cuestionarios teóricos obligatorios
 los conceptos deben volver a explicarse en contexto mientras se desarrolla cada
 bloque y al revisar su comportamiento.
 
+## Protocolo pedagógico obligatorio para React Hook Form
+
+El estudiante no tiene conocimiento previo de React Hook Form. Esta etapa debe
+tratarse como un tutorial guiado desde cero, con el mismo nivel de detalle
+utilizado para RTK Query.
+
+Cada tarea de formularios debe:
+
+1. Explicar primero el problema concreto que se resolverá.
+2. Comparar el formulario controlado conocido con la responsabilidad que
+   asumirá React Hook Form.
+3. Mostrar el flujo completo antes del código: campo, registro, evento,
+   validación, errores, envío y respuesta.
+4. Introducir preferiblemente un solo concepto nuevo por microtarea.
+5. Definir y explicar cada hook, función, propiedad, objeto y tipo antes de
+   utilizarlo.
+6. Explicar qué ocurre antes, durante y después de escribir en un campo o
+   enviar el formulario.
+7. Diferenciar estado del formulario, validación del cliente, estado de una
+   mutation y errores devueltos por el servidor.
+8. Evitar bloques para copiar sin explicar qué recibe cada pieza, qué devuelve
+   y qué comportamiento produce.
+9. Usar desde el principio la ubicación y estructura definitivas del
+   formulario.
+10. Cerrar cada microtarea con criterios de aceptación, errores comunes,
+    comprobaciones y un resumen del concepto aprendido.
+
+Antes de utilizarlos en una implementación, deben enseñarse explícitamente:
+
+- `useForm`;
+- `register`;
+- `handleSubmit`;
+- `formState`;
+- `errors`;
+- `defaultValues`;
+- tipos de datos del formulario;
+- validación con Zod;
+- `zodResolver`;
+- diferencias entre errores de cliente y servidor;
+- integración con una mutation de RTK Query;
+- estados de envío;
+- `reset`;
+- `Controller` cuando un componente realmente lo necesite.
+
+La implementación demostrará la comprensión y no se detendrá con cuestionarios
+teóricos obligatorios. Si una tarea mezcla demasiadas APIs nuevas, debe
+dividirse antes de continuar.
+
 ## UI/UX y estilos
 
 Los estilos del proyecto se harán principalmente con Tailwind CSS.

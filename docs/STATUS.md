@@ -1324,3 +1324,131 @@ otro error.
 Aprender `refetch`, la funcion que permite solicitar nuevamente los datos de
 una query existente. Se agregara un control de reintento solamente al estado de
 error general; un HTTP 401 seguira requiriendo autenticacion.
+
+## Tarea activa
+
+Extraer `refetch` de `useGetTripsQuery()` y agregar un boton `Reintentar` al
+estado de error general. El boton volvera a ejecutar la misma query sin crear
+otro endpoint ni modificar manualmente la cache.
+
+## Reintento manual con `refetch` completado
+
+- `TripsPage` extrae `refetch` del resultado de `useGetTripsQuery()`.
+- El estado de error general incluye un boton `Reintentar`.
+- `onClick={() => refetch()}` difiere la ejecucion hasta que ocurre el clic.
+- El reintento reutiliza `getTrips(undefined)`, su configuracion HTTP y su clave
+  de cache.
+- El estado HTTP 401 no ofrece reintento porque necesita autenticacion.
+- Se unifico mecanicamente la cadena de clases del boton para conservar un
+  formato legible.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Aprender la diferencia entre `isLoading` e `isFetching`. Durante un `refetch`
+sin datos disponibles, la pagina mostrara un estado especifico de reintento. El
+boton de error dejara de renderizarse mientras la nueva peticion este en curso,
+lo que tambien evita clics repetidos.
+
+## Tarea activa
+
+Extraer `isFetching` de `useGetTripsQuery()` y agregar un retorno de
+`Reintentando viajes...` para una peticion posterior que todavia no tenga datos
+disponibles. La carga inicial seguira controlada por `isLoading`.
+
+## Diferencia entre `isLoading` e `isFetching` integrada
+
+- `TripsPage` extrae ambos estados desde `useGetTripsQuery()`.
+- `isLoading` conserva el retorno de la primera carga sin datos.
+- `isFetching && tripsResponse === undefined` representa una peticion
+  posterior que todavia no tiene una respuesta exitosa para mostrar.
+- El reintento muestra `Reintentando viajes...`.
+- Una respuesta exitosa con `trips: []` no se confunde con ausencia de
+  respuesta.
+- Si en el futuro existen datos en cache durante una actualizacion,
+  `tripsResponse` permitira conservarlos visibles.
+- Se agruparon mecanicamente `isLoading` e `isFetching` en la
+  desestructuracion para hacer explicita su relacion.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Iniciar la integracion de autenticacion en el cliente para poder comprobar la
+query de viajes con una cookie real. Primero se revisara el contrato HTTP del
+login y se definiran sus tipos publicos en la ubicacion definitiva; todavia no
+se creara la mutation ni el formulario.
+
+## Tarea activa
+
+Crear `client/src/features/auth/auth.types.ts` con los contratos publicos de
+login: los datos enviados, el usuario autenticado y la envoltura de la
+respuesta exitosa. La cookie `httpOnly` no formara parte de estos tipos porque
+viaja en los encabezados HTTP y la administra el navegador.
+
+## Contratos publicos de autenticacion definidos
+
+- `client/src/features/auth/auth.types.ts` pertenece al dominio de
+  autenticacion.
+- `LoginRequest` representa el cuerpo con `email` y `password`.
+- `AuthUser` representa solamente `id`, `name`, `email` y `createdAt`.
+- `createdAt` usa `string` porque una fecha se serializa como texto en JSON.
+- `AuthUserResponse` representa `{ data: { user: AuthUser } }`.
+- La respuesta no contiene password, hash, token ni cookie.
+- La cookie `httpOnly` permanece fuera del cuerpo JSON y la administra el
+  navegador mediante los encabezados HTTP.
+- Se expandieron mecanicamente los tipos anidados para hacer visible su
+  estructura.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Explicar `builder.mutation` antes de utilizarlo: diferencia con una query,
+funcion disparadora, argumento, respuesta y estados. Despues se creara
+`client/src/features/auth/authApi.ts` e inyectara solamente la operacion de
+login en el API slice compartido.
+
+## Tarea activa
+
+Crear `client/src/features/auth/authApi.ts`, inyectar `login` como una mutation
+`POST /api/auth/login` en el API slice compartido y exportar
+`useLoginMutation`. Ningun componente utilizara todavia el hook, por lo que
+esta definicion no ejecutara peticiones.
+
+## Mutation de login definida
+
+- `client/src/features/auth/authApi.ts` amplia el API slice compartido.
+- `login` usa `builder.mutation<AuthUserResponse, LoginRequest>`.
+- El primer generico representa la respuesta exitosa y el segundo las
+  credenciales recibidas por la funcion disparadora.
+- La configuracion genera `POST /api/auth/login` y envia las credenciales en
+  `body`.
+- `fetchBaseQuery` conserva la base URL y `credentials: "include"` definidos
+  en `services/api.ts`.
+- RTK Query genera y exporta `useLoginMutation`.
+- Definir y exportar el hook no ejecuta una peticion.
+- Se corrigio durante la revision el concepto de endpoint: un POST declarado
+  mediante `builder.query` seguiria comportandose como consulta automatica; el
+  login necesita una mutation disparada manualmente.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Preparar el formulario definitivo de login con React Hook Form y Zod. El
+cliente todavia no tiene instalados `react-hook-form`, `zod` ni
+`@hookform/resolvers`; antes de instalarlos se explicara la responsabilidad de
+cada dependencia y se solicitara confirmacion.
+
+## Acuerdo pedagogico para React Hook Form
+
+- El estudiante comienza React Hook Form sin conocimiento previo.
+- La etapa se tratara como un tutorial guiado con el mismo nivel de detalle
+  utilizado para RTK Query.
+- Cada API se explicara antes de usarla y se comparara con formularios
+  controlados mediante `useState`.
+- Se mostrara el flujo completo desde el campo hasta la mutation y la respuesta
+  del servidor.
+- Se introducira preferiblemente un concepto nuevo por microtarea.
+- Se distinguiran estado del formulario, validacion del cliente, estado de RTK
+  Query y errores del backend.
+- No se usaran cuestionarios teoricos obligatorios para detener el avance.
+- El protocolo permanente quedo registrado en `AGENTS.md`.
