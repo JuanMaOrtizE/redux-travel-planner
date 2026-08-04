@@ -1452,3 +1452,409 @@ cada dependencia y se solicitara confirmacion.
   Query y errores del backend.
 - No se usaran cuestionarios teoricos obligatorios para detener el avance.
 - El protocolo permanente quedo registrado en `AGENTS.md`.
+
+## Preparacion de dependencias del formulario
+
+- `react-hook-form` administrara el registro de campos, envio y estado del
+  formulario.
+- `zod` definira el contrato y ejecutara validacion en el navegador.
+- `@hookform/resolvers` aportara `zodResolver`, el adaptador entre el resultado
+  de Zod y los errores de React Hook Form.
+- Los tipos TypeScript por si solos no validan valores escritos por el usuario
+  en ejecucion.
+- RTK Query conservara una responsabilidad separada: ejecutar el login y
+  representar su estado remoto.
+- Las tres dependencias siguen sin instalarse; se espera confirmacion explicita
+  del estudiante antes de modificar `client/package.json` y el lockfile.
+
+## Dependencias del formulario instaladas
+
+- `react-hook-form` `7.84.0` esta instalado en `dependencies`.
+- `zod` `4.4.3` esta instalado en `dependencies`.
+- `@hookform/resolvers` `5.7.1` esta instalado en `dependencies`.
+- `npm ls` confirma un arbol directo y consistente.
+- El resolver instalado declara compatibilidad con React Hook Form 7 y Zod 4.
+- `npm run build` y `npm run lint` pasan.
+
+## Tarea activa
+
+Crear `client/src/features/auth/login.schema.ts` con el esquema Zod definitivo
+de los valores del formulario de login. El esquema normalizara el email,
+validara email y password, y exportara el tipo inferido de los valores validos.
+Todavia no se utilizara `useForm` ni se modificara `LoginPage`.
+
+## Esquema Zod de login completado
+
+- `client/src/features/auth/login.schema.ts` contiene la validacion del
+  formulario de login.
+- `z.strictObject` permite solamente `email` y `password`.
+- El email se limpia, se normaliza a minusculas y luego se valida.
+- La password conserva exactamente el texto escrito y valida entre 8 y 72
+  caracteres.
+- Los limites de password incluyen mensajes en español para la futura UI.
+- `LoginFormValues` se infiere mediante `z.infer<typeof loginSchema>`.
+- El archivo se movio mecanicamente desde `client/src/auth/` a la ubicacion
+  definitiva `client/src/features/auth/`.
+- Una prueba directa confirmo normalizacion y rechazo de password corta,
+  password larga y propiedades externas.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Introducir `useForm` como coordinador del formulario y `register` como conexion
+entre React Hook Form y un campo HTML. Se construira la estructura definitiva
+de login y se registrara solamente el campo email; Zod, password, envio y RTK
+Query permaneceran desconectados en esta microtarea.
+
+## Tarea activa
+
+Modificar `client/src/pages/LoginPage.tsx`, inicializar
+`useForm<LoginFormValues>()` y registrar solamente un campo HTML de email. La
+pagina no tendra aun resolver, password, envio, mensajes de error ni mutation.
+
+## Ajuste pedagogico de la tarea activa
+
+- La implementacion queda pausada antes de modificar `LoginPage`.
+- Se explicara primero `register` desde su proposito basico, sin comenzar por
+  validacion ni restricciones de TypeScript.
+- Solo despues de comprender la conexion entre el input y React Hook Form se
+  retomara el campo email.
+
+## Primer campo registrado con React Hook Form
+
+- `LoginPage` crea una instancia privada mediante
+  `useForm<LoginFormValues>()`.
+- La funcion `register` proviene de esa instancia.
+- `{...register("email")}` conecta el input con React Hook Form mediante
+  `name`, eventos y una referencia al elemento HTML.
+- El label y el input comparten el identificador `email`.
+- El campo conserva semantica de email y autocompletado.
+- No existe todavia validacion Zod, envio ni mutation.
+- Se ajusto mecanicamente el texto introductorio de la pagina.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Registrar el campo `password` usando la misma funcion `register`. Esta tarea no
+introducira una API nueva; reforzara como una sola instancia de formulario
+organiza varios campos bajo nombres diferentes.
+
+## Campos de login registrados
+
+- `email` y `password` utilizan la misma instancia creada por `useForm`.
+- Ambos campos se conectan mediante la misma funcion `register`.
+- React Hook Form identifica cada valor por el nombre entregado a `register`.
+- El campo password usa `type="password"` y
+  `autoComplete="current-password"`.
+- `type="password"` oculta visualmente los caracteres, pero no cifra el valor.
+- Todavia no existe validacion, envio ni conexion con RTK Query.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Explicar y configurar `defaultValues` para que la instancia de React Hook Form
+nazca con `email` y `password` como textos vacios. No se conectara todavia Zod
+ni el envio.
+
+## Valores iniciales del login configurados
+
+- `useForm<LoginFormValues>()` recibe un objeto de configuracion.
+- `defaultValues` centraliza `email` y `password` como textos vacios.
+- Los inputs no duplican esta responsabilidad mediante atributos
+  `defaultValue`.
+- La inicializacion no requiere `useState`.
+- Se expandio mecanicamente el objeto para facilitar lectura y futuros diffs.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Explicar y conectar `zodResolver(loginSchema)` como adaptador entre Zod y React
+Hook Form. En esta microtarea solo se configurara el resolver; todavia no se
+mostraran errores ni se enviara el formulario.
+
+## Ajuste pedagogico antes de `zodResolver`
+
+- La implementacion del resolver queda pausada.
+- Antes de escribir codigo se comparara la validacion directa del backend
+  mediante `loginSchema.parse(req.body)` con el contrato de validacion que
+  espera React Hook Form.
+- Se explicara donde termina Zod, que hace el adaptador y quien transforma los
+  errores en cada entorno.
+- `LoginPage` no debe modificarse hasta completar esta comparacion.
+
+## Tarea activa
+
+Reanudar la implementacion conectando `zodResolver(loginSchema)` en la
+configuracion existente de `useForm`. La tarea termina al comprobar esa
+conexion; no incluye aun lectura de errores ni envio.
+
+## Zod conectado con React Hook Form
+
+- `LoginPage` importa `zodResolver` desde `@hookform/resolvers/zod`.
+- `loginSchema` se importa como valor ejecutable.
+- `LoginFormValues` permanece como import exclusivo de TypeScript.
+- `zodResolver(loginSchema)` crea la funcion adaptadora que recibe `useForm`.
+- Configurar el resolver no ejecuta por si solo una peticion ni muestra
+  mensajes.
+- `register` y `defaultValues` permanecen intactos.
+- Se ordenaron mecanicamente los imports externos y locales.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Explicar `formState` y su propiedad `errors`. Luego se extraeran los errores
+traducidos por el resolver y se preparara su renderizado condicional junto a
+cada campo. Todavia no se agregara envio ni mutation, por lo que los mensajes
+no apareceran hasta la siguiente microtarea.
+
+## Tarea activa
+
+Extraer `formState.errors` desde `useForm` y renderizar condicionalmente los
+mensajes de `email` y `password` junto a sus campos.
+
+## Errores de formulario preparados
+
+- `LoginPage` extrae `errors` mediante desestructuracion anidada de
+  `formState`.
+- `errors.email` y `errors.password` coinciden con los nombres registrados y
+  con las propiedades del esquema.
+- Cada mensaje se renderiza condicionalmente junto a su input.
+- Los mensajes usan `role="alert"`.
+- React Hook Form podra volver a renderizar la pagina cuando cambie esta parte
+  de `formState`.
+- Todavia no existe un evento de envio que solicite validacion, por lo que los
+  errores permanecen vacios al abrir la pagina.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Explicar `handleSubmit` como coordinador entre el evento HTML, el resolver y la
+funcion que recibe datos validos. Despues se conectara el envio minimo para
+hacer visibles los errores, sin ejecutar aun la mutation.
+
+## Envio y validacion del formulario conectados
+
+- `handleSubmit` se extrae de la misma instancia de `useForm`.
+- El formulario usa `onSubmit={handleSubmit(handleLoginSubmit)}`.
+- React Hook Form evita el envio HTML tradicional, recoge los campos y solicita
+  validacion al resolver.
+- Los datos invalidos actualizan `formState.errors` y no llegan a
+  `handleLoginSubmit`.
+- Los datos validos llegan a `handleLoginSubmit` como `LoginFormValues`.
+- El boton usa `type="submit"` y no necesita un `onClick`.
+- `noValidate` desactiva los avisos y el bloqueo de validacion nativos para que
+  Zod sea la unica fuente de mensajes.
+- Se conservan `type` y `autoComplete` porque siguen aportando semantica,
+  teclado, ocultamiento y ayuda del navegador.
+- `handleLoginSubmit` aun no ejecuta la mutation.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Retomar RTK Query explicando el retorno de `useLoginMutation`: la funcion
+disparadora y el objeto de estado. Luego se conectara la funcion disparadora
+dentro de `handleLoginSubmit`.
+
+## Tarea activa
+
+Importar `useLoginMutation`, extraer solamente su funcion disparadora `login` y
+ejecutarla desde `handleLoginSubmit` con los valores ya validados. El resultado
+y los estados de la mutation se estudiaran en microtareas posteriores.
+
+## Funcion disparadora de login conectada
+
+- `LoginPage` importa el hook generado `useLoginMutation`.
+- El hook se ejecuta en el nivel superior del componente.
+- La primera posicion de la tupla se guarda como `login`.
+- Ejecutar el hook no inicia por si solo una peticion.
+- `handleLoginSubmit` recibe valores que superaron Zod y ejecuta
+  `login(values)`.
+- La llamada dispara internamente Redux, el middleware de RTK Query y
+  `fetchBaseQuery`.
+- Los valores inferidos del formulario son compatibles estructuralmente con
+  `LoginRequest`.
+- Todavia no se lee la segunda posicion de la tupla ni se representa el
+  resultado remoto.
+- Se ordenaron mecanicamente los imports del dominio de autenticacion.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Explicar el segundo elemento devuelto por `useLoginMutation` y el estado
+`isUninitialized`: la mutation existe, pero aun no ha sido disparada. Despues
+se recorrera el cambio a `isLoading`, `isSuccess` o `isError`.
+
+## Tarea activa
+
+Extraer `isUninitialized` desde el objeto de estado de `useLoginMutation` y
+usarlo para mostrar el texto introductorio solamente antes de que la mutation
+haya sido disparada por primera vez.
+
+## Estado inicial de la mutation integrado
+
+- La segunda posicion de `useLoginMutation` se reconoce como un objeto de
+  estado.
+- `isUninitialized` es `true` mientras `login` nunca haya sido ejecutado.
+- El texto introductorio se muestra solamente durante ese estado.
+- Un formulario rechazado por Zod no cambia `isUninitialized`, porque la
+  mutation no se dispara.
+- Una llamada valida a `login(values)` cambia `isUninitialized` a `false`.
+- `formState.errors` y `isUninitialized` permanecen separados: uno describe
+  validacion local y el otro el ciclo remoto.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Extraer `isLoading` del mismo objeto de estado. Durante el POST, el boton se
+deshabilitara y mostrara `Iniciando sesion...` para comunicar progreso y evitar
+envios duplicados.
+
+## Estado de carga remota integrado
+
+- `isLoading` se extrae del objeto de estado de `useLoginMutation`.
+- Antes de disparar la mutation y despues de resolverla es `false`.
+- Mientras el POST espera respuesta es `true`.
+- El texto del boton cambia a `Iniciando sesion...`.
+- `disabled={isLoading}` impide nuevos eventos submit durante la peticion.
+- El texto comunica progreso y `disabled` controla la interaccion; son
+  responsabilidades complementarias.
+- No se creo estado local adicional mediante `useState`.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Extraer `isError` de la mutation y mostrar primero un mensaje remoto general.
+Se diferenciara de `formState.errors`: Zod describe campos invalidos, mientras
+RTK Query describe una peticion valida que fallo en la red o el backend.
+
+## Error remoto general de login integrado
+
+- `isError` se extrae del estado de `useLoginMutation`.
+- El mensaje remoto se muestra a nivel del formulario completo.
+- Los errores locales de Zod permanecen asociados a email y password.
+- Un rechazo local no dispara la mutation y no activa `isError`.
+- Un fallo HTTP o de red posterior a datos validos activa el mensaje remoto.
+- Todavia no se inspecciona la causa concreta almacenada en `error`.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Extraer `error` de la mutation y reconocer de forma segura el estado HTTP 401.
+Las credenciales incorrectas tendran un mensaje especifico y los demas fallos
+conservaran el mensaje general.
+
+## Error HTTP 401 diferenciado
+
+- `error` se extrae del objeto de estado de la mutation.
+- El acceso a `status` ocurre solo despues de comprobar que `error` existe y
+  que la propiedad esta presente.
+- HTTP 401 se interpreta como credenciales incorrectas en el endpoint de
+  login.
+- Los fallos de red, serializacion u otros estados HTTP conservan el mensaje
+  general.
+- Los errores remotos permanecen separados de `formState.errors`.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Extraer `isSuccess` y renderizar un mensaje de sesion iniciada. Este estado
+confirmara que RTK Query recibio una respuesta exitosa; la navegacion se
+implementara en una microtarea posterior.
+
+## Estado exitoso de login integrado
+
+- `isSuccess` se extrae del objeto de estado de la mutation.
+- Es `true` solamente cuando la ultima ejecucion termino correctamente.
+- El mensaje de exito utiliza `role="status"`.
+- El estado confirma una respuesta exitosa de RTK Query, no una lectura directa
+  de la cookie `httpOnly`.
+- Se ordenaron mecanicamente los estados como inicial, carga, exito y error.
+- La ruta exitosa real sigue pendiente de una prueba autenticada en navegador.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Extraer `data` de la mutation, renombrarlo como `loginResponse` y leer
+`loginResponse.data.user.name` en el mensaje exitoso. Esto comprobara el
+contrato publico antes de agregar navegacion.
+
+## Respuesta exitosa de login leida
+
+- `data` se renombra localmente como `loginResponse`.
+- Antes del exito puede ser `undefined`, por lo que el JSX comprueba su
+  existencia.
+- El acceso sigue el contrato
+  `loginResponse.data.user.name`.
+- El mensaje muestra solamente el nombre publico del usuario.
+- La respuesta JSON permanece separada de la cookie `httpOnly`.
+- Se corrigio mecanicamente el nombre de variable desde PascalCase a camelCase.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Explicar el valor devuelto por la funcion disparadora `login(values)` y el
+metodo `.unwrap()`. Despues se usara el resultado exitoso para navegar a
+`/trips` sin navegar cuando el backend responda con error.
+
+## Tarea activa
+
+Convertir `handleLoginSubmit` en una funcion asincrona, esperar
+`login(values).unwrap()` y capturar el rechazo. Los mensajes continuaran
+dependiendo del estado del hook; todavia no se agregara navegacion ni limpieza.
+
+## Espera y rechazo de la mutation integrados
+
+- `handleLoginSubmit` ahora es una funcion asincrona.
+- `login(values)` sigue disparando la mutation con los valores ya validados.
+- `.unwrap()` transforma el resultado de RTK Query en una promesa convencional:
+  devuelve la respuesta publica si el login funciona y rechaza si falla.
+- `await` mantiene pendiente la ejecucion de `handleLoginSubmit` hasta que el
+  backend responde.
+- El `catch` captura ese rechazo para que no quede sin manejar.
+- La interfaz sigue leyendo el fallo desde `isError` y `error`, por lo que el
+  `catch` no necesita crear otro mensaje ni duplicar estado.
+- Todavia no se agregaron navegacion, limpieza del formulario ni registros en
+  consola.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Enseñar `reset` de React Hook Form y utilizarlo para retirar la contraseña del
+formulario una vez terminado un intento de login. La limpieza conservara el
+email para facilitar un nuevo intento. Antes de modificar el codigo se
+explicara la diferencia entre limpiar los campos, borrar datos de RTK Query y
+eliminar informacion que ya aparecio temporalmente en las herramientas de
+desarrollo del navegador.
+
+## Tarea activa
+
+Ninguna. La siguiente microtarea comenzara con la explicacion de `reset`; no
+debe agregarse todavia navegacion.
+
+## Limpieza de la contraseña integrada
+
+- `reset` se extrae de la misma instancia de React Hook Form que administra
+  `register`, `handleSubmit` y `errors`.
+- El bloque `finally` se ejecuta una vez resuelta o rechazada la mutation.
+- El email validado se conserva para facilitar un nuevo intento.
+- La contraseña se reemplaza por un texto vacio en el input y en el estado
+  interno del formulario.
+- La limpieza ocurre despues de terminar la peticion, no durante `isLoading`.
+- `reset` no elimina una peticion ya visible en las herramientas de desarrollo
+  del navegador ni modifica el estado remoto de RTK Query.
+- Todavia no se agrego navegacion.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Navegar a `/trips` solamente despues de que `.unwrap()` entregue una respuesta
+exitosa. Se explicara como la posicion de `navigate("/trips")` dentro de
+`try` hace que el rechazo salte directamente a `catch` y evita navegar con
+credenciales incorrectas.
+
+## Tarea activa
+
+Importar `useNavigate`, crear la funcion `navigate` dentro de `LoginPage` y
+ejecutar `navigate("/trips")` inmediatamente despues de
+`await login(values).unwrap()`. La navegacion no debe colocarse en `finally` ni
+fuera de `try`.
