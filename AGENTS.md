@@ -200,6 +200,21 @@ Cada tarea de RTK Query debe tratarse como una lección de un curso guiado:
 10. Cerrar cada microtarea con criterios de aceptación, errores comunes,
     comprobaciones y un resumen del concepto aprendido.
 
+Cuando una tarea involucre tags de RTK Query, la explicación debe recordar
+siempre, antes del código:
+
+- qué dato almacenado podría quedar desactualizado;
+- qué query proporciona cada tag mediante `providesTags`;
+- qué mutation invalida cada tag mediante `invalidatesTags`;
+- qué ocurre con una entrada de caché activa y con una entrada sin
+  suscripciones;
+- qué petición visible puede producir la invalidación;
+- por qué la invalidación debe ocurrir en éxito o por qué debe evitarse en
+  error.
+
+Estas explicaciones deben comenzar con el comportamiento observable y una
+analogía sencilla, y después conservar el detalle técnico necesario.
+
 Antes de usarlos en una implementación, deben enseñarse de forma explícita:
 
 - `createApi`;

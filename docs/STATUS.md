@@ -2153,3 +2153,590 @@ posterior al login entre el dashboard `/` y la lista `/trips`.
 Probar manualmente que `/`, `/trips` y `/trips/:tripId` redirigen a `/login`
 sin cookie; despues de iniciar sesion, comprobar que las tres rutas se pueden
 abrir y que `/login` redirige al usuario autenticado.
+
+## Verificacion de ejecucion parcial
+
+- El servidor y el cliente se iniciaron localmente.
+- `GET /api/auth/me` sin cookie responde HTTP 401, como espera
+  `RequireAuth`.
+- Vite sirve `/` y `/trips` con HTTP 200 para que React Router resuelva la
+  navegacion en el cliente.
+- La automatizacion visual del navegador no estuvo disponible en esta sesion;
+  la observacion manual de las redirecciones sigue pendiente, pero no bloquea
+  el ajuste del destino exitoso.
+
+## Decision sobre el destino posterior al login
+
+- `/` representa ahora el dashboard autenticado y es el destino principal.
+- Un login exitoso debe navegar a `/`.
+- Un usuario autenticado que visite `/login` tambien debe ser redirigido a `/`.
+- La rama 401 de `RequireAuth` debe continuar apuntando a `/login`.
+
+## Tarea activa
+
+En `LoginPage`, cambiar a `/` las dos redirecciones que actualmente apuntan a
+`/trips`: la navegacion imperativa posterior a `.unwrap()` y el componente
+`Navigate` usado cuando `currentUserResponse` ya existe. Conservar `replace` en
+ambas.
+
+## Destino principal del login actualizado
+
+- La navegacion posterior a `.unwrap()` apunta a `/`.
+- Un usuario autenticado que visite `/login` tambien es redirigido a `/`.
+- Ambas redirecciones conservan reemplazo del historial.
+- La rama 401 de `RequireAuth` continua apuntando a `/login`.
+- El dashboard protegido es ahora el destino principal despues de autenticar.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Preparar la coherencia de cache necesaria para logout. Antes de usar
+`providesTags` e `invalidatesTags`, se declarara el tipo de etiqueta de sesion
+en el API slice compartido.
+
+## Tarea activa
+
+Agregar `tagTypes: ["Auth"]` a la configuracion de `createApi` en
+`client/src/services/api.ts`. Todavia no agregar `providesTags`,
+`invalidatesTags` ni la mutation de logout.
+
+## Tipo de tag de autenticacion declarado
+
+- El API slice compartido declara `tagTypes: ["Auth"]`.
+- La declaracion esta al mismo nivel que `reducerPath`, `baseQuery` y
+  `endpoints`.
+- Todos los endpoints inyectados pueden usar el mismo vocabulario de tags.
+- Declarar el tipo no etiqueta cache, no invalida datos y no ejecuta
+  peticiones.
+- No se creo un segundo API slice.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Enseñar `providesTags` y asociar la entrada de cache de `getCurrentUser` con la
+etiqueta `Auth`. Todavia ninguna mutation invalidara esa etiqueta.
+
+## Tarea activa
+
+Agregar `providesTags: ["Auth"]` al endpoint `getCurrentUser` en
+`client/src/features/auth/authApi.ts`. No agregar aun `invalidatesTags` ni
+logout.
+
+## Cache de sesion etiquetada
+
+- `getCurrentUser` declara `providesTags: ["Auth"]`.
+- La etiqueta relaciona la entrada de cache de la sesion con la categoria
+  `Auth`; no modifica el usuario ni la respuesta JSON.
+- `login` todavia no invalida la etiqueta.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Ajuste pedagogico
+
+- Las proximas explicaciones conservaran la precision tecnica, pero empezaran
+  por el comportamiento visible y una analogia sencilla antes de presentar los
+  nombres internos de RTK Query.
+- Los detalles tecnicos se conectaran siempre con una consecuencia concreta en
+  la interfaz o en las peticiones.
+- `AGENTS.md` exige recordar en cada tarea de tags que cache puede quedar
+  vieja, quien proporciona la etiqueta, quien la invalida y que peticion puede
+  producir esa invalidacion.
+
+## Proximo paso
+
+Enseñar `invalidatesTags` como la señal de que una mutation volvio vieja una
+respuesta cacheada. El primer caso sera el login: despues de crear la cookie, la
+consulta anterior de sesion debe comprobarse nuevamente.
+
+## Tarea activa
+
+Agregar una invalidacion condicional al endpoint `login`, al mismo nivel que
+`query`: si existe una respuesta exitosa, devolver `["Auth"]`; si el login
+falla, devolver `[]`. Todavia no crear la mutation de logout.
+
+## Login conectado con la cache de sesion
+
+- `login` invalida `Auth` solamente cuando recibe una respuesta exitosa.
+- Un login rechazado devuelve una lista de tags vacia y evita un refetch
+  innecesario de `/auth/me`.
+- Una invalidacion exitosa hace que las suscripciones activas a
+  `getCurrentUser` vuelvan a comprobar la sesion.
+- `getCurrentUser` conserva `providesTags: ["Auth"]`.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Definir la mutation de logout a partir del contrato real del backend:
+`POST /api/auth/logout`, sin cuerpo de solicitud y con respuesta HTTP 204 sin
+JSON.
+
+## Tarea activa
+
+Agregar el endpoint `logout` a `client/src/features/auth/authApi.ts` como
+`builder.mutation<void, void>`, devolver `url: "auth/logout"` y
+`method: "POST"`, y exportar `useLogoutMutation`. Todavia no agregar
+invalidacion ni usar el hook en un componente.
+
+## Mutation de logout definida
+
+- `logout` usa `builder.mutation<void, void>`.
+- Ejecutara `POST /api/auth/logout` sin body.
+- Los dos `void` representan ausencia de respuesta JSON y ausencia de
+  argumento.
+- Se exporta `useLogoutMutation`, pero ningun componente lo ejecuta todavia.
+- No se agrego invalidacion antes de revisar todas las caches dependientes de
+  la sesion.
+- Se retiro mecanicamente una linea vacia entre endpoints.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Decision de seguridad sobre cache de usuario
+
+- La cache de `getTrips` tambien depende de la identidad autenticada.
+- Cerrar sesion debe volver obsoletos tanto el usuario actual como los viajes
+  del usuario anterior.
+- La etiqueta `Auth` representara las entradas de cache cuyo contenido depende
+  de la sesion, no solamente la respuesta de `/auth/me`.
+- Antes de invalidar `Auth` desde logout, `getTrips` debe proporcionar esa
+  etiqueta.
+
+## Proximo paso
+
+Etiquetar la query de viajes como dependiente de la sesion para que logout
+pueda limpiar o volver a consultar todos los datos privados relacionados.
+
+## Tarea activa
+
+Agregar `providesTags: ["Auth"]` a `getTrips` en
+`client/src/features/trips/tripsApi.ts`. Todavia no modificar logout ni usar su
+hook.
+
+## Cache de viajes ligada a la sesion
+
+- `getTrips` proporciona la etiqueta `Auth`.
+- `getCurrentUser` y `getTrips` quedan identificadas como caches cuyo contenido
+  depende de la persona autenticada.
+- Agregar `providesTags` no ejecuto una peticion ni cambio la respuesta de
+  viajes.
+- Logout ya puede invalidar una sola etiqueta para volver obsoletas ambas
+  caches.
+- Se normalizaron mecanicamente los saltos de linea del bloque logout.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Invalidar `Auth` despues de un logout exitoso. Como el backend responde 204 sin
+contenido, el exito se reconocera por la ausencia de `error`, no por la
+existencia de `result`.
+
+## Tarea activa
+
+Agregar a `logout` una funcion `invalidatesTags` que reciba `_result` y `error`,
+devuelva `[]` si existe un error y `["Auth"]` si no existe. Todavia no usar
+`useLogoutMutation` en componentes.
+
+## Logout conectado con las caches privadas
+
+- Logout invalida `Auth` solamente cuando no recibe un error.
+- El resultado HTTP 204 no se usa para decidir el exito porque no contiene
+  datos.
+- La invalidacion alcanza los resultados guardados de `getCurrentUser` y
+  `getTrips`, ya que ambos proporcionan `Auth`.
+- Un logout fallido devuelve una lista vacia y conserva las caches actuales.
+- El hook de logout todavia no se ejecuta desde la interfaz.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Decision estructural para la navegacion de autenticacion
+
+- La cabecera necesita mostrar una accion diferente segun exista o no una
+  sesion.
+- Esa responsabilidad se ubicara en
+  `client/src/features/auth/AuthNavigation.tsx`.
+- `MainLayout` no administrara directamente las peticiones de autenticacion.
+- El componente reutilizara `useGetCurrentUserQuery`; al usar el mismo endpoint
+  y los mismos argumentos, compartira el resultado guardado existente.
+
+## Proximo paso
+
+Crear la base definitiva de `AuthNavigation` y reforzar como varios componentes
+pueden consumir el mismo resultado de RTK Query sin crear una cache por
+componente.
+
+## Tarea activa
+
+Crear `client/src/features/auth/AuthNavigation.tsx`. Debe usar
+`useGetCurrentUserQuery`, mostrar `Comprobando sesion...` durante la primera
+carga, devolver un `NavLink` a `/login` si no existe usuario y mostrar el nombre
+del usuario si existe. Todavia no usar `useLogoutMutation` ni modificar
+`MainLayout`.
+
+## Base de AuthNavigation completada
+
+- `AuthNavigation` usa `useGetCurrentUserQuery`.
+- Durante la primera consulta muestra `Comprobando sesion...`.
+- Sin una respuesta autenticada muestra un enlace a `/login`.
+- Con una respuesta autenticada muestra `data.user.name`.
+- El hook se conecta al mismo resultado guardado que consumen `RequireAuth` y
+  `LoginPage`; no crea una cache por componente.
+- Todavia no ejecuta logout.
+- Se corrigieron mecanicamente un import innecesario y el orden de imports.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Reemplazar el enlace estatico de login del encabezado por `AuthNavigation`.
+Montar el componente activara su suscripcion a `getCurrentUser` dentro del
+layout compartido.
+
+## Tarea activa
+
+Importar `AuthNavigation` en `client/src/layouts/MainLayout.tsx` y reemplazar
+unicamente `<NavLink to="/login">Login</NavLink>` por `<AuthNavigation />`.
+Conservar los enlaces de marca, inicio y viajes. Todavia no agregar logout.
+
+## AuthNavigation integrada en la cabecera
+
+- `MainLayout` renderiza `AuthNavigation` en lugar del enlace estatico de
+  login.
+- Los enlaces de marca, inicio y viajes permanecen intactos.
+- El layout no importa hooks ni mutations de autenticacion.
+- Montar `AuthNavigation` agrega otra suscripcion al mismo resultado guardado
+  de `getCurrentUser`; no crea una cache independiente.
+- Todavia no existe un boton que ejecute logout.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Riesgo detectado antes de conectar logout
+
+- Al refetch de una query, RTK Query puede conservar temporalmente el ultimo
+  dato exitoso mientras procesa la nueva respuesta.
+- Despues de logout, `/auth/me` respondera 401, pero `data` puede seguir
+  conteniendo por un momento al usuario anterior.
+- `RequireAuth` ya prioriza el 401 antes de renderizar su `Outlet`.
+- `LoginPage` redirige actualmente si existe `currentUserResponse` sin comprobar
+  que la nueva consulta no este en error.
+- Esa combinacion podria causar redirecciones opuestas entre `/login` y `/`.
+
+## Proximo paso
+
+Hacer que `LoginPage` solo confie en `currentUserResponse` cuando la consulta de
+sesion no este en estado de error.
+
+## Tarea activa
+
+Cambiar la condicion de redireccion autenticada en `LoginPage` de
+`if (currentUserResponse)` a
+`if (currentUserResponse && !isSessionError)`. No modificar las demas ramas ni
+conectar logout todavia.
+
+## Correccion de estrategia para logout
+
+- Se comprobo en la version instalada de RTK Query que un refetch rechazado
+  puede conservar el ultimo `data` exitoso junto al nuevo error.
+- Este comportamiento es util para actualizaciones normales, pero no es el
+  comportamiento deseado al cambiar de identidad.
+- La tarea anterior de modificar la condicion de `LoginPage` queda cancelada;
+  no se resolvera logout acumulando comprobaciones defensivas en componentes.
+- Un logout exitoso limpiara todo el estado del API slice mediante
+  `api.util.resetApiState()` antes de navegar a `/login`.
+- La limpieza eliminara usuario, viajes, errores, estados y suscripciones
+  cacheadas del API, evitando conservar datos de la sesion anterior.
+- `invalidatesTags` se retirara de logout porque sera redundante con el reinicio
+  completo.
+- Las tags se conservan para login y para futuras relaciones entre queries y
+  mutations que no representen un cambio total de identidad.
+
+## Proximo paso
+
+Retirar de logout la invalidacion `Auth` que acaba de quedar reemplazada por la
+estrategia de limpieza total. Despues se enseñara `resetApiState` antes de
+conectarlo en la interfaz.
+
+## Tarea activa
+
+Eliminar solamente `invalidatesTags` del endpoint `logout` en `authApi.ts`.
+Conservar la invalidacion condicional de login y los `providesTags` de
+`getCurrentUser` y `getTrips`.
+
+## Invalidacion selectiva retirada de logout
+
+- Logout conserva solamente su contrato HTTP `POST /auth/logout`.
+- Login mantiene la invalidacion condicional de `Auth`.
+- `getCurrentUser` y `getTrips` mantienen `providesTags: ["Auth"]`.
+- Logout ya no iniciara refetches selectivos antes de la limpieza completa.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Enseñar `api.util.resetApiState()` y conectar el flujo completo de logout en
+`AuthNavigation`: esperar el 204, reiniciar el API slice y navegar a `/login`.
+
+## Tarea activa
+
+Modificar `AuthNavigation.tsx` para usar `useLogoutMutation`,
+`useAppDispatch`, `api` y `useNavigate`. Crear un handler asincrono que espere
+`logout().unwrap()`, despache `api.util.resetApiState()` y navegue a `/login`
+con `replace`. Mostrar un boton solamente cuando exista usuario, deshabilitado
+mientras logout esta pendiente, y un mensaje si la mutation falla.
+
+## Hallazgo en la prueba manual de logout
+
+- Logout responde HTTP 204 y el backend envia una cookie vacia con expiracion
+  en 1970; la eliminacion de la cookie es correcta.
+- El usuario llega a `/login`, pero al volver con el historial puede alcanzar
+  temporalmente `HomePage`.
+- `RequireAuth` solo bloquea `isFetching` cuando `currentUserResponse` es
+  `undefined`.
+- Si existe un ultimo usuario guardado durante la revalidacion, el guard puede
+  renderizar su `Outlet` antes de conocer el nuevo 401.
+- La documentacion oficial advierte que `resetApiState` reinicia el estado del
+  API, pero los hooks tambien mantienen estado local; el guard no debe confiar
+  unicamente en el reset para autorizar una ruta.
+
+## Decision de proteccion adicional
+
+- Cada vez que `RequireAuth` vuelva a montarse, solicitara una comprobacion
+  fresca mediante `refetchOnMountOrArgChange: true`.
+- Mientras cualquier comprobacion de sesion este en curso, el guard no
+  renderizara contenido privado, incluso si existe un dato anterior.
+- Cuando llegue el 401, la rama `isUnauthenticated` seguira teniendo prioridad
+  sobre `currentUserResponse`.
+
+## Tarea activa
+
+En `RequireAuth`, llamar `useGetCurrentUserQuery` con `undefined` como primer
+argumento y `{ refetchOnMountOrArgChange: true }` como segundo. Cambiar la
+condicion del segundo estado de espera para que dependa solamente de
+`isFetchingSession`, sin comprobar `currentUserResponse === undefined`, y usar
+un texto apropiado para verificacion de sesion.
+
+## Simplificacion acordada
+
+- La tarea anterior de endurecer `RequireAuth` con
+  `refetchOnMountOrArgChange` queda cancelada por ahora.
+- La prueba manual confirma que el flujo actual elimina la cookie, reinicia
+  `state.api`, navega a `/login` e impide volver al dashboard.
+- Para el alcance actual se conserva el flujo directo:
+  `logout().unwrap()` -> `resetApiState()` -> navegacion.
+- El backend continua siendo la barrera de seguridad real para todos los datos
+  privados.
+- La revalidacion forzada al montar el guard queda como mejora futura solamente
+  si aparece un caso real fuera del flujo de logout.
+
+## Tarea activa
+
+Validar la implementacion actual de `AuthNavigation` y cerrar el hito de logout
+sin agregar mas comportamiento.
+
+## Hito de autenticacion del cliente completado
+
+- `AuthNavigation` ejecuta logout mediante `.unwrap()`.
+- Solo despues del HTTP 204 despacha `api.util.resetApiState()` y navega a
+  `/login` con reemplazo del historial.
+- Un fallo conserva la sesion y muestra un mensaje.
+- La prueba manual confirma que el usuario no puede volver al dashboard despues
+  de cerrar sesion.
+- Se decidio no agregar revalidacion forzada al guard mientras no exista un
+  problema real fuera del flujo de logout.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Retomar la fase de formularios con el formulario de creacion de viajes. Se
+comenzara revisando el contrato existente del backend y los tipos del cliente,
+sin agregar todavia UI ni nuevas abstracciones.
+
+## Tarea activa
+
+Ninguna. El hito de autenticacion queda cerrado.
+
+## Inicio del pulido visual del login
+
+- Se usara la guia de `$impeccable` para revisar jerarquia, composicion,
+  accesibilidad y estados del formulario.
+- Se conservara el lenguaje visual teal/slate que ya existe en la aplicacion.
+- La pantalla sera una interfaz de producto sobria y centrada, sin convertirla
+  en una landing page ni agregar decoracion innecesaria.
+- El pulido se dividira en microtareas para no mezclar layout, campos, estados
+  y accesibilidad en un unico cambio.
+
+## Proximo paso
+
+Estilizar solamente el contenedor exterior y la superficie principal de
+`LoginPage`. Todavia no se modificaran los campos, los mensajes ni el boton.
+
+## Tarea activa
+
+Agregar clases de Tailwind al `main` y al `section` de `LoginPage.tsx` para
+centrar el formulario, crear un fondo slate claro, limitar el ancho de lectura
+y presentar una superficie blanca con borde y esquinas moderadas.
+
+## Estructura visual del login completada
+
+- El contenido queda centrado dentro del espacio disponible bajo la cabecera.
+- La superficie usa todo el ancho disponible en movil y se limita con
+  `max-w-md` en pantallas mayores.
+- El fondo blanco, el borde slate y las esquinas moderadas mantienen el
+  lenguaje visual existente.
+- No se agregaron sombras amplias ni elementos decorativos.
+- `npm run build` y `npm run lint` pasan.
+
+## Proximo paso
+
+Crear una jerarquia estable para el titulo y la descripcion. La descripcion no
+debe depender del estado de la mutation porque sigue siendo util despues de un
+intento fallido.
+
+## Tarea activa
+
+Envolver el titulo y la descripcion en un `header`, estilizar ambos elementos y
+mostrar la descripcion de forma permanente. Retirar `isUninitialized` de la
+desestructuracion de `useLoginMutation`, ya que dejara de utilizarse. Todavia
+no modificar campos, errores ni boton.
+
+## Encabezado visual del login completado
+
+- El titulo y la descripcion estan agrupados semanticamente en un `header`.
+- La descripcion permanece visible antes y despues de ejecutar la mutation.
+- `isUninitialized` se retiro porque ya no controla ningun contenido.
+- La escala, el peso y los colores distinguen titulo y texto secundario sin
+  exagerar su tamano.
+- `npm run build` y `npm run lint` pasan.
+
+## Proximo paso
+
+Organizar el formulario en grupos visuales. Cada etiqueta, campo y mensaje de
+validacion deben permanecer juntos antes de aplicar estilos individuales.
+
+## Tarea activa
+
+Agregar espaciado vertical al `form` y envolver por separado el bloque de email
+y el bloque de contrasena en contenedores con su propio espaciado interno.
+Cambiar las etiquetas a `Correo electronico` y `Contrasena`. Todavia no agregar
+clases a `label`, `input`, errores o boton.
+
+## Grupos del formulario completados
+
+- Email y contrasena tienen contenedores independientes.
+- Cada mensaje de Zod permanece dentro del grupo del campo correspondiente.
+- El boton sigue siendo hijo directo del formulario.
+- Se acepto `space-y-6` como una separacion ligeramente mayor entre los grupos.
+- Durante la revision se corrigio la etiqueta de contrasena y se restauro
+  `autoComplete="current-password"`; el valor accidental `"email"` daba una
+  indicacion incorrecta al navegador y a los gestores de credenciales.
+- `npm run build` y `npm run lint` pasan.
+
+## Proximo paso
+
+Estilizar etiquetas y campos con una base visual consistente. El foco debe ser
+claramente visible para que el usuario sepa en que campo esta escribiendo.
+
+## Tarea activa
+
+Agregar clases de Tailwind a los dos `label` y a los dos `input`. Ambos campos
+deben ocupar el ancho disponible, conservar contraste suficiente y mostrar
+borde y anillo teal al recibir foco. Todavia no agregar estilos condicionales
+de error ni atributos ARIA; se abordaran juntos en la siguiente microtarea.
+
+## Base visual de los campos completada
+
+- Las etiquetas comparten tamano, peso y color.
+- Los inputs ocupan todo el ancho y usan borde, espaciado y esquinas
+  consistentes.
+- El foco reemplaza el contorno nativo por un borde y anillo teal visibles.
+- `register`, los tipos y los valores de `autoComplete` permanecen intactos.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Representar los errores de validacion de cada campo tanto visualmente como para
+tecnologias de asistencia. El objeto `errors` ya contiene la informacion; no se
+agregara una segunda validacion.
+
+## Tarea activa
+
+Hacer condicionales los colores de borde y foco de cada input segun su error de
+React Hook Form. Agregar `aria-invalid` y `aria-describedby`, asignar un `id`
+estable a cada mensaje y estilizar los errores de campo. Todavia no modificar
+el error general de la mutation ni el boton.
+
+## Estados de validacion de campos completados
+
+- Cada input consulta su propia propiedad dentro de `errors`.
+- Los campos invalidos usan borde y foco rojos; los validos conservan el foco
+  teal.
+- `aria-invalid` comunica si cada campo es invalido.
+- `aria-describedby` enlaza cada input con un mensaje de `id` unico.
+- Los mensajes de Zod usan texto rojo y `role="alert"`.
+- Una errata en `aria-describedby` se corrigio mecanicamente durante la
+  revision.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Estilizar el error general de login. Este mensaje aparece despues de una
+peticion rechazada y no debe presentarse como si perteneciera solo al email o a
+la contrasena.
+
+## Tarea activa
+
+Convertir el mensaje controlado por `isError` en un bloque de alerta visible,
+con fondo, borde, espaciado y texto rojos. Conservar `role="alert"` y la
+distincion existente entre credenciales incorrectas y otros fallos. Todavia no
+modificar el boton.
+
+## Alerta general de login completada
+
+- El error de la mutation se presenta como un bloque independiente antes del
+  formulario.
+- La alerta conserva la distincion entre credenciales incorrectas y otros
+  fallos.
+- `role="alert"` permanece intacto.
+- No se relaciono el mensaje con un campo especifico porque representa un fallo
+  de la operacion completa.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Estilizar el boton de envio y hacer visibles sus estados normal, hover, foco y
+deshabilitado. La mutation ya aporta `isLoading`; no se agregara estado local.
+
+## Tarea activa
+
+Agregar clases de Tailwind al boton de login sin modificar su condicion
+`disabled`, su tipo ni el texto condicional controlado por `isLoading`.
+
+## Boton de login completado
+
+- El boton ocupa todo el ancho y usa teal como accion principal.
+- Los estados hover y foco son visibles.
+- El estado deshabilitado usa colores slate y conserva un cursor explicito.
+- `isLoading` sigue controlando tanto `disabled` como el texto; no se agrego
+  estado local.
+- `type="submit"` permanece intacto.
+- `npm run build` y `npm run lint` pasan.
+
+## Decision sobre el momento de validacion
+
+- `useForm` conserva el modo predeterminado `onSubmit`.
+- Al recargar, `defaultValues` establece campos vacios, pero no ejecuta por si
+  solo el resolver ni crea mensajes de error.
+- El primer clic en enviar hace que `handleSubmit` solicite la validacion al
+  `zodResolver`.
+- Si Zod rechaza los datos, React Hook Form llena `formState.errors` y el
+  componente vuelve a renderizar los mensajes.
+- Este comportamiento evita presentar el formulario como incorrecto antes de
+  que la persona haya intentado usarlo.
+- No se forzara validacion al montar. Si mas adelante se desea respuesta antes
+  del envio, se evaluara `mode: "onBlur"` en una tarea separada.
+
+## Proximo paso
+
+Completar los estados visuales de comprobacion de sesion y fallo de esa
+comprobacion, que actualmente se renderizan fuera de la superficie estilizada
+del login.
+
+## Tarea activa
+
+Estilizar los dos retornos de espera de `LoginPage`: la comprobacion inicial y
+el nuevo intento cuando todavia no existe una respuesta de usuario. Ambos
+deben usar el mismo contenedor centrado y la misma superficie del formulario,
+con `role="status"` y `aria-busy`. Todavia no modificar la rama de error de
+sesion ni su boton `Reintentar`.

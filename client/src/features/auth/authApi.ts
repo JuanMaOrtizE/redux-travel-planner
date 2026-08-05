@@ -7,13 +7,21 @@ export const authApi = api.injectEndpoints({
       query: (credentials) => {
         return { url: "auth/login", method: "POST", body: credentials };
       },
+      invalidatesTags: (result) => (result ? ["Auth"] : []),
+    }),
+    logout: builder.mutation<void, void>({
+      query: () => {
+        return { url: "auth/logout", method: "POST" };
+      },
     }),
     getCurrentUser: builder.query<AuthUserResponse, void>({
       query: () => {
         return "auth/me";
       },
+      providesTags: ["Auth"],
     }),
   }),
 });
 
-export const { useLoginMutation, useGetCurrentUserQuery } = authApi;
+export const { useLoginMutation, useLogoutMutation, useGetCurrentUserQuery } =
+  authApi;

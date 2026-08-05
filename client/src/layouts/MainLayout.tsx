@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
+import AuthNavigation from "../features/auth/AuthNavigation";
 
 export default function MainLayout() {
   return (
@@ -12,7 +13,7 @@ export default function MainLayout() {
           <div className="flex items-center gap-4 text-sm font-medium">
             <NavLink to="/">Inicio</NavLink>
             <NavLink to="/trips">Viajes</NavLink>
-            <NavLink to="/login">Login</NavLink>
+            <AuthNavigation />
           </div>
         </nav>
       </header>

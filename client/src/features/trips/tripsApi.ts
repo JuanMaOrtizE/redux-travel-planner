@@ -5,6 +5,7 @@ export const tripsApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getTrips: builder.query<ListTripsResponse, void>({
       query: () => "trips",
+      providesTags: ["Auth"],
     }),
   }),
 });
