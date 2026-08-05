@@ -1,23 +1,27 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useLoginMutation } from "../features/auth/authApi";
+import { Navigate, useNavigate } from "react-router-dom";
+import {
+  useGetCurrentUserQuery,
+  useLoginMutation,
+} from "../features/auth/authApi";
 import { loginSchema } from "../features/auth/login.schema";
 import type { LoginFormValues } from "../features/auth/login.schema";
-import { useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const [
-    login,
-    {
-      isUninitialized,
-      isLoading,
-      isSuccess,
-      isError,
-      error,
-      data: loginResponse,
-    },
-  ] = useLoginMutation();
+
+  const {
+    data: currentUserResponse,
+    isLoading: isCheckingSession,
+    isFetching: isFetchingSession,
+    isError: isSessionError,
+    error: sessionError,
+    refetch: refetchCurrentUser,
+  } = useGetCurrentUserQuery();
+
+  const [login, { isUninitialized, isLoading, isError, error }] =
+    useLoginMutation();
 
   const {
     register,
@@ -35,6 +39,12 @@ export default function LoginPage() {
   const isInvalidCredentials =
     isError && error !== undefined && "status" in error && error.status === 401;
 
+  const isUnauthenticated =
+    isSessionError &&
+    sessionError !== undefined &&
+    "status" in sessionError &&
+    sessionError.status === 401;
+
   async function handleLoginSubmit(values: LoginFormValues) {
     try {
       await login(values).unwrap();
@@ -47,6 +57,37 @@ export default function LoginPage() {
         password: "",
       });
     }
+  }
+
+  if (isCheckingSession) {
+    return (
+      <main>
+        <p>Comprobando sesión...</p>
+      </main>
+    );
+  }
+
+  if (isFetchingSession && currentUserResponse === undefined) {
+    return (
+      <main>
+        <p>Reintentando comprobar sesión...</p>
+      </main>
+    );
+  }
+
+  if (currentUserResponse) {
+    return <Navigate to="/trips" replace />;
+  }
+
+  if (isSessionError && !isUnauthenticated) {
+    return (
+      <main>
+        <p role="alert">No pudimos comprobar tu sesión. Intenta nuevamente.</p>
+        <button type="button" onClick={refetchCurrentUser}>
+          Reintentar
+        </button>
+      </main>
+    );
   }
 
   return (
@@ -63,12 +104,7 @@ export default function LoginPage() {
               : "No pudimos iniciar sesión. Intenta nuevamente."}
           </p>
         )}
-        {isSuccess && loginResponse && (
-          <p role="status">
-            Sesión iniciada correctamente. Bienvenido,{" "}
-            {loginResponse.data.user.name}
-          </p>
-        )}
+
         <form onSubmit={handleSubmit(handleLoginSubmit)} noValidate>
           <label htmlFor="email">Ingresa tu correo</label>
           <input

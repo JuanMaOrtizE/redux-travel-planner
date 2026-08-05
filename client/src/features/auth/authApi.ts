@@ -8,7 +8,12 @@ export const authApi = api.injectEndpoints({
         return { url: "auth/login", method: "POST", body: credentials };
       },
     }),
+    getCurrentUser: builder.query<AuthUserResponse, void>({
+      query: () => {
+        return "auth/me";
+      },
+    }),
   }),
 });
 
-export const { useLoginMutation } = authApi;
+export const { useLoginMutation, useGetCurrentUserQuery } = authApi;

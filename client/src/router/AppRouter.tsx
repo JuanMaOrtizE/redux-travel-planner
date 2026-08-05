@@ -1,20 +1,26 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import HomePage from "../pages/HomePage";
+import RequireAuth from "../features/auth/RequireAuth";
 import MainLayout from "../layouts/MainLayout";
-import TripsPage from "../pages/TripsPage";
+import HomePage from "../pages/HomePage";
 import LoginPage from "../pages/LoginPage";
-import TripDetailPage from "../pages/TripDetailPage";
 import NotFoundPage from "../pages/NotFoundPage";
+import TripDetailPage from "../pages/TripDetailPage";
+import TripsPage from "../pages/TripsPage";
 
 const router = createBrowserRouter([
   {
     path: "/",
     Component: MainLayout,
     children: [
-      { index: true, Component: HomePage },
       { path: "/login", Component: LoginPage },
-      { path: "/trips", Component: TripsPage },
-      { path: "/trips/:tripId", Component: TripDetailPage },
+      {
+        Component: RequireAuth,
+        children: [
+          { index: true, Component: HomePage },
+          { path: "/trips", Component: TripsPage },
+          { path: "/trips/:tripId", Component: TripDetailPage },
+        ],
+      },
       { path: "*", Component: NotFoundPage },
     ],
   },

@@ -1858,3 +1858,298 @@ Importar `useNavigate`, crear la funcion `navigate` dentro de `LoginPage` y
 ejecutar `navigate("/trips")` inmediatamente despues de
 `await login(values).unwrap()`. La navegacion no debe colocarse en `finally` ni
 fuera de `try`.
+
+## Navegacion posterior al login integrada
+
+- `useNavigate` se importa desde React Router y se ejecuta en el nivel superior
+  de `LoginPage`.
+- `navigate("/trips", { replace: true })` se ejecuta inmediatamente despues de
+  que `.unwrap()` confirma el login.
+- Una respuesta rechazada salta a `catch` y no alcanza la navegacion.
+- `replace: true` sustituye `/login` en el historial para que el boton atras no
+  regrese inmediatamente al formulario.
+- `finally` conserva su responsabilidad independiente de limpiar la contraseña.
+- Se ordeno mecanicamente el import externo de `useNavigate`.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Decision de experiencia de autenticacion
+
+- Un usuario autenticado que visite `/login` no debe volver a ver el formulario.
+- El cliente no puede comprobar la cookie `httpOnly` directamente.
+- La sesion se confirmara consultando `GET /api/auth/me`.
+- Una respuesta exitosa permitira redirigir a `/trips`.
+- Una respuesta HTTP 401 permitira mostrar el formulario de login.
+- La proteccion de rutas privadas se implementara despues de preparar esta
+  consulta y comprender sus estados.
+
+## Proximo paso
+
+Agregar al API slice de autenticacion una query sin argumentos para consultar
+la sesion actual. Esta microtarea solo definira el endpoint y su hook generado;
+`LoginPage` todavia no lo ejecutara.
+
+## Tarea activa
+
+Agregar `getCurrentUser` a `client/src/features/auth/authApi.ts` mediante
+`builder.query<AuthUserResponse, void>`, consultar `auth/me` y exportar
+`useGetCurrentUserQuery`.
+
+## Query de sesion actual definida
+
+- `getCurrentUser` es un endpoint hermano de `login` dentro de `authApi`.
+- Usa `builder.query<AuthUserResponse, void>` porque consulta el usuario
+  autenticado y no recibe argumentos.
+- `query` devuelve `auth/me`; `fetchBaseQuery` completa la URL y envia la cookie
+  mediante la configuracion compartida `credentials: "include"`.
+- Al no recibir argumentos, la consulta tendra una unica entrada de cache para
+  el endpoint.
+- RTK Query genera y exporta `useGetCurrentUserQuery`.
+- Definir y exportar el hook no ejecuta todavia ninguna peticion.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Montar `useGetCurrentUserQuery()` en `LoginPage` y representar solamente la
+comprobacion inicial de sesion. La query se ejecutara automaticamente al montar
+la pagina y mantendra una suscripcion mientras el componente exista. La
+redireccion segun la respuesta se agregara en la microtarea posterior.
+
+## Tarea activa
+
+Importar `useGetCurrentUserQuery` en `LoginPage`, ejecutar el hook sin
+argumentos, renombrar su `isLoading` como `isCheckingSession` y mostrar
+`Comprobando sesion...` antes del formulario mientras esa primera consulta esta
+pendiente.
+
+## Comprobacion inicial de sesion integrada
+
+- `LoginPage` ejecuta `useGetCurrentUserQuery()` sin argumentos.
+- Montar el hook crea una suscripcion y dispara automaticamente
+  `GET /api/auth/me` cuando no existe una respuesta util en cache.
+- El `isLoading` de la query se renombra como `isCheckingSession`.
+- El `isLoading` de la mutation conserva su nombre y sigue representando
+  exclusivamente el envio del formulario.
+- Mientras se espera la primera respuesta, la pagina muestra
+  `Comprobando sesion...` y evita mostrar fugazmente el formulario.
+- Todos los hooks se ejecutan antes del retorno condicional.
+- Todavia no se lee la respuesta exitosa ni se redirige por una sesion activa.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Leer `data` de la query de sesion y usar el componente declarativo `Navigate`
+para redirigir a `/trips` cuando el backend confirme un usuario. Una respuesta
+401 dejara `data` como `undefined` y permitira mostrar el formulario.
+
+## Tarea activa
+
+Renombrar `data` como `currentUserResponse` al desestructurar
+`useGetCurrentUserQuery()`. Importar `Navigate` desde React Router y, despues
+del estado de comprobacion, devolver `<Navigate to="/trips" replace />` cuando
+`currentUserResponse` exista.
+
+## Redireccion de usuario autenticado integrada
+
+- La respuesta `data` de `useGetCurrentUserQuery` se renombra como
+  `currentUserResponse`.
+- Mientras la consulta inicial carga, se conserva el estado
+  `Comprobando sesion...`.
+- Una respuesta autenticada renderiza `<Navigate to="/trips" replace />`.
+- `Navigate` expresa una redireccion derivada del estado renderizado, mientras
+  `useNavigate` sigue reservado para la navegacion posterior al evento submit.
+- Una respuesta 401 no contiene `data`, por lo que permite llegar al formulario.
+- La redireccion reemplaza `/login` en el historial.
+- Todavia no se diferencian los errores 401 de otros fallos de la comprobacion.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Retirar del estado de la mutation y del JSX el mensaje de exito que dejo de
+tener una oportunidad util de mostrarse. El login exitoso navega inmediatamente
+a `/trips`; por eso `isSuccess` y `loginResponse` ya no deben mantener una rama
+visual muerta en `LoginPage`.
+
+## Tarea activa
+
+Eliminar `isSuccess` y `data: loginResponse` de la desestructuracion de
+`useLoginMutation`, y eliminar el bloque JSX que muestra
+`Sesion iniciada correctamente`. No modificar el manejo de carga, error,
+navegacion ni limpieza del formulario.
+
+## Rama visual de exito retirada
+
+- `LoginPage` ya no extrae `isSuccess` ni `data: loginResponse` de la mutation.
+- Se elimino el mensaje de exito que quedaba obsoleto al navegar inmediatamente
+  a `/trips`.
+- RTK Query sigue recibiendo la respuesta de login; la pagina simplemente ya no
+  necesita leerla para renderizar.
+- `.unwrap()`, la navegacion, el manejo de errores y `reset` permanecen
+  intactos.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Diferenciar el HTTP 401 esperado de `GET /api/auth/me` de un fallo real al
+comprobar la sesion. El 401 significa que se debe mostrar el formulario; un
+error de red, de serializacion o del servidor debe mostrar un estado de error
+separado.
+
+## Tarea activa
+
+Extraer `isError` y `error` de `useGetCurrentUserQuery` con los nombres
+`isSessionError` y `sessionError`. Reconocer de forma segura el estado 401 y,
+antes del formulario, devolver `No pudimos comprobar tu sesion. Intenta
+nuevamente.` solamente cuando exista un error de sesion diferente de 401.
+
+## Errores de comprobacion de sesion diferenciados
+
+- La query de sesion expone `isSessionError` y `sessionError`, separados de
+  `isError` y `error` de la mutation de login.
+- HTTP 401 se interpreta como ausencia de una sesion valida y permite mostrar
+  el formulario.
+- Un error de red, de serializacion u otro estado HTTP muestra un estado de
+  error de sesion independiente.
+- El formulario no se presenta como solucion cuando el cliente no pudo
+  determinar el estado de autenticacion.
+- El mensaje tecnico usa `role="alert"`.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Hacer recuperable el error tecnico mediante `refetch`. Se reutilizara
+`isFetching` para representar una peticion posterior y evitar mostrar el
+formulario mientras se vuelve a comprobar la sesion.
+
+## Tarea activa
+
+Extraer `refetch` como `refetchCurrentUser` e `isFetching` como
+`isFetchingSession` desde `useGetCurrentUserQuery`. Mostrar
+`Reintentando comprobar sesion...` cuando exista una peticion sin datos despues
+de la carga inicial, y agregar un boton `Reintentar` al estado de error tecnico
+que ejecute `refetchCurrentUser`.
+
+## Reintento de comprobacion de sesion integrado
+
+- La query expone `refetchCurrentUser`, que vuelve a ejecutar el mismo endpoint
+  sin reconstruir manualmente la peticion.
+- `isFetchingSession` representa cualquier peticion de sesion activa.
+- `isCheckingSession` conserva la responsabilidad especifica de la primera
+  carga sin datos.
+- Durante un reintento sin datos, la pagina muestra
+  `Reintentando comprobar sesion...` y no deja aparecer el formulario.
+- El estado de error tecnico incluye un boton `Reintentar` con
+  `type="button"`.
+- Un nuevo 200 redirige, un 401 muestra el formulario y otro fallo devuelve el
+  estado recuperable.
+- Se agrego mecanicamente una separacion visual entre retornos condicionales.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Decision estructural para rutas privadas
+
+- La autenticacion no se comprobara de forma independiente dentro de cada
+  pagina privada.
+- Se creara `client/src/features/auth/RequireAuth.tsx`.
+- `RequireAuth` sera un componente de ruta del dominio de autenticacion.
+- Cuando la sesion sea valida renderizara un `<Outlet />` para permitir que
+  React Router muestre la ruta privada hija.
+- La agrupacion de rutas privadas en `AppRouter` se realizara en una microtarea
+  posterior.
+
+## Proximo paso
+
+Crear y comprender `RequireAuth` reutilizando la query de sesion. El unico
+concepto nuevo sera `<Outlet>` como punto donde React Router coloca la ruta hija
+autorizada.
+
+## Tarea activa
+
+Crear `client/src/features/auth/RequireAuth.tsx`. Debe comprobar la sesion con
+`useGetCurrentUserQuery`, mostrar carga inicial, redirigir un 401 a `/login`,
+mostrar un error tecnico con reintento y devolver `<Outlet />` cuando exista una
+respuesta autenticada. Todavia no modificar `AppRouter`.
+
+## Guard de autenticacion definido
+
+- Se creo `client/src/features/auth/RequireAuth.tsx` en el dominio de
+  autenticacion.
+- La primera carga y los reintentos sin datos tienen estados separados.
+- HTTP 401 redirige declarativamente a `/login` con `replace`.
+- Los fallos tecnicos muestran un mensaje y permiten ejecutar `refetch`.
+- Una respuesta autenticada devuelve `<Outlet />` para habilitar la ruta
+  privada hija.
+- El fallback `null` evita renderizar contenido privado sin una decision
+  definitiva.
+- Se corrigieron mecanicamente el nombre inicial `RequiereAuth` y una ruta
+  escrita como `/trips` dentro de la rama 401.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Conectar `RequireAuth` en `AppRouter` como una ruta contenedora sin `path`. No
+agregara un segmento a la URL; solo interpondra la comprobacion de sesion antes
+de las rutas privadas.
+
+## Tarea activa
+
+Importar `RequireAuth` en `client/src/router/AppRouter.tsx` y mover las rutas
+`/trips` y `/trips/:tripId` dentro de un objeto hijo con
+`Component: RequireAuth` y su propio arreglo `children`. Inicio, login y la ruta
+comodin deben permanecer fuera del guard.
+
+## Rutas privadas conectadas
+
+- `AppRouter` importa `RequireAuth` desde el dominio de autenticacion.
+- La ruta contenedora del guard no tiene `path`, por lo que no agrega segmentos
+  a las URLs.
+- `/trips` y `/trips/:tripId` son rutas hijas privadas.
+- `/`, `/login` y la ruta comodin `*` permanecen publicas.
+- `MainLayout` renderiza primero el guard mediante su `Outlet`; una sesion
+  valida permite que el `Outlet` del guard renderice la pagina privada.
+- `TripsPage` no se monta ni dispara su query antes de confirmar la sesion.
+- Se ordenaron mecanicamente los imports locales de `AppRouter` y se normalizo
+  el formato del bloque 401.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Decision sobre HomePage
+
+- La revision del contenido real mostro que `HomePage` ya funciona
+  semanticamente como dashboard: presenta viajes proximos, presupuesto,
+  destinos guardados y acciones personales.
+- Aunque los valores actuales sean estaticos, su fuente definitiva sera
+  informacion privada del usuario.
+- La decision anterior de mantener `/` publica queda reemplazada:
+  `HomePage` debe quedar dentro de `RequireAuth`.
+- Si el producto necesita una landing publica en el futuro, se creara una
+  pagina separada con contenido promocional y sin estadisticas personales.
+
+## Proximo paso
+
+Verificar en ejecucion el flujo de rutas con y sin cookie antes de introducir
+logout e invalidacion de cache.
+
+## Tarea activa
+
+Mover la ruta indice de `HomePage` dentro del objeto de `RequireAuth` antes de
+realizar la prueba manual. `/login` y la ruta comodin continuaran fuera del
+guard.
+
+## HomePage protegida
+
+- La ruta indice `/` se movio dentro de los hijos de `RequireAuth`.
+- La URL no cambio; el objeto contenedor del guard sigue sin tener `path`.
+- `HomePage` solo se renderiza despues de confirmar una sesion valida.
+- `/login` y la ruta comodin `*` permanecen fuera del guard.
+- Las redirecciones exitosas de `LoginPage` siguen apuntando a `/trips`; su
+  destino se revisara por separado.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Verificar en ejecucion el flujo protegido y decidir el destino principal
+posterior al login entre el dashboard `/` y la lista `/trips`.
+
+## Tarea activa
+
+Probar manualmente que `/`, `/trips` y `/trips/:tripId` redirigen a `/login`
+sin cookie; despues de iniciar sesion, comprobar que las tres rutas se pueden
+abrir y que `/login` redirige al usuario autenticado.
