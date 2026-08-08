@@ -4,7 +4,12 @@ import { TripStatus } from "../../generated/prisma/enums.js";
 export const createTripSchema = z
   .strictObject({
     title: z.string().trim().min(2).max(120),
-    description: z.string().trim().min(1).max(1000).optional(),
+    description: z
+      .string()
+      .trim()
+      .max(1000, "La descripcion no puede superar 1000 caracteres")
+      .optional()
+      .transform((value) => (value === "" ? undefined : value)),
     startDate: z.iso.date("La fecha debe usar el formato YYYY-MM-DD"),
     endDate: z.iso.date("La fecha debe usar el formato YYYY-MM-DD"),
     currency: z
@@ -15,7 +20,7 @@ export const createTripSchema = z
     budgetLimit: z
       .string()
       .trim()
-      .regex(/^\d{1,10}(\.\d{1,2})?$/, "Presupuesto invalido")
+      .regex(/^\d{1,10}(\.\d{1,2})?$/, "Presupuesto inválido")
       .optional(),
   })
   .refine((data) => data.endDate >= data.startDate, {

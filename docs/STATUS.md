@@ -2740,3 +2740,500 @@ el nuevo intento cuando todavia no existe una respuesta de usuario. Ambos
 deben usar el mismo contenedor centrado y la misma superficie del formulario,
 con `role="status"` y `aria-busy`. Todavia no modificar la rama de error de
 sesion ni su boton `Reintentar`.
+
+## Estados de espera de sesion completados
+
+- La comprobacion inicial y el nuevo intento usan la misma superficie centrada.
+- Ambos estados declaran `aria-busy="true"`.
+- Sus mensajes usan `role="status"` porque representan espera y no un error.
+- Las condiciones `isCheckingSession` e
+  `isFetchingSession && currentUserResponse === undefined` permanecen intactas.
+- `npm run build` y `git diff --check` pasan.
+- `npm run lint` no pudo ejecutarse por una politica de Windows que bloqueo el
+  binario nativo de `oxlint`; no se obtuvo un error de lint del proyecto.
+
+## Proximo paso
+
+Completar la rama visual que aparece cuando `/auth/me` falla por una causa
+distinta de 401. Su boton debe volver a ejecutar la misma query mediante
+`refetchCurrentUser`.
+
+## Tarea activa
+
+Estilizar en `LoginPage.tsx` el retorno controlado por
+`isSessionError && !isUnauthenticated`: usar la superficie centrada, presentar
+el mensaje como alerta general y estilizar el boton `Reintentar`. Conservar la
+condicion y `onClick={refetchCurrentUser}` sin crear estado local.
+
+## Error de comprobacion de sesion completado
+
+- La rama distinta de 401 usa la misma superficie centrada del login.
+- El mensaje mantiene `role="alert"` y una presentacion roja diferenciada.
+- El boton `Reintentar` conserva `type="button"` y
+  `onClick={refetchCurrentUser}`.
+- Un reintento vuelve a la rama visual controlada por `isFetchingSession`.
+- Durante la revision se retiro `aria-busy` de la rama de error porque la
+  operacion ya habia terminado; el atributo permanece en las dos esperas.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Hito visual de LoginPage completado
+
+- La pantalla principal, los campos, el boton y todos los estados de espera y
+  error comparten el lenguaje visual teal/slate.
+- Los errores de Zod permanecen asociados a sus campos mediante ARIA.
+- Los errores de la mutation y de la query se presentan como alertas generales
+  independientes.
+- Los estados de React Hook Form, la mutation de login y la query de sesion no
+  se mezclaron.
+
+## Proximo paso
+
+Realizar una prueba manual de los estados principales del login antes de
+retomar el formulario de creacion de viajes.
+
+## Tarea activa
+
+Comprobar manualmente: carga sin sesion, validacion vacia, correccion de campos,
+credenciales rechazadas, foco con teclado, estado de envio y login exitoso.
+La rama de error de sesion puede probarse apagando temporalmente el backend y
+usando `Reintentar`.
+
+## Validacion manual del login completada
+
+- El estudiante confirmo la comprobacion manual de los estados principales.
+- El hito de autenticacion y el pulido visual de `LoginPage` quedan cerrados.
+
+## Decision estructural para crear viajes
+
+- La pantalla de creacion tendra la ruta definitiva `/trips/new`.
+- `client/src/pages/CreateTripPage.tsx` sera responsable de la composicion de
+  la pagina.
+- `client/src/features/trips/CreateTripForm.tsx` administrara React Hook Form y
+  la integracion con la mutation.
+- `client/src/features/trips/createTrip.schema.ts` contendra la validacion Zod
+  y los tipos derivados del formulario.
+- `client/src/features/trips/tripsApi.ts` contendra la mutation porque el dato
+  creado pertenece al servidor y a la cache de viajes.
+- No se colocara temporalmente el formulario dentro de `TripsPage`.
+
+## Proximo paso
+
+Definir en el cliente los tipos del cuerpo y de la respuesta de
+`POST /api/trips`, respetando el contrato existente del backend.
+
+## Tarea activa
+
+Agregar `CreateTripRequest` y `CreateTripResponse` a
+`client/src/features/trips/trip.types.ts`. Todavia no crear la mutation, el
+esquema Zod, la ruta ni el formulario.
+
+## Contrato TypeScript de creacion completado
+
+- `CreateTripRequest` representa los campos aceptados por `POST /api/trips`.
+- `description` y `budgetLimit` son propiedades opcionales.
+- Fechas, moneda y presupuesto se transportan como strings.
+- `CreateTripResponse` reutiliza `Trip` dentro de `data.trip`.
+- Durante la revision se corrigio la capitalizacion del tipo de respuesta y
+  una referencia recursiva incorrecta.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Crear el esquema Zod del formulario en su archivo definitivo. Se comenzara solo
+con `title` para recordar el flujo esquema -> resolver -> `formState.errors`
+sin introducir a la vez fechas, regex y campos opcionales.
+
+## Tarea activa
+
+Crear `client/src/features/trips/createTrip.schema.ts`, importar `z`, declarar
+`createTripSchema` como `z.strictObject` con la validacion definitiva de
+`title`, y exportar `CreateTripFormValues` mediante `z.infer`. Todavia no
+agregar los demas campos ni crear el formulario.
+
+## Esquema de creacion iniciado
+
+- El archivo se creo en la ubicacion definitiva de la feature de viajes.
+- `title` elimina espacios exteriores y valida limites de 2 y 120 caracteres
+  con mensajes explicitos.
+- `CreateTripFormValues` se deriva mediante `z.infer`.
+- El estudiante adelanto fechas, moneda, descripcion, presupuesto y la
+  comparacion entre fechas. Se conservara el trabajo, pero cada concepto se
+  revisara antes de conectar el formulario.
+- Se corrigio mecanicamente una tilde en el mensaje de presupuesto.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Resolver la diferencia entre un campo opcional del contrato y el string vacio
+que produce un input HTML. El primer caso sera `description`.
+
+## Tarea activa
+
+Modificar solamente la validacion de `description` en
+`createTrip.schema.ts`: permitir el string vacio, mantener el maximo de 1000
+con mensaje explicito y transformarlo a `undefined` despues de `optional`.
+Todavia no modificar `budgetLimit` ni crear el formulario.
+
+## Descripcion opcional normalizada
+
+- El esquema del cliente elimina espacios exteriores y permite `""` como valor
+  del formulario.
+- El maximo de 1000 caracteres tiene un mensaje explicito.
+- El esquema de creacion del backend aplica la misma normalizacion. Postman u
+  otro consumidor pueden enviar un string vacio y el servidor lo interpreta
+  como ausencia de descripcion.
+- La actualizacion conserva un contrato diferente: usa `null` para borrar una
+  descripcion existente y no se modifico en esta tarea.
+- El esquema del servidor tambien produjo un objeto sin `description` para el
+  payload equivalente de Postman.
+- Cliente: `npm run build` y `npm run lint` pasan.
+- Servidor: `npm run typecheck` y `npm run build` pasan.
+- `git diff --check` pasa.
+
+## Proximo paso
+
+Separar explicitamente el modelo del formulario del contrato HTTP para evitar
+que el esquema de React Hook Form tambien tenga que preparar el request.
+
+## Tarea activa
+
+La tarea anterior basada en `.transform().pipe()` queda cancelada. La siguiente
+microtarea simplificara el esquema del cliente: `description` y `budgetLimit`
+seran strings del formulario y podran contener `""`. Un mapper posterior,
+ubicado en `features/trips`, convertira los strings vacios a propiedades
+ausentes dentro de `CreateTripRequest`.
+
+## Decision sobre formularios y contratos HTTP
+
+- Los inputs HTML trabajan con strings; el estado del formulario conservara
+  esa representacion.
+- Zod validara la experiencia del formulario, pero no sera responsable de
+  construir por completo el payload HTTP.
+- Un mapper explicito convertira `CreateTripFormValues` en
+  `CreateTripRequest`, omitiendo descripcion y presupuesto cuando esten vacios.
+- El backend seguira validando y normalizando su propio limite de confianza.
+- Los importes decimales viajaran como strings y Prisma los almacenara como
+  `Decimal`; no se usaran numeros flotantes de JavaScript para dinero exacto.
+- `.pipe()` no se introducira en esta etapa porque no aporta claridad al
+  objetivo actual.
+
+## Pausa de campos opcionales
+
+- `description` y `budgetLimit` no se mostraran en la primera parte del
+  formulario.
+- Su normalizacion definitiva en el cliente se retomara cuando se agreguen esos
+  campos a la interfaz.
+- Esto permite aprender primero el flujo de creacion con titulo, fechas y
+  moneda sin mezclar casos opcionales.
+
+## Proximo paso
+
+Definir la mutation de RTK Query que representara `POST /api/trips`. Todavia no
+se usara desde un componente y no se conectara con tags en la misma tarea.
+
+## Tarea activa
+
+Agregar `createTrip` a `client/src/features/trips/tripsApi.ts` como
+`builder.mutation<CreateTripResponse, CreateTripRequest>`, describir su
+peticion POST y exportar `useCreateTripMutation`. Conservar `getTrips` sin
+cambios y no agregar aun `invalidatesTags`.
+
+## Mutation createTrip definida
+
+- `createTrip` usa `builder.mutation<CreateTripResponse, CreateTripRequest>`.
+- Describe `POST /api/trips` y envia su argumento como body.
+- `fetchBaseQuery` conserva la responsabilidad de base URL, JSON y cookies.
+- Se exporta `useCreateTripMutation`, pero ningun componente lo ejecuta aun.
+- La mutation todavia no informa que la lista cacheada de viajes quedo vieja.
+- `getTrips` permanece sin cambios.
+- `npm run build` y `npm run lint` pasan.
+
+## Proximo paso
+
+Declarar el tipo de tag `Trips` en el API slice compartido. Declararlo solo
+creara vocabulario permitido; todavia no marcara cache ni causara peticiones.
+
+## Tarea activa
+
+Agregar `"Trips"` a `tagTypes` en `client/src/services/api.ts`, conservando
+`"Auth"`. Todavia no modificar `providesTags`, `invalidatesTags` ni los
+endpoints.
+
+## Tipo de tag Trips declarado
+
+- El API slice compartido declara `tagTypes: ["Auth", "Trips"]`.
+- `Auth` se conserva para datos dependientes de la identidad.
+- Declarar `Trips` no etiqueto cache, no invalido datos y no ejecuto
+  peticiones.
+- `getTrips` y `createTrip` permanecen sin cambios.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Marcar el resultado cacheado de `getTrips` con `Trips`, conservando tambien
+`Auth`. Todavia no conectar la mutation con la tag.
+
+## Tarea activa
+
+Cambiar solamente `providesTags` de `getTrips` en `tripsApi.ts` para que
+proporcione `["Auth", "Trips"]`. No modificar `createTrip` ni agregar
+`invalidatesTags`.
+
+## Cache de viajes conectada con createTrip
+
+- `getTrips` proporciona `Auth` y `Trips`.
+- `Auth` conserva la relacion con la identidad autenticada.
+- `Trips` identifica la lista que puede quedar vieja despues de una creacion.
+- `createTrip` invalida `Trips` solamente cuando recibe
+  `CreateTripResponse`.
+- Un error devuelve una lista de tags vacia y evita refetch o descarte
+  innecesario.
+- Con `getTrips` activo, una creacion exitosa producira `GET /api/trips`.
+- Sin suscripciones activas, el resultado viejo se descartara sin GET
+  inmediato.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Crear la pagina definitiva de creacion y registrar `/trips/new` dentro de las
+rutas protegidas. Todavia no se conectara el formulario.
+
+## Tarea activa
+
+Crear `client/src/pages/CreateTripPage.tsx` con la composicion base de la pagina
+e importarla en `AppRouter.tsx`. Agregar `/trips/new` dentro de los hijos de
+`RequireAuth`, antes de `/trips/:tripId`. No usar aun React Hook Form, el
+esquema ni la mutation.
+
+## Pagina y ruta de creacion completadas
+
+- `CreateTripPage.tsx` contiene la composicion base definitiva.
+- `/trips/new` usa `CreateTripPage`.
+- La ruta vive dentro de `RequireAuth` y antes de `/trips/:tripId`.
+- La pagina no importa formulario, esquema ni mutation.
+- Se ordeno mecanicamente el import de la nueva pagina.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Hacer accesible `/trips/new` desde la lista de viajes mediante un enlace
+semantico. Todavia no conectar el formulario.
+
+## Tarea activa
+
+Importar `Link` en `TripsPage.tsx` y agregar despues del texto introductorio un
+enlace visible a `/trips/new` con el texto `Crear viaje`. No modificar
+`getTrips`, los estados de carga/error ni la condicion de lista vacia.
+
+## Navegacion hacia la creacion completada
+
+- `TripsPage` usa `Link` para navegar sin recargar el documento.
+- El enlace es visible tanto con lista vacia como con viajes.
+- Durante la revision se corrigio `to="trips/new"` a `to="/trips/new"` para
+  evitar resolver la ruta como `/trips/trips/new`.
+- El enlace no ejecuta la mutation ni modifica cache.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Crear el formulario en su archivo definitivo y retomar React Hook Form con un
+solo campo. El componente permanecera sin montar hasta completar sus campos y
+el flujo de envio.
+
+## Tarea activa
+
+Crear `client/src/features/trips/CreateTripForm.tsx`. Configurar `useForm` con
+`zodResolver(createTripSchema)`, valores iniciales para titulo, fechas y moneda,
+y registrar solamente el campo `title` con su mensaje de
+`formState.errors`. No usar `handleSubmit`, la mutation ni un boton, y no
+renderizar aun el componente desde `CreateTripPage`.
+
+## Base de CreateTripForm completada
+
+- El componente vive en la feature de viajes y todavia no esta montado.
+- `useForm<CreateTripFormValues>` usa `zodResolver(createTripSchema)`.
+- Los valores iniciales requeridos son strings y la moneda comienza en `USD`.
+- `register("title")` conecta el primer input.
+- `errors.title` controla su mensaje.
+- Durante la revision se agrego mecanicamente el `return` que faltaba y se
+  restauro el `<form noValidate>`; sin `return`, el JSX se descartaba aunque el
+  archivo aislado compilara.
+- Se retiro del esquema del cliente la transformacion de `description` que
+  diferenciaba innecesariamente el tipo de entrada y salida del resolver.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Registrar la fecha inicial y relacionar el string producido por un input de
+fecha con `startDate` del esquema.
+
+## Tarea activa
+
+Agregar solamente el grupo `startDate` a `CreateTripForm.tsx`: label, input
+`type="date"`, `register("startDate")` y mensaje de `errors.startDate`. No
+agregar fecha final, moneda, boton, `handleSubmit` ni mutation.
+
+## Fecha inicial registrada
+
+- `startDate` usa un input `type="date"`.
+- El navegador y React Hook Form conservan el valor como string `YYYY-MM-DD`.
+- No se uso `valueAsDate` porque el esquema y el contrato HTTP esperan string.
+- `errors.startDate` queda preparado para mostrar el fallo del resolver.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Registrar `endDate` y conectar su mensaje. Este campo puede recibir un error de
+formato o el error de rango producido por `.refine`.
+
+## Tarea activa
+
+Agregar solamente el grupo `endDate` a `CreateTripForm.tsx`: label, input
+`type="date"`, `register("endDate")` y mensaje de `errors.endDate`. No agregar
+moneda, boton, `handleSubmit`, mutation ni estilos.
+
+## Campos del formulario registrados
+
+- `endDate` conserva el string `YYYY-MM-DD` y muestra tanto errores de formato
+  como el error de rango colocado por `path: ["endDate"]`.
+- `description`, `currency` y `budgetLimit` quedaron registrados en React Hook
+  Form y asociados con sus respectivos mensajes de error.
+- `description` y `budgetLimit` comienzan en `""`, igual que los controles HTML
+  vacios.
+- El esquema de `budgetLimit` permite `""` porque el presupuesto es opcional.
+- El presupuesto usa `type="text"` e `inputMode="decimal"`: se mantiene como
+  string para no convertir dinero a un numero flotante de JavaScript.
+- La moneda empieza en `USD` mediante `defaultValues`.
+- Todavia no existe envio, mutation ni comunicacion con el backend.
+
+## Proximo paso
+
+Mostrar el formulario dentro de su pagina definitiva. Este montaje debe ocurrir
+antes de conectar el envio para que el comportamiento de `handleSubmit` pueda
+comprobarse visualmente en la siguiente tarea.
+
+## Tarea activa
+
+Importar `CreateTripForm` en `CreateTripPage.tsx` y renderizarlo una vez,
+despues del `header`. No modificar `CreateTripForm`, no agregar `handleSubmit`,
+boton, mutation ni estilos.
+
+## Formulario montado en la pagina
+
+- `CreateTripPage` importa el formulario desde la feature de viajes.
+- `<CreateTripForm />` se renderiza despues del encabezado y dentro de `main`.
+- Visitar `/trips/new` ya permite ver todos los campos registrados.
+- Montar el componente no ejecuta validacion, mutation ni peticion HTTP.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Conectar el evento submit con `handleSubmit`. Esta funcion de React Hook Form
+activara el resolver, separara el camino invalido del valido y actualizara
+`formState.errors`.
+
+## Tarea activa
+
+Extraer `handleSubmit` de `useForm`, declarar
+`handleCreateTripSubmit(values: CreateTripFormValues)`, pasarla mediante
+`handleSubmit(handleCreateTripSubmit)` al `onSubmit` del formulario y agregar
+un boton `type="submit"`. La funcion recibira los datos validos pero todavia no
+ejecutara la mutation.
+
+## Envio y validacion conectados
+
+- `handleSubmit` se obtiene de React Hook Form.
+- `handleCreateTripSubmit` representa el camino valido propio de la
+  aplicacion, igual que `handleLoginSubmit` en el login.
+- `onSubmit={handleSubmit(handleCreateTripSubmit)}` hace que el resolver y Zod
+  actuen antes de la funcion de la aplicacion.
+- El boton `type="submit"` inicia el evento del formulario sin usar `onClick`.
+- La funcion valida recibe `CreateTripFormValues`, pero aun no ejecuta la
+  mutation.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Comprobar manualmente el camino invalido y el valido antes de incorporar RTK
+Query.
+
+## Tarea activa
+
+Probar el formulario vacio, una fecha final anterior, un presupuesto con mas de
+dos decimales y finalmente valores validos. Confirmar que los tres primeros
+casos muestran errores y que el ultimo los limpia sin navegar ni hacer una
+peticion.
+
+## Validacion manual de CreateTripForm completada
+
+- Los campos requeridos vacios muestran sus errores.
+- Una fecha final anterior coloca el error junto a `endDate`.
+- Un presupuesto con mas de dos decimales es rechazado.
+- Los valores validos limpian los errores y alcanzan
+  `handleCreateTripSubmit`.
+- Todavia no existe navegacion ni peticion HTTP.
+
+## Proximo paso
+
+Separar los valores propios del formulario del cuerpo esperado por la mutation.
+La conversion solo omitira `description` y `budgetLimit` cuando sean strings
+vacios; no convertira fechas ni dinero.
+
+## Tarea activa
+
+Crear `client/src/features/trips/createTrip.mapper.ts`. Exportar una funcion
+`mapCreateTripFormToRequest` que reciba `CreateTripFormValues` y devuelva
+`CreateTripRequest`: copiar siempre titulo, fechas y moneda, agregar descripcion
+y presupuesto solo cuando no esten vacios, y devolver el objeto resultante.
+Todavia no importar el mapper en el formulario ni ejecutar la mutation.
+
+## Mapper de creacion completado
+
+- `mapCreateTripFormToRequest` crea un objeto nuevo y no modifica
+  `CreateTripFormValues`.
+- Titulo, fechas y moneda siempre forman parte de `CreateTripRequest`.
+- Descripcion y presupuesto solo se agregan cuando contienen texto.
+- El presupuesto permanece como string; el mapper no realiza conversiones
+  numericas.
+- El mapper no valida, no modifica estado y no ejecuta peticiones.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Usar el mapper en el camino valido del formulario y entregar
+`CreateTripRequest` al trigger de `useCreateTripMutation`.
+
+## Tarea activa
+
+Antes del codigo, repasar el flujo completo de la mutation y sus tags. Despues,
+importar `mapCreateTripFormToRequest` y `useCreateTripMutation` en
+`CreateTripForm`, obtener el trigger, convertir los valores validos y ejecutar
+la mutation con `.unwrap()`. Todavia no agregar navegacion, `reset`, estilos ni
+mensajes de exito o error.
+
+## Mutation conectada al formulario
+
+- `useCreateTripMutation` proporciona el trigger `createTrip` sin ejecutar una
+  peticion al montar el componente.
+- El camino valido convierte `CreateTripFormValues` mediante el mapper y
+  entrega `CreateTripRequest` al trigger.
+- `.unwrap()` resuelve con `CreateTripResponse` en exito y lanza el error hacia
+  `catch` cuando falla la peticion.
+- Una respuesta exitosa invalida `Trips`; una respuesta con error no invalida
+  tags.
+- Con una lista activa puede aparecer un nuevo GET; sin suscripcion activa se
+  descarta la lista vieja sin GET inmediato.
+- Durante la revision se corrigio el nombre accidental `dexCreateTripForm` y
+  se documento la razon del `catch` temporal.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Comprobar una creacion real antes de introducir estados visuales y navegacion.
+
+## Tarea activa
+
+Enviar una sola vez un viaje valido desde `/trips/new`. En Network, confirmar
+`POST /api/trips`, respuesta 201 con `data.trip`, cookie de sesion incluida y
+ausencia de `description` y `budgetLimit` en el request cuando ambos campos
+quedan vacios. La pantalla todavia no debe navegar ni mostrar confirmacion.

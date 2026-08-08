@@ -1,6 +1,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import RequireAuth from "../features/auth/RequireAuth";
 import MainLayout from "../layouts/MainLayout";
+import CreateTripPage from "../pages/CreateTripPage";
 import HomePage from "../pages/HomePage";
 import LoginPage from "../pages/LoginPage";
 import NotFoundPage from "../pages/NotFoundPage";
@@ -18,6 +19,7 @@ const router = createBrowserRouter([
         children: [
           { index: true, Component: HomePage },
           { path: "/trips", Component: TripsPage },
+          { path: "/trips/new", Component: CreateTripPage },
           { path: "/trips/:tripId", Component: TripDetailPage },
         ],
       },

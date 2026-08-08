@@ -18,3 +18,18 @@ export type ListTripsResponse = {
     trips: Trip[];
   };
 };
+
+export type CreateTripRequest = {
+  title: string;
+  description?: string;
+  startDate: string;
+  endDate: string;
+  currency: string;
+  budgetLimit?: string;
+};
+
+export type CreateTripResponse = {
+  data: {
+    trip: Trip;
+  };
+};

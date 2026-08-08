@@ -75,8 +75,15 @@ export default function LoginPage() {
 
   if (isFetchingSession && currentUserResponse === undefined) {
     return (
-      <main>
-        <p>Reintentando comprobar sesión...</p>
+      <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-10 sm:px-6">
+        <section
+          className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 text-center sm:p-8"
+          aria-busy="true"
+        >
+          <p className="text-sm font-medium text-slate-600" role="status">
+            Reintentando comprobar sesión...
+          </p>
+        </section>
       </main>
     );
   }
@@ -87,11 +94,22 @@ export default function LoginPage() {
 
   if (isSessionError && !isUnauthenticated) {
     return (
-      <main>
-        <p role="alert">No pudimos comprobar tu sesión. Intenta nuevamente.</p>
-        <button type="button" onClick={refetchCurrentUser}>
-          Reintentar
-        </button>
+      <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-10 sm:px-6">
+        <section className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 text-center sm:p-8">
+          <p
+            className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm leading-5 text-red-800"
+            role="alert"
+          >
+            No pudimos comprobar tu sesión. Intenta nuevamente.
+          </p>
+          <button
+            className="mt-6 inline-flex w-full items-center justify-center rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2"
+            type="button"
+            onClick={refetchCurrentUser}
+          >
+            Reintentar
+          </button>
+        </section>
       </main>
     );
   }
