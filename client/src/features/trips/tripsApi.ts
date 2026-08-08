@@ -2,6 +2,7 @@ import { api } from "../../services/api";
 import type {
   CreateTripRequest,
   CreateTripResponse,
+  GetTripResponse,
   ListTripsResponse,
 } from "./trip.types";
 
@@ -9,6 +10,10 @@ export const tripsApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getTrips: builder.query<ListTripsResponse, void>({
       query: () => "trips",
+      providesTags: ["Auth", "Trips"],
+    }),
+    getTrip: builder.query<GetTripResponse, string>({
+      query: (tripId) => `trips/${tripId}`,
       providesTags: ["Auth", "Trips"],
     }),
     createTrip: builder.mutation<CreateTripResponse, CreateTripRequest>({
@@ -20,4 +25,5 @@ export const tripsApi = api.injectEndpoints({
   }),
 });
 
-export const { useGetTripsQuery, useCreateTripMutation } = tripsApi;
+export const { useGetTripsQuery, useGetTripQuery, useCreateTripMutation } =
+  tripsApi;

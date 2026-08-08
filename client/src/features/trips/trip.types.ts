@@ -19,6 +19,12 @@ export type ListTripsResponse = {
   };
 };
 
+export type GetTripResponse = {
+  data: {
+    trip: Trip;
+  };
+};
+
 export type CreateTripRequest = {
   title: string;
   description?: string;

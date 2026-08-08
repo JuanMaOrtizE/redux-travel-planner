@@ -102,14 +102,16 @@ export default function TripsPage() {
         <section className="mt-8">
           <ul className="grid gap-4 sm:grid-cols-2">
             {trips.map((trip) => (
-              <li
-                key={trip.id}
-                className="rounded-xl border border-slate-200 bg-white p-5"
-              >
-                <h2 className="text-lg font-semibold">{trip.title}</h2>
-                <p className="mt-2 text-sm text-slate-600">
-                  {trip.startDate} — {trip.endDate}
-                </p>
+              <li key={trip.id}>
+                <Link
+                  className="block rounded-xl border border-slate-200 bg-white p-5"
+                  to={`/trips/${trip.id}`}
+                >
+                  <h2 className="text-lg font-semibold">{trip.title}</h2>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {trip.startDate} — {trip.endDate}
+                  </p>
+                </Link>
               </li>
             ))}
           </ul>

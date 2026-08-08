@@ -3237,3 +3237,399 @@ Enviar una sola vez un viaje valido desde `/trips/new`. En Network, confirmar
 `POST /api/trips`, respuesta 201 con `data.trip`, cookie de sesion incluida y
 ausencia de `description` y `budgetLimit` en el request cuando ambos campos
 quedan vacios. La pantalla todavia no debe navegar ni mostrar confirmacion.
+
+## Creacion real comprobada
+
+- `POST /api/trips` crea el registro y responde con el viaje persistido.
+- El mapper omite descripcion y presupuesto cuando los inputs estan vacios.
+- La invalidacion de `Trips` evita reutilizar la lista anterior al regresar a
+  `TripsPage`.
+- El formulario permanece visible despues del exito porque todavia no existe
+  navegacion ni confirmacion.
+
+## Proximo paso
+
+Representar el tiempo durante el cual la mutation espera la respuesta y evitar
+un segundo envio accidental.
+
+## Tarea activa
+
+Extraer `isLoading` del estado devuelto por `useCreateTripMutation`. Usarlo para
+deshabilitar el boton submit mientras la mutation esta pendiente y cambiar su
+texto entre `Crear viaje` y `Creando viaje...`. Todavia no agregar navegacion,
+`reset`, estados de exito/error ni estilos.
+
+## Espera de createTrip representada
+
+- `isLoading` proviene del estado de la mutation, no de React Hook Form.
+- Comienza en `false`, cambia a `true` al ejecutar el trigger y vuelve a
+  `false` cuando la peticion termina con exito o error.
+- El boton deshabilitado evita un segundo envio durante la peticion pendiente.
+- Un fallo de Zod no inicia la mutation y no cambia `isLoading`.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Mostrar un error general cuando la mutation falla, manteniendolo separado de
+los errores de campos producidos por Zod.
+
+## Tarea activa
+
+Extraer tambien `isError` de `useCreateTripMutation` y mostrar al inicio del
+formulario, antes del primer campo, un mensaje con `role="alert"`: `No pudimos
+crear el viaje. Intenta nuevamente.` No extraer todavia `error`, no interpretar
+codigos HTTP y no agregar navegacion, reset ni estilos.
+
+## Error general de createTrip representado
+
+- `isError` proviene del estado de la mutation y no de `formState.errors`.
+- La alerta general se renderiza como hija directa del formulario, separada de
+  los grupos de campos.
+- Los errores de Zod permanecen junto a cada input y evitan iniciar el POST.
+- El `catch` no crea el estado de error; RTK Query ya lo conserva y lo expone
+  mediante `isError`.
+- En error, `invalidatesTags` devuelve `[]` y no toca la lista de viajes.
+- Durante la revision se movio la alerta fuera del grupo de titulo y se
+  actualizo el comentario del `catch`.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Navegar a la lista despues de una creacion exitosa para mostrar el resultado
+actualizado y evitar que el formulario permanezca disponible tras el POST.
+
+## Tarea activa
+
+Usar `useNavigate` en `CreateTripForm` y, solamente despues de que
+`createTrip(request).unwrap()` resuelva, ejecutar
+`navigate("/trips", { replace: true })`. No usar `reset`, no navegar desde
+`finally` o `catch`, y no agregar todavia estilos ni mensajes especializados.
+
+## Navegacion despues de crear completada
+
+- `useNavigate` se ejecuta como hook dentro de `CreateTripForm`.
+- La navegacion ocurre dentro del `try` y despues de que `.unwrap()` resuelve.
+- Un error salta al `catch`, conserva el formulario y muestra la alerta general.
+- `replace: true` evita regresar con Atras al formulario que ya fue enviado.
+- No se usa `reset` porque la navegacion desmonta el formulario y destruye su
+  estado local.
+- La invalidacion de `Trips` ocurre antes de que `TripsPage` vuelva a consultar
+  la lista.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Comprobar manualmente el flujo completo de exito antes de pulir visualmente el
+formulario.
+
+## Tarea activa
+
+Crear un viaje valido con titulo reconocible y comprobar: un solo POST 201,
+navegacion automatica a `/trips`, un GET actualizado de la lista, aparicion del
+nuevo viaje y que el boton Atras no regrese a `/trips/new`.
+
+## Flujo funcional de creacion cerrado
+
+- La creacion valida ejecuta un solo POST y navega a la lista.
+- `Trips` se invalida y `TripsPage` obtiene datos actualizados.
+- La ruta de creacion se reemplaza en el historial despues del exito.
+- La creacion de un viaje permanece como pagina completa; no se usara un modal
+  para un formulario de esta longitud y relevancia.
+
+## Decision visual para CreateTripForm
+
+- Se conservara el lenguaje teal/slate ya utilizado en LoginPage.
+- El formulario usara una sola superficie blanca funcional, sin tarjetas
+  anidadas ni decoracion innecesaria.
+- El ancho se limitara para facilitar el recorrido visual de labels e inputs.
+- Los estilos se incorporaran por capas: contenedor, grupos y controles,
+  responsive, estados y acciones.
+
+## Proximo paso
+
+Crear la superficie y el ritmo vertical del formulario sin modificar todavia
+los campos individuales.
+
+## Tarea activa
+
+Agregar al elemento `form` de `CreateTripForm` las clases `mt-8 max-w-2xl
+space-y-6 rounded-xl border border-slate-200 bg-white p-6 sm:p-8`. No modificar
+todavia labels, inputs, textarea, select, alerta ni boton.
+
+## Superficie de CreateTripForm completada
+
+- El formulario se separa del encabezado y limita su ancho a `max-w-2xl`.
+- Una unica superficie blanca con borde agrupa la tarea sin crear tarjetas
+  anidadas.
+- `space-y-6` establece el ritmo entre los grupos principales.
+- El padding aumenta de `p-6` a `sm:p-8` en pantallas con mas espacio.
+- `noValidate` y `onSubmit` permanecen intactos.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Definir el ritmo interno de cada grupo y una jerarquia consistente para todos
+los labels antes de estilizar los controles.
+
+## Tarea activa
+
+Agregar `className="space-y-2"` a los seis `div` que agrupan campos y
+`className="block text-sm font-medium text-slate-700"` a sus seis labels. No
+modificar todavia inputs, textarea, select, mensajes, alerta, boton ni layout de
+fechas.
+
+## Estilos de CreateTripForm completados
+
+- El usuario autorizo completar todos los estilos pendientes del formulario en
+  una sola intervencion.
+- Labels, inputs, textarea y select comparten el lenguaje visual de LoginPage.
+- Cada control cambia borde y foco segun su error de React Hook Form.
+- `aria-invalid` y `aria-describedby` relacionan controles y mensajes; cada
+  error tiene un id estable.
+- Fechas y configuracion financiera usan dos columnas desde `sm` y una columna
+  en pantallas pequenas.
+- Los campos opcionales reducen visualmente el peso de `(opcional)`.
+- La alerta general mantiene una superficie roja diferenciada de los errores
+  de campo.
+- La barra de acciones incluye `Cancelar` y la accion primaria teal.
+- Durante `isLoading`, submit y cancelar quedan inactivos y el formulario
+  expone `aria-busy`.
+- El enlace de cancelar navega semanticamente a `/trips` cuando no hay una
+  peticion pendiente.
+- La implementacion evita sombras decorativas y tarjetas anidadas.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Revisar manualmente la composicion renderizada y sus estados antes de cerrar el
+hito de creacion de viajes.
+
+## Tarea activa
+
+Comprobar `/trips/new` en escritorio y movil: columnas responsive, recorrido
+con Tab, foco visible, errores de campos, alerta general, acciones apiladas en
+movil y estado `Creando viaje...`. La automatizacion visual no estuvo
+disponible en esta sesion, por lo que esta comprobacion queda manual.
+
+## Hito de creacion de viajes cerrado
+
+- El usuario continuo despues de la revision visual manual.
+- El flujo cubre validacion de cliente, mapper, mutation, espera, error,
+  invalidacion, navegacion y responsive.
+- CreateTripForm queda listo para el alcance actual del proyecto.
+
+## Siguiente flujo: detalle de viaje
+
+- La ruta protegida `/trips/:tripId` ya existe.
+- `TripDetailPage` solo muestra actualmente el parametro y no consulta datos.
+- El backend ya ofrece `GET /api/trips/:tripId` con respuesta `data.trip`.
+
+## Proximo paso
+
+Definir la query parametrizada sin conectarla aun a la pagina, para estudiar
+como el argumento participa en la URL y en la clave de cache.
+
+## Tarea activa
+
+Agregar `GetTripResponse` a `trip.types.ts`. En `tripsApi.ts`, definir
+`getTrip` como `builder.query<GetTripResponse, string>`, construir
+`trips/${tripId}`, proporcionar `Auth` y `Trips`, e incluir
+`useGetTripQuery` entre los hooks exportados. Todavia no modificar
+`TripDetailPage` ni ejecutar la query desde un componente.
+
+## Query getTrip definida
+
+- `GetTripResponse` representa `data.trip` con el tipo `Trip`.
+- `getTrip` recibe un string y construye `trips/${tripId}`.
+- El argumento forma parte de la clave de cache; dos ids generan resultados
+  separados.
+- La query proporciona `Auth` y `Trips` con la estrategia amplia actual.
+- `useGetTripQuery` se exporta, pero definirlo no produjo ninguna peticion.
+- `TripDetailPage` permanecio sin cambios.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Montar la query desde `TripDetailPage` de forma segura cuando React Router puede
+tipar `tripId` como ausente.
+
+## Tarea activa
+
+Importar `skipToken` y `useGetTripQuery` en `TripDetailPage`. Llamar siempre al
+hook con `tripId ?? skipToken`, extraer solamente `isLoading` y agregar un
+retorno `Cargando viaje...` mientras ocurre el primer GET. Todavia no extraer
+datos, error, `isFetching` ni `refetch`, y no modificar los tags.
+
+## getTrip montada con skipToken
+
+- El hook se llama en cada render con `tripId ?? skipToken`.
+- Un id valido crea la suscripcion y puede ejecutar `GET /api/trips/:tripId`.
+- `skipToken` evita fabricar un string vacio y no crea peticion sin parametro.
+- `isLoading` representa la primera carga sin datos disponibles.
+- Durante la revision se ordenaron mecanicamente los imports externos y
+  locales.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Representar el fallo de la query y el nuevo intento antes de consumir
+`data.trip`.
+
+## Tarea activa
+
+Extraer `isFetching`, `isError` y `refetch` de `useGetTripQuery`. Mantener la
+carga inicial, agregar un retorno `Reintentando viaje...` cuando `isFetching`
+sea true despues de esa primera rama, y agregar una rama de error general con
+un boton `Reintentar` que ejecute `refetch`. Todavia no extraer `data` ni
+`error`, no distinguir 404 y no modificar los tags.
+
+## Estados de error y reintento de getTrip completados
+
+- `isLoading` conserva la primera carga sin datos.
+- `isFetching` representa el nuevo intento despues de la primera rama.
+- `isError` muestra un fallo general cuando la peticion termina rechazada.
+- `refetch` repite el GET con el mismo argumento y la misma clave de cache.
+- Durante la primera revision se detecto que `isFetching` estaba extraido pero
+  no utilizado; el estudiante agrego la rama faltante.
+- Se separaron mecanicamente los `if` para mejorar legibilidad.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Consumir el resultado exitoso de la query y reemplazar el parametro tecnico por
+informacion real del viaje.
+
+## Tarea activa
+
+Extraer `data: tripResponse` de `useGetTripQuery`, obtener
+`tripResponse?.data.trip`, agregar una guarda cuando `trip` no exista y mostrar
+`trip.title` como h1 y `trip.description` con un texto alternativo cuando sea
+null. Todavia no mostrar fechas, estado, moneda ni presupuesto, no extraer
+`error` y no modificar tags o endpoints.
+
+## Resultado exitoso de getTrip consumido
+
+- `data` se renombra como `tripResponse` al extraerse del hook, para conservar
+  visible la forma real de la respuesta HTTP.
+- `tripResponse?.data.trip` obtiene el viaje sin intentar leer propiedades
+  mientras la respuesta todavia puede estar ausente.
+- La guarda `if (!trip)` evita renderizar la vista principal sin un viaje.
+- El titulo y la descripcion ya provienen del backend; una descripcion `null`
+  muestra un texto alternativo.
+- Esta tarea solo consume el resultado existente: no agrega peticiones, no
+  cambia la clave de cache y no modifica tags.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Mostrar los metadatos basicos que ya vienen en el mismo viaje: fecha inicial,
+fecha final y presupuesto. El estado se dejara para una microtarea posterior,
+porque antes de mostrar valores tecnicos como `PLANNING` se definiran etiquetas
+comprensibles para el usuario.
+
+## Tarea activa
+
+Agregar debajo de la descripcion una lista descriptiva `<dl>` con tres datos:
+`trip.startDate`, `trip.endDate` y el presupuesto. Para el presupuesto, mostrar
+`${trip.currency} ${trip.budgetLimit}` cuando exista y `Sin presupuesto
+definido.` cuando sea `null`. No convertir el presupuesto a numero, no mostrar
+todavia el estado y no modificar la query, los tags ni los estilos generales.
+
+## Metadatos basicos del detalle completados
+
+- `TripDetailPage` muestra fecha inicial, fecha final y presupuesto dentro de
+  una lista descriptiva `<dl>`.
+- Cada `<dt>` identifica el nombre del dato y cada `<dd>` muestra su valor.
+- El presupuesto combina la moneda y el importe sin convertir el string
+  decimal recibido del backend.
+- Un presupuesto `null` muestra `Sin presupuesto definido.`.
+- Se agrego solamente una jerarquia visual minima para distinguir etiquetas y
+  valores; la composicion general de la pagina sigue pendiente.
+- No se modificaron la query, la clave de cache, las suscripciones ni las tags.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Traducir el estado tecnico del viaje a una etiqueta comprensible antes de
+mostrarlo en la interfaz. Por ejemplo, `PLANNING` no debe aparecer directamente
+como texto para el usuario.
+
+## Tarea activa
+
+Crear `client/src/features/trips/trip.formatters.ts` con un mapa tipado que
+relacione cada `TripStatus` con una etiqueta en espanol y una funcion
+`getTripStatusLabel(status: TripStatus)` que devuelva la etiqueta. Todavia no
+usarla en `TripDetailPage`, no agregar colores y no modificar RTK Query.
+
+## Formateador de estados completado
+
+- `trip.formatters.ts` contiene un `Record<TripStatus, string>` con las cuatro
+  etiquetas en espanol.
+- `Record` obliga a cubrir todos los estados permitidos por `TripStatus`.
+- `getTripStatusLabel` recibe un estado valido y devuelve su etiqueta.
+- La transformacion es una funcion pura: no modifica datos ni estado global.
+- No se modificaron RTK Query, la cache, las suscripciones ni las tags.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Consumir `getTripStatusLabel` en `TripDetailPage` y mostrar el estado como un
+cuarto par dentro de la lista descriptiva existente.
+
+## Tarea activa
+
+Importar `getTripStatusLabel` en `TripDetailPage` y agregar al `<dl>` un cuarto
+grupo con la etiqueta `Estado` y el valor
+`getTripStatusLabel(trip.status)`. No agregar colores por estado ni modificar
+la query o sus tags.
+
+## Estado traducido en el detalle
+
+- `TripDetailPage` importa y ejecuta `getTripStatusLabel(trip.status)` durante
+  el renderizado.
+- La interfaz muestra una etiqueta en espanol en lugar del valor tecnico del
+  enum.
+- El estado forma parte del mismo `<dl>` que las fechas y el presupuesto.
+- No se agregaron efectos, estado local ni peticiones adicionales.
+- La query conserva sus tags `Auth` y `Trips`; el formateo no modifica la cache
+  ni produce invalidaciones.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Conectar cada elemento de `TripsPage` con su ruta de detalle. La ruta
+`/trips/:tripId` ya existe, pero actualmente el usuario solo puede alcanzarla
+escribiendo la URL manualmente.
+
+## Tarea activa
+
+Dentro del `trips.map` de `TripsPage`, agregar un `Link` que use
+`to={`/trips/${trip.id}`}` y permita abrir el detalle del viaje correspondiente.
+Conservar el `li` como elemento de la lista y no modificar queries, tags ni el
+router.
+
+## Lista conectada con el detalle
+
+- Cada viaje conserva un `<li>` con una `key` estable basada en `trip.id`.
+- Un `Link` construye la ruta `/trips/${trip.id}` y contiene el titulo y las
+  fechas del viaje.
+- Durante la revision se movieron mecanicamente las clases de la tarjeta desde
+  el `<li>` al `Link` y se agrego `block`, para que toda la superficie visual
+  sea interactiva.
+- Al montar `TripDetailPage`, el parametro de la URL pasa a `useGetTripQuery`;
+  RTK Query reutiliza una respuesta valida o ejecuta el GET si no existe.
+- Navegar no invalida tags ni modifica la cache por si mismo.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Iniciar la eliminacion de viajes definiendo primero su mutation de RTK Query,
+sin conectarla todavia a ningun boton. El backend ya ofrece
+`DELETE /api/trips/:tripId` y responde HTTP 204 sin cuerpo.
+
+## Tarea activa
+
+Agregar `deleteTrip` a `tripsApi.ts` como
+`builder.mutation<void, string>`, construir la URL con el id, usar el metodo
+`DELETE` e invalidar `Trips` solamente cuando no exista un error. Exportar
+`useDeleteTripMutation`, pero todavia no modificar `TripDetailPage`.
