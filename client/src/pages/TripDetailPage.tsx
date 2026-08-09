@@ -2,6 +2,7 @@ import { skipToken } from "@reduxjs/toolkit/query";
 import { useParams } from "react-router-dom";
 import { useGetTripQuery } from "../features/trips/tripsApi";
 import { getTripStatusLabel } from "../features/trips/trip.formatters";
+import DeleteTripAction from "../features/trips/DeleteTripAction";
 
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>();
@@ -93,6 +94,9 @@ export default function TripDetailPage() {
             </dd>
           </div>
         </dl>
+        <div className="mt-8 border-t border-slate-200 pt-6">
+          <DeleteTripAction tripId={trip.id} tripTitle={trip.title} />
+        </div>
       </section>
     </main>
   );

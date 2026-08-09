@@ -22,8 +22,18 @@ export const tripsApi = api.injectEndpoints({
       },
       invalidatesTags: (result) => (result ? ["Trips"] : []),
     }),
+    deleteTrip: builder.mutation<void, string>({
+      query: (tripId) => {
+        return { url: `trips/${tripId}`, method: "DELETE" };
+      },
+      invalidatesTags: (_result, error) => (error ? [] : ["Trips"]),
+    }),
   }),
 });
 
-export const { useGetTripsQuery, useGetTripQuery, useCreateTripMutation } =
-  tripsApi;
+export const {
+  useGetTripsQuery,
+  useGetTripQuery,
+  useCreateTripMutation,
+  useDeleteTripMutation,
+} = tripsApi;

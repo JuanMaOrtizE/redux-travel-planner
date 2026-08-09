@@ -66,3 +66,27 @@ landing page promocional.
 La implementacion se dividira en microtareas: primero la estructura general,
 despues campos, luego boton y estados, y finalmente accesibilidad y revision
 responsive.
+
+## Confirmacion para eliminar un viaje
+
+- La eliminacion usara un popup modal porque es una accion irreversible y
+  necesita una pausa de confirmacion antes de ejecutar la mutation.
+- Se usara el elemento nativo `<dialog>` para obtener comportamiento modal,
+  manejo de foco y cierre con `Escape` sin instalar una dependencia.
+- El fondo tendra una capa oscura semitransparente con desenfoque sutil. El
+  blur pertenece al backdrop y ayuda a separar la decision del resto de la
+  pagina.
+- La superficie del dialogo sera blanca y opaca; no se usara glassmorphism.
+- El mensaje identificara el viaje y explicara que la accion no se puede
+  deshacer.
+- `Cancelar` sera la salida segura y `Eliminar viaje` la accion destructiva
+  roja. El foco inicial favorecera la opcion segura.
+- Mientras el DELETE este pendiente, no se podra repetir la accion ni cerrar
+  accidentalmente el dialogo.
+- Hacer clic sobre el backdrop cerrara el dialogo cuando este inactivo. Durante
+  el DELETE pendiente, el clic exterior no podra cerrarlo.
+- Un error mantendra abierto el dialogo y mostrara una alerta; un exito
+  navegara a `/trips` con reemplazo del historial.
+- La responsabilidad vivira en
+  `client/src/features/trips/DeleteTripAction.tsx`, que recibira el id y el
+  titulo del viaje y coordinara dialogo, mutation y navegacion.

@@ -3633,3 +3633,369 @@ Agregar `deleteTrip` a `tripsApi.ts` como
 `builder.mutation<void, string>`, construir la URL con el id, usar el metodo
 `DELETE` e invalidar `Trips` solamente cuando no exista un error. Exportar
 `useDeleteTripMutation`, pero todavia no modificar `TripDetailPage`.
+
+## Mutation deleteTrip definida
+
+- `deleteTrip` usa `builder.mutation<void, string>`: no espera un cuerpo de
+  respuesta y recibe el identificador del viaje como argumento.
+- La peticion usa `DELETE` y construye `trips/${tripId}` sin enviar `body`.
+- `invalidatesTags` comprueba `error` porque una respuesta exitosa HTTP 204 no
+  entrega un objeto de resultado util para decidir el exito.
+- En exito se invalida `Trips`; en error se devuelve `[]` y la cache existente
+  no se marca como desactualizada.
+- `useDeleteTripMutation` se exporta, pero todavia no existe ningun componente
+  que llame al trigger, por lo que definirla no produce peticiones.
+- Con una query `Trips` activa, la invalidacion puede producir un GET; sin
+  suscripcion activa, no se hace un GET inmediato.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Conectar la mutation al detalle mediante una accion de eliminacion segura. La
+accion debe pedir confirmacion, representar espera y error, y navegar a la
+lista solamente despues de un DELETE exitoso. Este bloque se implementara en
+microtareas para no mezclar toda la interaccion de una vez.
+
+## Tarea activa
+
+Reiniciar de forma mas gradual
+`client/src/features/trips/DeleteTripAction.tsx`. En la primera microtarea se
+corregiran los nombres `tripId` y `tripTitle`, se definira el tipo
+`DeleteTripActionProps` y se creara el componente con el boton que posteriormente
+abrira el dialogo. Todavia no se usaran `useRef`, `<dialog>`, la mutation ni
+estilos. Cada una de esas piezas se introducira despues y dentro de su flujo.
+
+## Base de DeleteTripAction completada
+
+- `DeleteTripActionProps` exige `tripId` y `tripTitle` como strings.
+- El componente extrae solamente `tripTitle`; `tripId` permanecera disponible
+  cuando se conecte la mutation.
+- El boton base usa `type="button"` y todavia no ejecuta ninguna accion.
+- Durante la revision se elimino mecanicamente el import prematuro de `useRef`.
+- Se agrego un `aria-label` que incorpora `tripTitle`, evitando que el nombre
+  accesible del boton sea ambiguo para lectores de pantalla.
+- No se montaron el componente o el dialogo y no hubo peticiones ni cambios de
+  cache o tags.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Introducir `useRef` correctamente dentro del componente y conectarlo a un
+elemento `<dialog>`, sin abrirlo todavia. Esta microtarea estudiara solamente
+como React entrega acceso a un elemento real del DOM.
+
+## Tarea activa
+
+Importar `useRef`, crear dentro de `DeleteTripAction`
+`useRef<HTMLDialogElement>(null)` y asignar esa referencia a un `<dialog>`
+vacio mediante su prop `ref`. Mantener el boton sin `onClick`; no usar aun
+`showModal`, `close`, mutation, estilos ni montar el componente en la pagina.
+
+## Referencia del dialogo conectada
+
+- `useRef` se ejecuta dentro de `DeleteTripAction`, respetando las reglas de
+  hooks.
+- `useRef<HTMLDialogElement>(null)` expresa que la referencia comienza vacia y
+  despues podra contener un elemento `<dialog>`.
+- React conecta el elemento real mediante `ref={dialogRef}`.
+- El dialogo permanece oculto y vacio; todavia no se ejecutan `showModal` o
+  `close`.
+- Durante la revision se agrego solamente una separacion mecanica entre el hook
+  y el `return`.
+- No se ejecutan mutations, peticiones, invalidaciones ni cambios de cache.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Usar por primera vez la referencia para abrir el elemento con `showModal()`.
+Todavia no se agregara contenido ni cierre: la microtarea se concentrara en el
+flujo clic, manejador, referencia y API del navegador.
+
+## Tarea activa
+
+Crear dentro de `DeleteTripAction` una funcion `handleOpenDialog` que ejecute
+`dialogRef.current?.showModal()` y conectarla al `onClick` del boton existente.
+No agregar aun `close`, contenido, mutation, estilos ni montar el componente en
+la pagina.
+
+## Apertura del dialogo conectada
+
+- `handleOpenDialog` se declara dentro del componente y lee la referencia ya
+  conectada al elemento.
+- `dialogRef.current?.showModal()` delega la apertura modal a la API nativa del
+  navegador.
+- El boton pasa `handleOpenDialog` a `onClick` sin ejecutarlo durante el render.
+- No se agrego una funcion flecha intermedia porque el manejador no necesita
+  argumentos ni logica adicional.
+- Abrir el dialogo no ejecuta mutations, no modifica la cache y no invalida
+  tags.
+- El componente aun no esta montado y el dialogo permanece sin contenido.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Dar significado accesible al dialogo antes de agregar botones de cierre o
+acciones. El navegador debe poder anunciar un titulo y una descripcion al
+abrirlo.
+
+## Tarea activa
+
+Agregar al `<dialog>` `aria-labelledby="delete-trip-dialog-title"` y
+`aria-describedby="delete-trip-dialog-description"`. Dentro, crear un `<h2>`
+con el primer id y el texto `¿Eliminar viaje?`, y un `<p>` con el segundo id que
+incluya `tripTitle` y advierta que la accion no se puede deshacer. No agregar
+aun cierre, mutation, estilos ni montar el componente.
+
+## Significado accesible del dialogo completado
+
+- `aria-labelledby` apunta al `<h2>` visible que nombra el dialogo.
+- `aria-describedby` apunta al parrafo que explica la consecuencia de la
+  eliminacion.
+- La descripcion interpola `tripTitle`, por lo que identifica el viaje real en
+  vez de mostrar una advertencia generica.
+- El elemento nativo `<dialog>` conserva su referencia y no necesita un rol
+  agregado manualmente.
+- No se agregaron cierre, mutation, estilos, peticiones o invalidaciones.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Agregar una salida explicita y segura. Aunque `Escape` puede cerrar un dialogo
+modal, todos los usuarios necesitan un boton visible para cancelar la accion.
+
+## Tarea activa
+
+Crear `handleCloseDialog` con `dialogRef.current?.close()`. Dentro del dialogo,
+despues del parrafo, agregar un boton `type="button"`, texto `Cancelar`,
+`autoFocus` y `onClick={handleCloseDialog}`. No agregar aun el boton de
+confirmacion, mutation, estilos ni montar el componente.
+
+## Salida segura del dialogo completada
+
+- `handleCloseDialog` usa la misma referencia que la apertura y ejecuta el
+  metodo nativo `close()`.
+- El boton `Cancelar` ofrece una salida visible ademas del cierre con `Escape`.
+- `autoFocus` coloca el foco inicial en la opcion no destructiva cuando se abre
+  el dialogo.
+- Cerrar no desmonta el elemento; la referencia permanece disponible para una
+  apertura posterior.
+- Cancelar no ejecuta peticiones, no cambia la cache y no invalida tags.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Conectar el boton destructivo al trigger ya generado por
+`useDeleteTripMutation`, manteniendo el componente sin montar hasta completar
+navegacion y estados visuales.
+
+## Tarea activa
+
+Extraer tambien `tripId` de las props, importar `useDeleteTripMutation`, obtener
+el trigger `deleteTrip` y crear `handleConfirmDelete`. El manejador debe esperar
+`deleteTrip(tripId).unwrap()` dentro de `try/catch`. Agregar despues de Cancelar
+un boton `type="button"`, texto `Eliminar viaje` y
+`onClick={handleConfirmDelete}`. No agregar aun loading, error, navegacion,
+estilos ni montar el componente.
+
+## Confirmacion conectada a la mutation
+
+- `useDeleteTripMutation()` prepara la mutation, pero no envia ninguna peticion
+  durante el render. La peticion comienza solamente al ejecutar el trigger
+  `deleteTrip(tripId)` desde el clic de confirmacion.
+- `handleConfirmDelete` espera la promesa mediante `.unwrap()`: una respuesta
+  exitosa `204 No Content` continua por el camino del `try`; una respuesta de
+  error rechaza la promesa y entra al `catch`.
+- El `catch` conserva un comentario explicando por que todavia no renderiza
+  nada: el estado de error que mantiene RTK Query se conectara a la interfaz en
+  una microtarea posterior.
+- En exito, `invalidatesTags` deja de confiar en los datos marcados con
+  `Trips`. Una query activa puede hacer un nuevo GET visible; una query sin
+  componentes suscritos no hace ese GET inmediatamente.
+- En error, la mutation devuelve `[]` y no invalida `Trips`, porque el viaje no
+  fue eliminado y los datos guardados siguen siendo validos.
+- El componente continua sin montarse en `TripDetailPage`, por lo que esta
+  conexion todavia no puede enviar un DELETE desde la interfaz real.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Representar el tiempo que transcurre entre el clic y la respuesta del backend.
+Esto evita confirmaciones repetidas y le informa al usuario que la eliminacion
+esta en curso.
+
+## Tarea activa
+
+Extraer `isLoading` del resultado de `useDeleteTripMutation`. Mientras sea
+`true`, deshabilitar los botones `Cancelar` y `Eliminar viaje`, y cambiar el
+texto del boton destructivo a `Eliminando...`. No agregar aun manejo de
+`Escape`, mensaje de error, navegacion, estilos ni montar el componente.
+
+## Estado pendiente de la mutation representado
+
+- El hook ahora se desestructura como `[deleteTrip, { isLoading }]`: la primera
+  posicion sigue siendo el trigger y la segunda aporta el estado administrado
+  por RTK Query.
+- No se creo un `useState` duplicado. RTK Query cambia `isLoading` a `true`
+  cuando se ejecuta `deleteTrip(tripId)` y lo devuelve a `false` cuando la
+  peticion termina, tanto en exito como en error.
+- Los botones `Cancelar` y `Eliminar viaje` quedan deshabilitados durante la
+  peticion, evitando clics repetidos o un cierre mediante esos controles.
+- El texto cambia a `Eliminando...`, por lo que el nuevo render comunica que el
+  backend todavia no ha respondido.
+- Este cambio no altera las tags: en exito se invalida `Trips` y una query
+  activa puede repetir su GET; en error no se invalida; sin suscripcion activa
+  no se produce un GET inmediato.
+- El componente continua sin montarse, de modo que todavia no se puede observar
+  este estado desde la pagina real.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Completar el bloqueo accidental durante la espera. Un boton deshabilitado no
+impide que el elemento `<dialog>` reciba el evento nativo `cancel` cuando el
+usuario pulsa `Escape`.
+
+## Tarea activa
+
+Agregar un manejador para el evento `cancel` del `<dialog>`. Si `isLoading` es
+`true`, debe ejecutar `event.preventDefault()` para conservar abierto el modal;
+si es `false`, debe permitir el cierre nativo. No agregar aun mensaje de error,
+navegacion, estilos ni montar el componente.
+
+## Ajuste de ritmo pedagogico
+
+El estudiante solicito tareas un poco mas amplias. Se conservaran las
+explicaciones detalladas, pero las siguientes tareas agruparan varias piezas
+que pertenezcan al mismo comportamiento observable. La tarea de `Escape` queda
+absorbida por el cierre funcional completo del modal de eliminacion.
+
+## Tarea activa revisada
+
+Completar el comportamiento funcional de `DeleteTripAction` antes de trabajar
+sus estilos y montarlo:
+
+1. Importar el tipo `SyntheticEvent` y `useNavigate`.
+2. Extraer tambien `isError` y `reset` del estado de
+   `useDeleteTripMutation`.
+3. Limpiar el resultado anterior con `reset()` al abrir el dialogo.
+4. Manejar `onCancel`: bloquear `Escape` con `preventDefault()` solamente
+   mientras `isLoading` sea `true`.
+5. Mostrar dentro del dialogo un mensaje generico con `role="alert"` cuando
+   `isError` sea `true`.
+6. Despues de un `.unwrap()` exitoso, navegar a `/trips` con
+   `{ replace: true }` para no conservar en el historial el detalle eliminado.
+7. Agregar `aria-busy={isLoading}` al dialogo.
+
+No agregar aun estilos ni montar el componente en `TripDetailPage`. El siguiente
+bloque agrupara estilo, montaje y comprobacion visual del flujo completo.
+
+## Comportamiento funcional del modal completado
+
+- Se conservo el manejo de `onCancel` que el estudiante ya habia implementado:
+  `Escape` se bloquea solamente mientras `isLoading` sea `true`.
+- La mutation expone ahora `isError` y `reset` ademas de `isLoading`.
+- `reset()` se ejecuta al abrir y limpia el resultado visual de la ejecucion
+  anterior; no borra viajes, no cambia la cache de las queries y no invalida
+  tags.
+- `aria-busy` comunica que el dialogo espera la respuesta del backend.
+- Un fallo mantiene el dialogo abierto y renderiza una alerta generica. En ese
+  caso `deleteTrip` no invalida `Trips`, porque el viaje sigue existiendo.
+- Despues de un `.unwrap()` exitoso se navega a `/trips` con reemplazo del
+  historial. La mutation invalida `Trips`: una query activa puede repetir su
+  GET; una entrada sin suscripcion no hace un GET inmediatamente.
+- Durante la implementacion se agrego mecanicamente la separacion que faltaba
+  entre dos manejadores.
+- El componente todavia no esta montado; por ello no se ejecuto una prueba
+  visual ni una eliminacion real.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Proximo paso
+
+Cerrar el bloque de eliminacion con una tarea de mayor alcance: aplicar el
+diseno ya acordado, montar la accion en el detalle y comprobar la interaccion
+real sin confirmar una eliminacion sobre datos del usuario.
+
+## Tarea activa
+
+1. Estilizar `DeleteTripAction` con Tailwind: boton disparador destructivo,
+   superficie blanca opaca, ancho responsive, jerarquia tipografica, alerta,
+   acciones y estados disabled/focus.
+2. Estilizar `::backdrop` mediante variantes `backdrop:` con capa oscura y blur
+   sutil, sin convertir el contenido del dialogo en glassmorphism.
+3. Importar y montar `DeleteTripAction` en `TripDetailPage` usando `trip.id` y
+   `trip.title`.
+4. Ejecutar lint y build, y revisar en navegador apertura, foco inicial,
+   cancelacion, `Escape`, responsive y apariencia. No confirmar un DELETE real
+   durante la prueba visual salvo que se use un viaje desechable autorizado.
+
+## Integracion y estilos de DeleteTripAction revisados
+
+- El dialogo usa una superficie blanca opaca, ancho responsive, jerarquia
+  tipografica, alerta coherente y un `::backdrop` oscuro con blur sutil.
+- Los botones representan sus estados default, focus y disabled sin cambiar el
+  flujo funcional de la mutation.
+- `DeleteTripAction` se importo en `TripDetailPage` y recibe `trip.id` y
+  `trip.title`.
+- Durante la revision se corrigio un error funcional: se estaba enviando
+  `className` a `DeleteTripAction`, aunque ese componente no define esa prop. El
+  espaciado de pagina se movio a un `<div>` contenedor alrededor de la accion.
+- Tambien se normalizaron mecanicamente tres cadenas de clases que contenian
+  saltos de linea innecesarios.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+- El CSS construido contiene `calc(100% - 2rem)`, reglas `::backdrop` y
+  `backdrop-filter`, por lo que Tailwind reconocio las variantes nuevas.
+- No se confirmo ningun DELETE y, por tanto, no se invalidaron tags ni se
+  repitieron queries durante esta revision.
+
+## Verificacion visual pendiente
+
+La automatizacion del navegador integrado no pudo iniciar porque el entorno no
+entrego la politica de sandbox requerida por esa herramienta. Se intento la
+recuperacion una vez y el bloqueo se repitio. Quedan pendientes la comprobacion
+visual de apertura, foco inicial, cierre con `Escape`, backdrop y responsive;
+el codigo y el CSS construido si quedaron validados estaticamente.
+
+## Proximo paso
+
+Completar la verificacion visual cuando el navegador integrado vuelva a estar
+disponible o mediante revision manual del estudiante. Despues se cerrara el
+hito de eliminacion y se determinara la siguiente funcionalidad del roadmap.
+
+## Captura visual recibida
+
+- La captura manual confirma que el backdrop oscuro, el blur sutil, la
+  superficie blanca opaca, la jerarquia del mensaje, los botones y el foco
+  inicial en `Cancelar` se renderizan.
+- La captura revelo que el dialogo aparecia en la esquina superior izquierda.
+  Tailwind Preflight elimina el `margin: auto` que usa el estilo nativo de
+  `<dialog>` para centrar el elemento.
+- Durante la revision se agrego mecanicamente `m-auto` al dialogo, restaurando
+  su centrado horizontal y vertical sin cambiar la logica de la mutation.
+- `npm run build`, `npm run lint` y `git diff --check` pasan despues del ajuste.
+- No se ejecuto un DELETE y no se invalidaron tags.
+
+## Comprobacion visual restante
+
+Cerrar y volver a abrir el dialogo con el cliente actualizado para confirmar
+que ahora queda centrado. Probar tambien que `Escape` lo cierra cuando no hay
+una eliminacion pendiente. No confirmar la eliminacion para esta comprobacion.
+
+## Cierre mediante clic exterior implementado
+
+- El `<dialog>` escucha `onClick` mediante `handleDialogBackdropClick`.
+- React entrega un `MouseEvent<HTMLDialogElement>`; comparar `event.target` con
+  `event.currentTarget` permite distinguir un clic sobre el backdrop de un clic
+  originado en el contenido interior.
+- Si ambos son el mismo elemento y `isLoading` es `false`, se reutiliza
+  `handleCloseDialog()`.
+- Los clics sobre titulo, descripcion, alerta o botones no cierran el dialogo.
+- Mientras el DELETE esta pendiente, el clic exterior no cierra el modal, igual
+  que ocurre con `Escape` y los botones deshabilitados.
+- Este cambio no ejecuta peticiones, no cambia la cache y no invalida tags.
+- `npm run build`, `npm run lint` y `git diff --check` pasan.
+
+## Comprobacion manual
+
+Abrir el modal y hacer clic en el fondo oscuro: debe cerrarse. Volver a abrirlo
+y hacer clic dentro de la superficie blanca: debe permanecer abierto. No es
+necesario confirmar una eliminacion para comprobar este comportamiento.
