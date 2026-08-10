@@ -4139,3 +4139,119 @@ cerrara el flujo de estados y se iniciara la fase de destinos.
 Probar con una sesion autenticada una transicion valida y otra invalida. La
 invalida debe responder 409 sin modificar PostgreSQL; por ello la mutation del
 cliente no debe invalidar `Trips` ni provocar un refetch.
+
+## Tarea activa de verificacion
+
+Cerrar el flujo de estados con dos comprobaciones separadas:
+
+1. usar Postman para confirmar que el backend acepta una secuencia valida,
+   rechaza una transicion invalida con HTTP 409 y conserva el registro;
+2. usar la interfaz para confirmar que la mutation muestra espera, invalida
+   `Trips` solo en exito y actualiza el detalle y el resumen de Inicio.
+
+Postman no puede comprobar la cache de RTK Query porque no ejecuta la
+aplicacion React. Las dos comprobaciones validan capas distintas y ambas son
+necesarias antes de cerrar el hito.
+
+## Flujo de estados cerrado
+
+- El estudiante indico que completo la verificacion del cambio de estado y no
+  reporto errores adicionales.
+- El frontend presenta transiciones contextuales y el backend protege la misma
+  regla frente a clientes externos.
+- Una mutation exitosa invalida `Trips`; una respuesta 409 no invalida datos
+  porque PostgreSQL conserva el estado anterior.
+
+## Fase 8 iniciada: destinos y geocodificacion
+
+- El proveedor inicial sera la API oficial de geocodificacion de Open-Meteo.
+- La consulta externa se realizara desde el backend para que el cliente dependa
+  de nuestro contrato y no del formato particular del proveedor.
+- Buscar una ciudad devolvera candidatos, pero no los guardara todavia en
+  PostgreSQL. Persistir un destino sera una accion posterior y explicita.
+- Nuestro endpoint usara un termino de busqueda propio; el backend lo traducira
+  al parametro externo `name` y fijara `count`, `language` y `format`.
+- La respuesta externa se validara y normalizara antes de enviarla al cliente.
+
+## Tarea activa
+
+Definir la frontera de datos del buscador de destinos:
+
+1. validar el termino recibido por nuestro backend;
+2. describir solamente los campos de Open-Meteo que consumiremos;
+3. definir el resultado normalizado que conocera el resto de la aplicacion;
+4. mantener separados el contrato externo en `snake_case` y el contrato propio
+   en `camelCase`.
+
+Todavia no se realizara `fetch`, no se creara una ruta y no se modificara
+Prisma. El siguiente bloque conectara estos contratos con la peticion externa.
+
+## Frontera Zod de geocodificacion completada
+
+- `destination.schemas.ts` valida el parametro interno `q`, elimina espacios y
+  exige entre 2 y 100 caracteres.
+- `DestinationSearchQuery` se infiere desde el esquema y evita mantener un tipo
+  manual separado de la validacion.
+- `destination.geocoding.ts` describe solamente los campos externos que usa la
+  aplicacion; los campos opcionales de Open-Meteo pueden faltar.
+- La respuesta externa entra como `unknown` y se valida en tiempo de ejecucion
+  antes de acceder a sus propiedades.
+- `normalizeOpenMeteoGeocodingResponse` transforma `country_code` en
+  `countryCode`, `admin1` en `region`, el id numerico en `providerId` de texto y
+  los valores opcionales ausentes en `null`.
+- Una respuesta sin `results` se normaliza como un arreglo vacio, no como un
+  error.
+- Una prueba directa confirma trim, rechazo de un caracter, descarte de campos
+  externos no usados, normalizacion y resultado vacio.
+- `npm run typecheck` y `npm run build` pasan en el servidor.
+
+## Proximo paso
+
+Agregar al adaptador de geocodificacion la peticion HTTP real con `fetch`,
+`URLSearchParams`, tiempo limite y traduccion de fallos de red, HTTP, JSON o
+contrato externo a un error 502 controlado. Todavia no se montara una ruta.
+
+## Tarea activa: llamada al proveedor
+
+Completar y exportar `searchDestinationsWithOpenMeteo` dentro de
+`destination.geocoding.ts`:
+
+- construir una URL segura con `name`, `count=5`, `language=es` y
+  `format=json`;
+- ejecutar `fetch` con un limite de cinco segundos;
+- recordar que `fetch` no rechaza automaticamente respuestas HTTP 4xx/5xx y
+  comprobar `response.ok`;
+- tratar el resultado de `response.json()` como `unknown`;
+- reutilizar `normalizeOpenMeteoGeocodingResponse` para validar y transformar;
+- registrar en el servidor la causa tecnica y devolver al cliente un
+  `AppError` 502 estable sin exponer detalles del proveedor.
+
+La funcion todavia no sera una ruta HTTP propia. Se probara directamente antes
+de agregar service, controller y router.
+
+## Adaptador HTTP de Open-Meteo completado
+
+- `searchDestinationsWithOpenMeteo` esta exportada y recibe un termino ya
+  validado, sin depender de Express ni de Prisma.
+- La URL se construye con `URL` y `URLSearchParams`; el termino se envia como
+  `name` junto con `count=5`, `language=es` y `format=json`.
+- `fetch` usa `AbortSignal.timeout(5000)` para no mantener indefinidamente una
+  peticion al proveedor.
+- Se comprueba `response.ok` porque `fetch` no rechaza automaticamente estados
+  HTTP 4xx o 5xx.
+- El cuerpo se trata como `unknown` y se entrega a la frontera Zod antes de
+  normalizarse.
+- Los fallos de red, timeout, HTTP, JSON o contrato se registran internamente y
+  se convierten en `AppError` 502 con codigo `GEOCODING_PROVIDER_ERROR`.
+- Una primera ejecucion con red bloqueada comprobo el camino de error 502; una
+  ejecucion con acceso autorizado busco `Lima` y devolvio cinco resultados.
+- El primer resultado real se normalizo como Lima, Peru, codigo PE, coordenadas
+  WGS84, zona `America/Lima` y region `Provincia de Lima`.
+- `npm run typecheck`, `npm run build` y `git diff --check` pasan.
+
+## Proximo paso
+
+Crear service, controller y router para exponer
+`GET /api/destinations/search?q=...`, protegerlo con autenticacion y traducir
+`req.query` mediante `destinationSearchQuerySchema`. Todavia no se guardaran
+destinos ni se modificara Prisma.
