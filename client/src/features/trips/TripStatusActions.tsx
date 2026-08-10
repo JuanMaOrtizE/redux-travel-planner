@@ -80,7 +80,6 @@ export default function TripStatusActions({
       setPendingStatus(null);
     }
   }
-  console.log(pendingStatus);
 
   return (
     <section

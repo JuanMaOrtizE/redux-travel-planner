@@ -4090,3 +4090,52 @@ Probar en el navegador la secuencia planificacion, confirmacion y finalizacion,
 comprobando simultaneamente el resumen de Inicio y la lista de Viajes. Despues
 se decidira si las transiciones tambien se restringen como regla de negocio en
 el backend o si se inicia la fase de destinos.
+
+## Revision posterior del cambio de estado
+
+- Se retiro `console.log(pendingStatus)`, que habia servido para observar el
+  estado local durante el aprendizaje pero no debe permanecer en produccion.
+- `npm run lint`, `npm run build` y `git diff --check` pasan despues del ajuste.
+- Se decidio proteger en el backend las mismas transiciones que presenta la
+  interfaz. El enum de Zod valida valores posibles, pero no puede decidir por
+  si solo si una transicion depende del estado almacenado actualmente.
+
+## Tarea activa
+
+Agregar una regla de dominio en `trip.service.ts` que valide el cambio antes de
+llamar `prisma.trip.update`:
+
+- permitir conservar el mismo estado para facilitar reintentos, teniendo en
+  cuenta que `updatedAt` puede cambiar si Prisma ejecuta la actualizacion;
+- permitir `PLANNING -> CONFIRMED` y `PLANNING -> CANCELLED`;
+- permitir `CONFIRMED -> COMPLETED` y `CONFIRMED -> CANCELLED`;
+- rechazar las demas transiciones con HTTP 409, codigo
+  `INVALID_TRIP_STATUS_TRANSITION` y un mensaje publico claro;
+- no ejecutar esta validacion cuando el PATCH no incluya `status`.
+
+## Proximo paso
+
+Revisar y probar la regla con una secuencia valida y otra invalida. Despues se
+cerrara el flujo de estados y se iniciara la fase de destinos.
+
+## Regla de transiciones implementada en el backend
+
+- `trip.service.ts` contiene un `Record<TripStatus, readonly TripStatus[]>`
+  que obliga a representar todos los estados del enum y sus posibles destinos.
+- `isAllowedStatusTransition` permite conservar el mismo estado y consulta el
+  mapa para las transiciones reales.
+- `updateTrip` ejecuta la regla despues de encontrar el viaje y antes de
+  calcular o persistir cualquier cambio.
+- Un PATCH sin `status` omite la comprobacion y puede continuar actualizando
+  otros campos.
+- Una transicion invalida lanza `AppError` con HTTP 409, codigo
+  `INVALID_TRIP_STATUS_TRANSITION` y un mensaje publico sin valores tecnicos.
+- Zod conserva una responsabilidad distinta: comprueba que el valor pertenezca
+  al enum, pero no consulta ni decide el estado actual del viaje.
+- `npm run typecheck`, `npm run build` y `git diff --check` pasan.
+
+## Comprobacion pendiente
+
+Probar con una sesion autenticada una transicion valida y otra invalida. La
+invalida debe responder 409 sin modificar PostgreSQL; por ello la mutation del
+cliente no debe invalidar `Trips` ni provocar un refetch.

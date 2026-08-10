@@ -67,6 +67,11 @@ Decisiones implementadas:
   `@db.Date`;
 - `status` usa `TripStatus` con `PLANNING`, `CONFIRMED`, `COMPLETED` y
   `CANCELLED`;
+- las transiciones permitidas son `PLANNING -> CONFIRMED/CANCELLED` y
+  `CONFIRMED -> COMPLETED/CANCELLED`;
+- `COMPLETED` y `CANCELLED` son estados finales en esta version;
+- enviar nuevamente el mismo estado no se considera una transicion invalida y
+  permite reintentos; si el PATCH llega a Prisma, `updatedAt` puede cambiar;
 - `currency` usa un texto de tres caracteres;
 - `budgetLimit` usa `Decimal(12, 2)` y es opcional;
 - `userId` es una clave foranea UUID obligatoria;

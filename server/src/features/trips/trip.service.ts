@@ -2,9 +2,31 @@ import prisma from "../../lib/prisma.js";
 import type { CreateTripInput, UpdateTripInput } from "./trip.schemas.js";
 import { toTripResponse, type TripResponse } from "./trip.mapper.js";
 import { AppError } from "../../common/errors/AppError.js";
+import type { TripStatus } from "../../generated/prisma/enums.js";
+
+const allowedStatusTransitions: Record<
+  TripStatus,
+  readonly TripStatus[]
+> = {
+  PLANNING: ["CONFIRMED", "CANCELLED"],
+  CONFIRMED: ["COMPLETED", "CANCELLED"],
+  COMPLETED: [],
+  CANCELLED: [],
+};
 
 function toUtcDate(value: string): Date {
   return new Date(`${value}T00:00:00.000Z`);
+}
+
+function isAllowedStatusTransition(
+  currentStatus: TripStatus,
+  nextStatus: TripStatus,
+): boolean {
+  if (currentStatus === nextStatus) {
+    return true;
+  }
+
+  return allowedStatusTransitions[currentStatus].includes(nextStatus);
 }
 
 export async function createTrip(
@@ -72,6 +94,17 @@ export async function updateTrip(
 
   if (!existingTrip) {
     throw new AppError(404, "TRIP_NOT_FOUND", "Viaje no encontrado");
+  }
+
+  if (
+    input.status !== undefined &&
+    !isAllowedStatusTransition(existingTrip.status, input.status)
+  ) {
+    throw new AppError(
+      409,
+      "INVALID_TRIP_STATUS_TRANSITION",
+      "El cambio de estado solicitado no está permitido",
+    );
   }
 
   const nextStartDate =

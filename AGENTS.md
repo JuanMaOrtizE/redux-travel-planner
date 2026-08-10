@@ -90,6 +90,35 @@ Conceptos que requieren explicación detallada:
 - consumo de APIs externas;
 - patrones UI/UX más profesionales.
 
+## Profundidad obligatoria de las explicaciones
+
+El estudiante ha solicitado de forma permanente explicaciones más profundas y
+no quiere tener que recordarlo cada cierto tiempo. Una tarea no debe limitarse
+a indicar qué código escribir.
+
+Antes de pedir una implementación que introduzca o combine una decisión nueva,
+el agente debe explicar:
+
+- el problema observable que existe antes del cambio;
+- por qué la solución pertenece a ese archivo y a esa capa;
+- qué responsabilidad tiene cada dato, tipo, función y condición nueva;
+- el flujo completo con valores concretos, desde la entrada hasta el resultado;
+- qué ocurre en éxito, error y casos límite;
+- por qué se eligió esa solución frente a alternativas razonables;
+- qué parte es regla de negocio, validación, persistencia, estado del servidor o
+  estado temporal de interfaz;
+- cómo comprobar el comportamiento y qué evidencia esperar.
+
+Cuando se muestre un fragmento, se debe recorrer su ejecución y explicar sus
+operadores y tipos relevantes. Haber explicado un concepto en una tarea pasada
+no autoriza a omitirlo cuando vuelve a intervenir en un flujo que el estudiante
+todavía está consolidando. Se puede recordar de forma compacta lo conocido,
+pero no saltar las conexiones causales entre las piezas.
+
+La explicación debe comenzar en lenguaje sencillo y después incorporar el
+detalle técnico. No se usarán cuestionarios obligatorios para sustituir la
+explicación.
+
 ## Objetivo del proyecto
 
 Construir una aplicación de planificación de viajes para portfolio, con mayor dificultad que el proyecto Mesa de Servicio, pero sin llegar a una arquitectura empresarial.
