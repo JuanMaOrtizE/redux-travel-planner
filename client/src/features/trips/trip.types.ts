@@ -39,3 +39,16 @@ export type CreateTripResponse = {
     trip: Trip;
   };
 };
+
+export type UpdateTripRequest = {
+  tripId: string;
+  changes: {
+    status: TripStatus;
+  };
+};
+
+export type UpdateTripResponse = {
+  data: {
+    trip: Trip;
+  };
+};

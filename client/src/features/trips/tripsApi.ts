@@ -4,6 +4,8 @@ import type {
   CreateTripResponse,
   GetTripResponse,
   ListTripsResponse,
+  UpdateTripRequest,
+  UpdateTripResponse,
 } from "./trip.types";
 
 export const tripsApi = api.injectEndpoints({
@@ -22,6 +24,16 @@ export const tripsApi = api.injectEndpoints({
       },
       invalidatesTags: (result) => (result ? ["Trips"] : []),
     }),
+    updateTrip: builder.mutation<UpdateTripResponse, UpdateTripRequest>({
+      query: ({ tripId, changes }) => {
+        return {
+          url: `trips/${tripId}`,
+          method: "PATCH",
+          body: changes,
+        };
+      },
+      invalidatesTags: (_result, error) => (error ? [] : ["Trips"]),
+    }),
     deleteTrip: builder.mutation<void, string>({
       query: (tripId) => {
         return { url: `trips/${tripId}`, method: "DELETE" };
@@ -35,5 +47,6 @@ export const {
   useGetTripsQuery,
   useGetTripQuery,
   useCreateTripMutation,
+  useUpdateTripMutation,
   useDeleteTripMutation,
 } = tripsApi;

@@ -19,7 +19,7 @@ export default function StatCard({
           <p className="mt-2 text-sm text-slate-600">{description}</p>
         </div>
 
-        <h2 className="shrink-0 text-3xl font-bold">{value}</h2>
+        <p className="shrink-0 text-3xl font-bold tabular-nums">{value}</p>
       </article>
     );
   }
@@ -27,7 +27,7 @@ export default function StatCard({
   return (
     <article className="rounded-xl border border-slate-200 bg-white p-6">
       <p className="text-sm font-medium text-slate-500">{label}</p>
-      <h2 className="mt-3 text-3xl font-bold">{value}</h2>
+      <p className="mt-3 text-3xl font-bold tabular-nums">{value}</p>
       <p className="mt-2 text-sm text-slate-600">{description}</p>
     </article>
   );

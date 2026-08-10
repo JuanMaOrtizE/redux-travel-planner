@@ -163,3 +163,29 @@ Cada concepto nuevo de Redux Toolkit debe explicarse con:
 4. Cambio con dispatch.
 5. RTK Query para datos de backend.
 6. Estados derivados y selectores más útiles.
+
+## Cambio de estado de un viaje
+
+El cliente usa una mutation `updateTrip` para ejecutar el endpoint existente
+`PATCH /api/trips/:tripId`.
+
+La mutation recibe un objeto con dos responsabilidades separadas:
+
+- `tripId` construye la URL del viaje;
+- `changes` se envia como cuerpo JSON y, en esta etapa, contiene `status`.
+
+El componente no modifica manualmente el viaje guardado en Redux ni mantiene
+una copia del estado del servidor con `useState`. El flujo es:
+
+1. el usuario elige una transicion permitida;
+2. el trigger envia el `PATCH` y RTK Query activa `isLoading`;
+3. el backend valida el estado y Prisma actualiza PostgreSQL;
+4. `.unwrap()` resuelve en exito o rechaza en error;
+5. en exito, la mutation invalida `Trips`;
+6. `getTrip` y `getTrips`, si tienen suscripciones activas, pueden repetir sus
+   peticiones y actualizar la interfaz con el dato real;
+7. en error no se invalida la tag porque PostgreSQL no cambio.
+
+`pendingStatus` es estado local de interfaz y solo identifica que texto de
+carga debe mostrarse. No representa ni reemplaza el estado persistido del
+viaje.

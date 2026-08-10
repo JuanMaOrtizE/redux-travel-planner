@@ -90,3 +90,35 @@ responsive.
 - La responsabilidad vivira en
   `client/src/features/trips/DeleteTripAction.tsx`, que recibira el id y el
   titulo del viaje y coordinara dialogo, mutation y navegacion.
+
+## Direccion visual de Inicio
+
+- Inicio funcionara como un resumen confiable de la informacion real del
+  usuario, no como una landing page con estadisticas ficticias.
+- La personalidad sera calida y editorial, relacionada con viajes, pero
+  conservara la base sobria de teal, slate y superficies claras.
+- La calidez se construira primero mediante jerarquia, textos y datos utiles;
+  no se agregaran imagenes o tarjetas decorativas solo para llenar espacio.
+- `Crear viaje` sera una accion real que navegara a `/trips/new`.
+- Las funcionalidades futuras, como destinos, no se mostraran como acciones
+  disponibles antes de estar implementadas.
+- No se sumaran presupuestos de viajes con monedas distintas. El resumen usara
+  metricas que puedan calcularse correctamente con los datos actuales.
+- La primera iteracion mostrara viajes creados, viajes en planificacion y
+  viajes con presupuesto definido, incluyendo estados de carga y error.
+
+## Acciones de estado del viaje
+
+- El detalle mostrara acciones contextuales en lugar de un selector libre.
+- Un viaje en planificacion puede confirmarse o cancelarse.
+- Un viaje confirmado puede marcarse como completado o cancelarse.
+- Los viajes completados y cancelados no muestran nuevas transiciones en esta
+  primera version.
+- La accion en curso deshabilita todas las transiciones para evitar peticiones
+  simultaneas y comunica un texto especifico como `Confirmando...`.
+- Los errores permanecen junto a las acciones y un exito se anuncia mediante
+  `role="status"`.
+- La eliminacion se conserva separada en una zona de peligro porque borrar un
+  viaje no equivale a cambiar su estado a cancelado.
+- Durante el refetch provocado por la invalidacion, el detalle conserva la
+  informacion visible y muestra un aviso de actualizacion.

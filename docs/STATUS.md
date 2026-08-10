@@ -3999,3 +3999,94 @@ una eliminacion pendiente. No confirmar la eliminacion para esta comprobacion.
 Abrir el modal y hacer clic en el fondo oscuro: debe cerrarse. Volver a abrirlo
 y hacer clic dentro de la superficie blanca: debe permanecer abierto. No es
 necesario confirmar una eliminacion para comprobar este comportamiento.
+
+## Revision visual de las pantallas principales
+
+- Se revisaron Inicio, lista de viajes, creacion y detalle mediante la skill
+  Impeccable.
+- La base visual es coherente; el formulario y el dialogo de eliminacion son
+  las superficies mas maduras.
+- Los dos problemas prioritarios son la informacion ficticia o inerte de
+  Inicio y la falta de un siguiente paso constructivo en el detalle.
+- Se acordo conservar una interfaz sobria y darle una personalidad mas calida
+  y editorial mediante contenido real, jerarquia y lenguaje de viajes.
+- La auditoria se guardo en `.impeccable/critique/` con una puntuacion inicial
+  de 21/40.
+- Se corrigio mecanicamente la errata `prócximas` por `próximas` en Inicio.
+
+## Tarea activa
+
+Convertir Inicio en un resumen confiable:
+
+1. convertir `Crear viaje` en navegacion real hacia `/trips/new`;
+2. retirar temporalmente `Ver destinos` como accion disponible;
+3. consumir `useGetTripsQuery` desde `HomePage`;
+4. sustituir las tres cifras ficticias por metricas calculadas a partir de los
+   viajes reales;
+5. representar carga y error sin ocultar el encabezado ni la accion principal.
+
+No se sumaran presupuestos porque cada viaje puede usar una moneda diferente.
+
+## Proximo paso
+
+Revisar la implementacion del estudiante, comprobar el comportamiento de la
+cache compartida entre Inicio y Viajes, y despues aplicar el pulido visual
+calido/editorial al contenido real.
+
+## Inicio conectado con datos reales
+
+- `HomePage` usa `useGetTripsQuery` y comparte la entrada de cache de
+  `getTrips(undefined)` con cualquier otra pantalla suscrita a la misma query.
+- `Crear viaje` es ahora un `Link` real hacia `/trips/new` y se retiro la
+  accion inerte `Ver destinos`.
+- Las cifras ficticias se reemplazaron por tres conteos derivados de la
+  respuesta: viajes creados, viajes en planificacion y viajes con presupuesto.
+- `tripsWithBudget` filtra los viajes cuyo `budgetLimit` no es `null` y usa la
+  longitud del arreglo resultante; no convierte, modifica ni suma importes.
+- La primera carga usa esqueletos; un error sin datos ofrece reintento; una
+  actualizacion fallida conserva los ultimos datos disponibles.
+- La ausencia de viajes muestra un estado vacio que explica el siguiente paso.
+- El selector de vista se oculta cuando no hay tarjetas y ahora comunica su
+  seleccion mediante `aria-pressed`.
+- Los valores de `StatCard` dejaron de ser encabezados y usan numeros
+  tabulares para mantener una alineacion visual estable.
+- Se elimino el `min-h-screen` duplicado de Inicio porque el layout principal
+  ya controla la altura minima de la aplicacion.
+- `npm run lint`, `npm run build`, `git diff --check` y el detector de
+  Impeccable pasan sin errores ni advertencias.
+
+## Proximo paso
+
+Comprobar manualmente Inicio con datos, sin viajes y con el backend detenido.
+Despues, mejorar el detalle del viaje con navegacion de regreso y un siguiente
+paso constructivo, manteniendo la eliminacion como accion secundaria.
+
+## Cambio de estado conectado desde el frontend
+
+- `trip.types.ts` define `UpdateTripRequest` con `tripId` para la URL y
+  `changes.status` para el cuerpo, ademas de `UpdateTripResponse`.
+- `tripsApi.ts` registra la mutation `updateTrip`, que ejecuta
+  `PATCH /api/trips/:tripId` y exporta `useUpdateTripMutation`.
+- La mutation invalida `Trips` solamente en exito. Una entrada activa de
+  `getTrip` o `getTrips` puede repetir su GET; sin suscripcion no se produce un
+  GET inmediato. En error no se invalida porque el servidor no cambio.
+- `TripStatusActions.tsx` contiene las transiciones visibles:
+  `PLANNING -> CONFIRMED/CANCELLED` y
+  `CONFIRMED -> COMPLETED/CANCELLED`.
+- `pendingStatus` solo identifica el boton que debe mostrar el texto de carga;
+  el estado persistido sigue procediendo del backend.
+- Los botones se bloquean durante el PATCH, muestran espera especifica y
+  representan error y exito sin duplicar los datos del viaje con `useState`.
+- `TripDetailPage` monta las acciones, agrega regreso a `/trips`, conserva los
+  datos durante un refetch y separa la eliminacion en una zona de peligro.
+- Los viajes completados o cancelados muestran su estado final sin acciones
+  adicionales en esta version.
+- `npm run lint`, `npm run build` y el detector de Impeccable pasan. El flujo
+  HTTP real queda pendiente de comprobacion manual con una sesion autenticada.
+
+## Proximo paso
+
+Probar en el navegador la secuencia planificacion, confirmacion y finalizacion,
+comprobando simultaneamente el resumen de Inicio y la lista de Viajes. Despues
+se decidira si las transiciones tambien se restringen como regla de negocio en
+el backend o si se inicia la fase de destinos.
