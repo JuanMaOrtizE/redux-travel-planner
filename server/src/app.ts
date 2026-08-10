@@ -7,6 +7,7 @@ import { errorMiddleware } from "./middlewares/error.middleware.js";
 
 import authRouter from "./features/auth/auth.routes.js";
 import tripRouter from "./features/trips/trip.routes.js";
+import destinationRouter from "./features/destinations/destination.route.js";
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use(cookieParser());
 app.use("/api/health", healthRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/trips", tripRouter);
+app.use("/api/destinations", destinationRouter);
 app.use(errorMiddleware);
 
 export default app;

@@ -4255,3 +4255,20 @@ Crear service, controller y router para exponer
 `GET /api/destinations/search?q=...`, protegerlo con autenticacion y traducir
 `req.query` mediante `destinationSearchQuerySchema`. Todavia no se guardaran
 destinos ni se modificara Prisma.
+
+## Tarea activa: endpoint propio de busqueda
+
+Conectar el adaptador externo con Express mediante la estructura definitiva del
+modulo `destinations`:
+
+1. `destination.service.ts` representara el caso de uso propio y delegara la
+   consulta al adaptador de Open-Meteo;
+2. `destination.controller.ts` comprobara autenticacion, validara `req.query`
+   y respondera `{ data: { destinations } }`;
+3. `destination.routes.ts` registrara `GET /search` con `requireAuth`;
+4. `app.ts` montara el router bajo `/api/destinations` antes del middleware de
+   errores.
+
+El endpoint final sera `GET /api/destinations/search?q=Lima`. Un termino
+invalido producira 400, una sesion ausente 401 y un fallo utilizable del
+proveedor 502. La busqueda exitosa respondera 200 y no escribira en PostgreSQL.
