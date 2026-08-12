@@ -122,3 +122,37 @@ responsive.
   viaje no equivale a cambiar su estado a cancelado.
 - Durante el refetch provocado por la invalidacion, el detalle conserva la
   informacion visible y muestra un aviso de actualizacion.
+
+## Busqueda de destinos
+
+- La pantalla sera una herramienta protegida y orientada a una tarea concreta,
+  no una landing ni una coleccion de tarjetas decorativas.
+- El encabezado explicara que los resultados son candidatos proporcionados por
+  geocodificacion y que todavia no se guardan automaticamente.
+- La primera version ejecutara la busqueda al enviar el formulario. No se haran
+  peticiones en cada pulsacion ni se introducira debounce todavia.
+- Antes del primer envio se mostrara una instruccion breve. La carga usara una
+  estructura estable; el error permitira reintentar; un arreglo vacio explicara
+  que conviene probar un termino mas especifico o alternativo.
+- Los candidatos se presentaran como una lista semantica con nombre como dato
+  principal y region, pais y coordenadas como contexto secundario.
+- No habra botones inertes de guardar, seleccionar o agregar. Esas acciones se
+  incorporaran cuando exista el flujo persistente que las respalde.
+- La paleta y los controles reutilizaran el vocabulario visual teal, slate y
+  rojo ya usado por los formularios del proyecto, con foco visible y contraste
+  legible.
+- La region de resultados permanece montada para conservar la estructura entre
+  estados. Antes del envio orienta; durante la primera carga muestra
+  placeholders; durante una actualizacion mantiene los datos visibles.
+- Los fallos iniciales usan una alerta con reintento. Si falla una actualizacion
+  y existe una respuesta actual en cache, se conserva la lista y se muestra un
+  aviso no destructivo.
+- Una respuesta vacia propone ampliar o reformular el termino. Una respuesta
+  con candidatos usa una sola lista con divisores, no una cuadricula de tarjetas
+  repetitivas.
+- Cada candidato prioriza el nombre y presenta region, pais, coordenadas y zona
+  horaria como contexto secundario. Los textos largos pueden envolver sin
+  desbordar el contenedor.
+- La navegacion principal anuncia `Destinos` cuando la pantalla ya ofrece una
+  accion util. Los enlaces usan un estado activo visible y pueden envolver en
+  pantallas estrechas sin imponer anchos fijos.

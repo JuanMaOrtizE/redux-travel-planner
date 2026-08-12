@@ -4272,3 +4272,358 @@ modulo `destinations`:
 El endpoint final sera `GET /api/destinations/search?q=Lima`. Un termino
 invalido producira 400, una sesion ausente 401 y un fallo utilizable del
 proveedor 502. La busqueda exitosa respondera 200 y no escribira en PostgreSQL.
+
+## Endpoint propio de busqueda revisado
+
+- `destination.service.ts` expresa el caso de uso propio y delega la consulta
+  al adaptador de Open-Meteo sin depender de Express ni de Prisma.
+- `destination.controller.ts` conserva la comprobacion defensiva de
+  autenticacion, valida `req.query` y responde con
+  `{ data: { destinations } }`.
+- `destination.routes.ts` registra `GET /search` con `requireAuth` y `app.ts`
+  monta el router bajo `/api/destinations` antes del middleware de errores.
+- Se corrigio mecanicamente el nombre singular `destination.route.ts` para
+  seguir la convencion `*.routes.ts` ya usada por `auth` y `trips`.
+- Una prueba HTTP local, sin escribir en PostgreSQL, confirmo 401 sin cookie y
+  400 con una cookie valida pero un termino de un solo caracter.
+- `npm run typecheck`, `npm run build` y `git diff --check` pasan despues del
+  ajuste.
+- La busqueda exitosa y el fallo 502 ya habian sido comprobados directamente
+  en el adaptador; la nueva capa no modifica ese comportamiento.
+
+## Tarea activa: contrato RTK Query de destinos
+
+Crear la frontera de datos del cliente y registrar una sola query de busqueda:
+
+1. `client/src/features/destinations/destination.types.ts` describira el
+   candidato normalizado y la respuesta `{ data: { destinations } }`;
+2. `client/src/features/destinations/destinationsApi.ts` inyectara
+   `searchDestinations` en el API slice compartido;
+3. la query recibira un termino de busqueda y enviara
+   `GET /api/destinations/search?q=...` mediante la propiedad `params` de
+   `fetchBaseQuery`;
+4. se exportara el hook generado, pero todavia no se montara en un componente;
+5. no se agregaran tags: por ahora no existe una mutation que vuelva obsoletos
+   estos candidatos externos.
+
+Cada termino sera parte de la clave de cache de RTK Query. El siguiente bloque
+creara la interfaz que controle cuando existe un termino valido y cuando debe
+iniciarse o evitarse la peticion.
+
+## Contrato RTK Query de destinos completado
+
+- `destination.types.ts` reproduce el candidato normalizado y el sobre real
+  `{ data: { destinations } }` sin usar `any`.
+- `destinationsApi.ts` inyecta `searchDestinations` en el API slice compartido;
+  no crea un segundo reducer ni un segundo middleware.
+- La operacion es una query con argumento `string` y construye `q` mediante
+  `params`, por lo que `fetchBaseQuery` se encarga de codificar la URL.
+- Se exporta `useSearchDestinationsQuery`; definir el hook no ejecuta ninguna
+  peticion mientras un componente no se suscriba.
+- No se agregaron tags porque todavia no existe una mutation que vuelva
+  obsoletos los candidatos del proveedor.
+- Cada termino exacto formara una clave de cache distinta. La interfaz sera
+  responsable de validar y normalizar el termino antes de activar la query.
+- `npm run lint`, `npm run build` y `git diff --check` pasan en el cliente; el
+  servidor tambien conserva `typecheck` y `build` correctos.
+
+## Secuencia prevista para la primera interfaz de destinos
+
+La interfaz no se implementara como una sola tarea. Se divide en bloques que
+pueden revisarse y comprenderse por separado:
+
+1. frontera Zod de los datos del formulario;
+2. formulario registrado con React Hook Form, todavia sin peticion;
+3. separacion entre el texto editable y el termino enviado;
+4. conexion de la query mediante `skip`;
+5. representacion progresiva de los estados de la query y de los resultados;
+6. montaje final en pagina, ruta protegida y navegacion.
+
+No se avanzara al siguiente bloque hasta revisar el anterior. Los resultados
+solo seran candidatos informativos; guardar o asociar un destino requiere un
+flujo persistente posterior.
+
+## Tarea activa: esquema del formulario de busqueda
+
+Crear solamente
+`client/src/features/destinations/destinationSearch.schema.ts`:
+
+- definir un objeto estricto con el campo obligatorio `searchTerm`;
+- recortar espacios al inicio y al final;
+- exigir entre 2 y 100 caracteres despues del recorte;
+- exportar `DestinationSearchFormValues` inferido desde el esquema;
+- no crear todavia componente, estado local, hook, pagina, ruta o navegacion.
+
+## Esquema del formulario de busqueda completado
+
+- `destinationSearch.schema.ts` define un objeto estricto con el unico campo
+  obligatorio `searchTerm`.
+- El campo se recorta antes de comprobar el minimo de 2 y el maximo de 100
+  caracteres.
+- `DestinationSearchFormValues` se infiere desde el esquema y no duplica el
+  contrato mediante un tipo manual.
+- El archivo no adelanta responsabilidades de React, React Hook Form o RTK
+  Query.
+- `npm run lint`, `npm run build` y `git diff --check` pasan.
+
+## Tarea activa: formulario de busqueda visible y validado
+
+Construir un formulario comprobable en el navegador, todavia sin peticiones:
+
+1. `DestinationSearch.tsx` configurara React Hook Form, registrara
+   `searchTerm`, ejecutara Zod al enviar y representara su error accesible;
+2. `DestinationsPage.tsx` aportara el encabezado y montara el formulario en su
+   ubicacion definitiva;
+3. `AppRouter.tsx` registrara `/destinations` dentro de `RequireAuth` para poder
+   comprobar el formulario mediante la URL directa;
+4. la navegacion principal todavia no anunciara esta pantalla porque buscar no
+   ejecutara ninguna accion hasta el siguiente bloque.
+
+No se usaran todavia `useState`, `useSearchDestinationsQuery`, estados de
+peticion, resultados ni cambios en `MainLayout.tsx`.
+
+## Revision pendiente del formulario visible
+
+- React Hook Form usa el tipo inferido, `zodResolver`, el esquema definitivo y
+  `searchTerm: ""` como valor inicial.
+- El input esta registrado, el submit pasa por `handleSubmit` y el error esta
+  asociado mediante `aria-invalid`, `aria-describedby` y `role="alert"`.
+- `/destinations` esta correctamente dentro de `RequireAuth` y todavia no se
+  agrego a la navegacion principal.
+- Se movio mecanicamente `DestinationsPage.tsx` desde la feature hacia
+  `client/src/pages`, su ubicacion arquitectonica definitiva.
+- Se retiraron un `try/catch` vacio y un comentario copiado de una mutation.
+- Se recompusieron clases Tailwind que estaban partidas a mitad del token y no
+  podian generar los estilos esperados.
+- Lint, build y `git diff --check` pasan despues de esos ajustes.
+- La tarea sigue abierta: `DestinationsPage` debe usar el contenedor compartido
+  de las paginas, un encabezado limitado y un `h1` con la jerarquia visual
+  acordada antes de realizar la prueba manual.
+
+## Ajustes de layout del formulario de destinos completados
+
+- `DestinationsPage` usa el contenedor compartido
+  `mx-auto max-w-6xl px-6 py-10`, por lo que recupera el centrado, el ancho
+  maximo y el espacio exterior de las demas paginas protegidas.
+- El titulo y la descripcion viven en un `header` limitado a `max-w-2xl` para
+  mantener una longitud de lectura estable.
+- El titulo principal ahora es un `h1` con
+  `text-3xl font-bold tracking-tight`; la descripcion se separa mediante
+  `mt-3` y usa el color secundario `text-slate-600`.
+- Se conservo intacto `DestinationSearch`: su separacion `mt-8`, su ancho y su
+  ritmo interno ya eran coherentes con el resto de la interfaz.
+- Dos revisiones aisladas confirmaron el diagnostico: la evaluacion visual
+  encontro el problema solo en la envoltura y el encabezado, mientras el
+  detector mecanico no encontro espaciados arbitrarios antes ni despues del
+  cambio.
+- `npm run lint`, `npm run build`, el detector de layout y las respuestas HTTP
+  locales de cliente y servidor pasan correctamente.
+- La comprobacion visual automatizada queda pendiente porque el navegador
+  integrado no estuvo disponible en esta sesion. El siguiente paso inmediato
+  es abrir `/destinations` con una sesion autenticada y validar el layout y los
+  estados locales de Zod antes de conectar la query.
+
+## Formulario visible aceptado para continuar
+
+- El usuario indico continuar sin reportar fallos en la comprobacion manual.
+- El bloque se considera aceptado para avanzar, aunque la sesion no obtuvo una
+  captura o inspeccion automatizada del navegador.
+- El formulario conserva una responsabilidad local: registrar el campo,
+  validar con Zod y entregar valores validos a `handleSearchSubmit`.
+- Todavia no existe una peticion de destinos ni un estado que represente la
+  ultima busqueda enviada.
+
+## Tarea activa: separar edicion y envio de la busqueda
+
+Modificar solamente `DestinationSearch.tsx` para:
+
+1. importar `useState` desde React;
+2. crear un estado `string | null` cuyo valor inicial sea `null`;
+3. llamar al setter con `values.searchTerm` dentro de `handleSearchSubmit`;
+4. omitir temporalmente el valor de la tupla en la desestructuracion, porque la
+   siguiente microtarea sera la primera que lo consuma;
+5. no montar todavia `useSearchDestinationsQuery`, `skip`, resultados ni
+   estados de red.
+
+`null` representara que nunca se ha enviado una busqueda. Un `string`
+representara el termino ya validado y recortado que mas adelante formara el
+argumento y la clave de cache de la query.
+
+## Separacion entre edicion y envio completada
+
+- `DestinationSearch` crea un estado local `string | null` cuyo valor inicial
+  es `null`.
+- `handleSearchSubmit` recibe los valores que ya pasaron por Zod y guarda
+  solamente `values.searchTerm` mediante `setSubmittedSearchTerm`.
+- Un envio invalido no ejecuta el handler y, por tanto, no reemplaza el ultimo
+  termino valido.
+- La primera posicion de la tupla se omite mientras no exista un consumidor.
+  Esto no elimina el estado: React conserva internamente su valor y el setter
+  sigue programando una nueva renderizacion.
+- Durante la revision se corrigieron mecanicamente el valor local sin uso y el
+  orden del import de React. El primer build evidencio `TS6133`; despues del
+  ajuste, `npm run lint` y `npm run build` pasan.
+- No se conectaron RTK Query, `skip`, estados de red ni resultados.
+
+## Proximo paso
+
+Ensenar y conectar `useSearchDestinationsQuery` mediante `skip`. La siguiente
+microtarea recuperara el valor actualmente omitido y evitara la peticion
+mientras sea `null`; todavia no representara todos los estados ni la lista de
+resultados.
+
+## Tarea activa: activar la query solamente despues del envio
+
+Modificar solo `DestinationSearch.tsx` para:
+
+1. importar el hook generado `useSearchDestinationsQuery` desde
+   `destinationsApi.ts`;
+2. recuperar `submittedSearchTerm` en la tupla del estado existente;
+3. llamar al hook en el nivel superior del componente;
+4. entregar `submittedSearchTerm ?? ""` como argumento requerido de tipo
+   `string`;
+5. usar `skip: submittedSearchTerm === null` para no crear una peticion antes
+   del primer envio valido;
+6. no desestructurar todavia el resultado del hook ni representar carga,
+   error, exito o candidatos.
+
+La query debe permanecer declarada siempre para respetar las reglas de Hooks.
+`skip` cambia su comportamiento, no su posicion: con `null` no inicia ni se
+suscribe a una entrada util; con un termino valido crea la suscripcion, busca o
+reutiliza la entrada de cache correspondiente y permite que RTK Query ejecute
+la peticion.
+
+## Activacion condicional de la query completada
+
+- `DestinationSearch` importa y llama `useSearchDestinationsQuery` en el nivel
+  superior del componente.
+- El estado vuelve a exponer `submittedSearchTerm`; el setter conserva la misma
+  responsabilidad dentro de `handleSearchSubmit`.
+- `submittedSearchTerm ?? ""` satisface el argumento `string` del endpoint sin
+  convertir `null` en una busqueda real.
+- `skip: submittedSearchTerm === null` mantiene la query sin iniciar antes del
+  primer envio valido y la activa despues de guardar un termino.
+- El resultado del hook todavia no se desestructura, por lo que esta tarea no
+  mezcla la activacion con la representacion de estados.
+- `npm run lint` y `npm run build` pasan. La secuencia visible de peticiones
+  sigue pendiente de una comprobacion manual del navegador.
+
+## Tarea activa: representar el estado no iniciado
+
+Modificar solamente `DestinationSearch.tsx` para introducir
+`isUninitialized`:
+
+1. desestructurar solo `isUninitialized` del resultado del hook;
+2. envolver el formulario y la futura region de resultados en un fragmento;
+3. crear despues del formulario una `section` definitiva, identificada por un
+   `h2` de resultados;
+4. mostrar dentro una instruccion breve solamente cuando
+   `isUninitialized` sea verdadero;
+5. no usar aun `isLoading`, `isFetching`, `isSuccess`, `isError`, `data`,
+   `error` ni `refetch`.
+
+La seccion permanecera como contenedor estable para los siguientes estados.
+Solo su contenido cambiara conforme avance la query.
+
+## Estado no iniciado completado
+
+- El estudiante desestructuro correctamente `isUninitialized` del hook.
+- El agente completo la parte mecanica ya conocida: fragmento, seccion
+  semantica, encabezado de resultados y renderizado condicional de la
+  instruccion inicial.
+- La seccion `aria-labelledby` permanece montada y actuara como ubicacion
+  definitiva para carga, error, vacio y resultados.
+- La region se separa mediante espacio y jerarquia tipografica; no se agrego
+  una segunda tarjeta decorativa junto al formulario.
+- `npm run lint`, `npm run build`, el detector de interfaz y
+  `git diff --check` pasan.
+
+## Acuerdo de trabajo actualizado
+
+- El agente puede implementar directamente los pasos que reutilicen conceptos
+  ya conocidos por el estudiante.
+- Cuando el siguiente paso introduzca un concepto nuevo, el agente debe
+  explicarlo y dejar su implementacion como microtarea para el estudiante.
+- Los ajustes mecanicos detectados durante la revision continuan a cargo del
+  agente.
+
+## Tarea activa: primera carga con `isLoading`
+
+Modificar solamente `DestinationSearch.tsx` para:
+
+1. desestructurar `isLoading` junto con `isUninitialized`;
+2. representar dentro de la seccion de resultados un mensaje visible
+   `Buscando destinos...` solamente cuando `isLoading` sea verdadero;
+3. usar `role="status"` para anunciar el cambio sin interrumpir al usuario;
+4. conservar la instruccion inicial y no introducir todavia `isFetching`,
+   `isSuccess`, `isError`, `data`, `error` ni `refetch`;
+5. no deshabilitar aun el boton, porque su estado final dependera de la
+   diferencia entre primera carga y peticiones posteriores.
+
+`isLoading` representa la primera peticion sin datos disponibles.
+`isFetching` tambien sera verdadero durante esa peticion, pero ademas cubrira
+actualizaciones posteriores; esa diferencia se implementara en la siguiente
+microtarea.
+
+## Estados completos de la busqueda de destinos
+
+Por peticion explicita del usuario, los estados restantes se implementaron en
+un solo bloque:
+
+- `isUninitialized` conserva la instruccion anterior al primer envio.
+- `isLoading` y `isFetching` forman un estado de carga estable cuando la query
+  todavia no tiene una respuesta para el argumento actual.
+- La primera carga muestra texto accesible y placeholders; la animacion respeta
+  `prefers-reduced-motion`.
+- `currentData` evita mostrar candidatos de un termino anterior mientras se
+  solicita una clave de cache nueva.
+- Un refetch con datos conserva la lista y comunica
+  `Actualizando resultados...`.
+- Un error sin datos usa una alerta roja y permite reintentar. Un error de
+  actualizacion usa un aviso no destructivo y mantiene la ultima respuesta.
+- Los mensajes distinguen 400, 401, 429, 502, fallo de red y error generico sin
+  exponer detalles internos del backend.
+- `isSuccess` anuncia la cantidad de coincidencias; una respuesta vacia ofrece
+  alternativas concretas para reformular la busqueda.
+- Los candidatos se representan como una lista semantica con nombre, contexto
+  geografico, coordenadas y zona horaria cuando esta disponible.
+- El formulario y la region declaran su actividad; el boton se deshabilita
+  durante `isFetching` y el handler conserva una defensa contra envios
+  concurrentes.
+- `npm run lint`, `npm run build`, el detector de interfaz y
+  `git diff --check` pasan.
+
+## Proximo paso
+
+Realizar una comprobacion manual de la secuencia completa en navegador y, una
+vez confirmada, agregar `/destinations` a la navegacion principal. La ruta ya
+existe y permanece protegida; el enlace dejara de ser prematuro porque la
+pantalla ya ejecuta y representa una busqueda util.
+
+## Navegacion de destinos completada
+
+- `MainLayout` incorpora un `NavLink` visible a `/destinations` con la etiqueta
+  `Destinos`.
+- La ruta ya existente continua dentro de `RequireAuth`; agregar el enlace no
+  cambia su proteccion ni duplica la configuracion del router.
+- Los enlaces principales comparten estados visible, hover, foco y activo.
+- `Inicio` usa `end` para no permanecer activo cuando el usuario visita viajes
+  o destinos.
+- La navegacion y su grupo de acciones permiten envolver el contenido en
+  pantallas estrechas, evitando que el nuevo enlace provoque desbordamiento.
+- `npm run lint`, `npm run build`, el detector de interfaz y
+  `git diff --check` pasan.
+
+## Tarea activa: validacion manual del flujo de destinos
+
+Con una sesion autenticada, comprobar:
+
+1. que `Destinos` navega a `/destinations` y refleja el estado activo;
+2. que el formulario muestra primero la instruccion y no dispara una query;
+3. que un termino invalido permanece en la validacion local;
+4. que un termino valido representa carga y candidatos o vacio;
+5. que el reintento y la actualizacion conservan la estructura estable;
+6. que la navegacion y la lista no desbordan un viewport movil.
+
+No se iniciara todavia el guardado persistente de candidatos. Esa funcionalidad
+requiere definir primero el modelo y el contrato propio de destinos de viaje.

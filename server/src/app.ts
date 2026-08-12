@@ -7,7 +7,7 @@ import { errorMiddleware } from "./middlewares/error.middleware.js";
 
 import authRouter from "./features/auth/auth.routes.js";
 import tripRouter from "./features/trips/trip.routes.js";
-import destinationRouter from "./features/destinations/destination.route.js";
+import destinationRouter from "./features/destinations/destination.routes.js";
 
 const app = express();
 
