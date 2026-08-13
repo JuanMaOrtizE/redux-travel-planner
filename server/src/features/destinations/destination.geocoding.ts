@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { AppError } from "../../common/errors/AppError.js";
+import type { DestinationCandidateInput } from "./destination.schemas.js";
 
 const OPEN_METEO_GEOCODING_URL =
   "https://geocoding-api.open-meteo.com/v1/search";
@@ -21,16 +22,7 @@ const openMeteoGeocodingResponseSchema = z.object({
   results: z.array(openMeteoLocationSchema).optional(),
 });
 
-export type DestinationSearchResult = {
-  providerId: string;
-  name: string;
-  country: string | null;
-  countryCode: string | null;
-  latitude: number;
-  longitude: number;
-  timezone: string | null;
-  region: string | null;
-};
+export type DestinationSearchResult = DestinationCandidateInput;
 
 export function normalizeOpenMeteoGeocodingResponse(
   input: unknown,

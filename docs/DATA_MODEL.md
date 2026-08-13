@@ -83,16 +83,32 @@ Decisiones implementadas:
 Campos previstos:
 
 - `id`;
-- identificador del proveedor externo, si está disponible;
+- `providerId`, identificador obligatorio y unico de Open-Meteo;
 - `name`;
-- `country`;
-- `countryCode`;
+- `country`, opcional;
+- `countryCode`, opcional;
+- `region`, opcional;
 - `latitude`;
 - `longitude`;
 - `timezone`, opcional.
+- `createdAt`;
+- `updatedAt`.
 
 No contiene directamente `userId` ni `tripId`, porque un destino puede
 reutilizarse en varios viajes y ser guardado por varios usuarios.
+
+Decisiones para la primera version:
+
+- solo se integra Open-Meteo, por lo que `providerId` puede ser unico sin una
+  columna adicional de proveedor;
+- si se incorpora un segundo proveedor, la identidad se migrara a una
+  restriccion compuesta `provider + providerId`;
+- los campos que Open-Meteo puede omitir permanecen nulos en PostgreSQL; no se
+  reemplazan por cadenas vacias;
+- las coordenadas usan `Float`/`DoublePrecision`: son mediciones geograficas,
+  no importes monetarios que requieran aritmetica decimal exacta;
+- `Destination` sigue siendo reutilizable. Las relaciones con usuarios y
+  viajes se agregaran mediante las tablas puente previstas.
 
 ### TripDestination
 
@@ -110,6 +126,56 @@ Campos previstos:
 
 La tabla puente es explícita porque la participación de un destino en un viaje
 tiene información propia.
+
+Reglas de orden:
+
+- `position` comienza en `1` y representa el lugar de la parada dentro del
+  viaje;
+- al crear una parada, el backend calcula `position` como la siguiente del
+  viaje; el cliente no envia este valor;
+- una posicion no puede repetirse dentro del mismo viaje, por lo que la
+  combinacion `tripId + position` sera unica;
+- un viaje puede visitar el mismo destino mas de una vez. Por esa razon no se
+  declara como unica la combinacion `tripId + destinationId`;
+- el valor positivo de `position` se validara en la entrada de la aplicacion;
+  la restriccion compuesta protege en PostgreSQL la ausencia de posiciones
+  duplicadas.
+
+Reglas de fechas de una parada:
+
+- `arrivalDate` y `departureDate` son opcionales e independientes, porque una
+  parada puede comenzar a planificarse con una sola fecha conocida;
+- se almacenan como `DateTime` con tipo nativo `Date`, ya que representan dias
+  del calendario y no instantes con hora o zona horaria;
+- cuando existen ambas, `arrivalDate` no puede ser posterior a
+  `departureDate`;
+- las fechas de la parada deben quedar dentro de `Trip.startDate` y
+  `Trip.endDate`;
+- las dos ultimas reglas se validaran en el servicio del backend, porque
+  requieren comparar valores de la entrada y del viaje relacionado. El modelo
+  Prisma solo expresa la nulabilidad y el tipo fisico de las columnas.
+- la regla se comprobara tanto al crear o actualizar una parada como al
+  modificar el rango general de `Trip`; reducir el viaje no puede dejar
+  paradas existentes fuera de sus nuevas fechas.
+
+Reglas de notas de una parada:
+
+- `notes` es opcional y pertenece a la visita concreta, no al destino
+  reutilizable;
+- se almacena como `String?` con tipo nativo `Text`;
+- el contrato HTTP limitara el contenido a 1000 caracteres y normalizara el
+  texto vacio para persistir `null`;
+- no se usa un valor por defecto: ausencia de nota se representa con `null`.
+
+Indices de la tabla puente:
+
+- la restriccion unica `tripId + position` crea un indice compuesto que cubre
+  las consultas de paradas por viaje y su orden;
+- `destinationId` tendra un indice independiente para las consultas inversas
+  y para localizar eficientemente las relaciones afectadas al eliminar un
+  destino;
+- no se agrega otro indice independiente sobre `tripId`, porque duplicaria el
+  prefijo izquierdo del indice compuesto existente.
 
 ### SavedDestination
 

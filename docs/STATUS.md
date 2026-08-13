@@ -4627,3 +4627,375 @@ Con una sesion autenticada, comprobar:
 
 No se iniciara todavia el guardado persistente de candidatos. Esa funcionalidad
 requiere definir primero el modelo y el contrato propio de destinos de viaje.
+
+## Validacion de la interfaz aceptada para continuar
+
+- El usuario indico continuar sin reportar fallos en el recorrido manual.
+- La sesion no obtuvo una inspeccion automatizada del navegador, por lo que no
+  se registra evidencia visual adicional.
+- Se cierra el bloque de busqueda y comienza la persistencia incremental de
+  destinos.
+
+## Tarea activa: modelo persistente `Destination`
+
+Modificar solamente `server/prisma/schema.prisma` para crear la entidad
+reutilizable `Destination`:
+
+1. `id`: UUID generado por PostgreSQL/Prisma;
+2. `providerId`: texto obligatorio, unico y limitado a 32 caracteres;
+3. `name`: texto obligatorio de hasta 200 caracteres;
+4. `country`: texto opcional de hasta 120 caracteres;
+5. `countryCode`: texto opcional de hasta 2 caracteres;
+6. `region`: texto opcional de hasta 160 caracteres;
+7. `latitude` y `longitude`: `Float` con tipo nativo `DoublePrecision`;
+8. `timezone`: texto opcional de hasta 80 caracteres;
+9. `createdAt` con `now()` y `updatedAt` con `@updatedAt`;
+10. mapear la tabla fisica como `destinations`.
+
+En esta microtarea no se agregaran `userId`, `tripId`, relaciones inversas,
+tablas puente, servicios, endpoints ni migraciones. Primero se validara el
+contrato aislado mediante `prisma format` y `prisma validate`; las relaciones
+se incorporaran en su ubicacion definitiva antes de crear la migracion del
+bloque.
+
+## Modelo persistente `Destination` completado
+
+- `Destination` se agrego en `server/prisma/schema.prisma` con identidad UUID
+  interna e identidad externa unica mediante `providerId`.
+- Los datos opcionales del proveedor permanecen anulables y las coordenadas
+  usan `Float` con `DoublePrecision`.
+- El modelo no contiene propiedad directa de usuario o viaje; conserva la
+  reutilizacion prevista para las futuras tablas puente.
+- `prisma format` corrigio la sangria y el salto de linea final del archivo.
+- `prisma validate`, `npm run typecheck` y `git diff --check` pasan.
+- No se genero una migracion: primero se definira la relacion entre viajes y
+  destinos mediante `TripDestination`.
+
+## Proximo paso
+
+Introducir el concepto de tabla puente y definir incrementalmente
+`TripDestination`, comenzando por explicar por que la relacion entre `Trip` y
+`Destination` no debe representarse con una clave foranea directa en ninguno
+de los dos modelos.
+
+## Tarea activa: estructura relacional de `TripDestination`
+
+Modificar solamente `server/prisma/schema.prisma` para:
+
+1. agregar en `Trip` el lado inverso, una lista de `TripDestination`;
+2. agregar en `Destination` el lado inverso, otra lista de
+   `TripDestination`;
+3. crear `TripDestination` con identidad UUID propia;
+4. agregar las claves foraneas UUID `tripId` y `destinationId`;
+5. declarar las relaciones obligatorias hacia `Trip` y `Destination`, ambas
+   con `onDelete: Cascade`;
+6. mapear la tabla fisica como `trip_destinations`.
+
+Esta microtarea define solamente la conexion. Todavia no incluye `position`,
+fechas, notas, restricciones compuestas, endpoints ni migracion. Se comprobara
+con `prisma format`, `prisma validate` y `npm run typecheck`.
+
+## Estructura relacional de `TripDestination` completada
+
+- `Trip` y `Destination` exponen sus respectivos lados inversos mediante
+  listas `TripDestination[]`.
+- `TripDestination` tiene identidad UUID propia y claves foraneas UUID hacia
+  ambos modelos.
+- Las dos relaciones son obligatorias y eliminan sus filas puente mediante
+  `onDelete: Cascade` cuando se elimina el registro padre.
+- La tabla fisica queda mapeada como `trip_destinations`.
+- No se agregaron datos de la parada, restricciones compuestas ni migracion.
+- `prisma format`, `prisma validate`, `npm run typecheck` y
+  `git diff --check` pasan.
+
+## Proximo paso
+
+Completar la informacion propia de cada parada en `TripDestination`: orden,
+fechas opcionales y notas. Antes de implementarla se definiran la regla de
+orden y los casos limite de una visita repetida al mismo destino.
+
+## Tarea activa: posicion de una parada
+
+Modificar solamente `server/prisma/schema.prisma` para agregar a
+`TripDestination`:
+
+1. `position` como entero obligatorio;
+2. una restriccion unica compuesta por `tripId` y `position`.
+
+La posicion comienza conceptualmente en `1`. Un mismo destino puede aparecer
+mas de una vez en un viaje, por lo que no se agregara una restriccion unica
+entre `tripId` y `destinationId`. Todavia no se agregaran fechas, notas,
+endpoints ni migracion.
+
+## Posicion de una parada completada
+
+- `TripDestination.position` es un entero obligatorio.
+- `@@unique([tripId, position])` impide repetir una posicion dentro del mismo
+  viaje sin convertirla en unica para todos los viajes.
+- No existe unicidad entre `tripId` y `destinationId`, por lo que una ruta
+  puede visitar el mismo destino mas de una vez.
+- Durante la revision se movio `@@unique` desde la linea del campo hasta el
+  nivel del modelo, que es donde Prisma admite los atributos compuestos.
+- `prisma format`, `prisma validate`, `npm run typecheck` y
+  `git diff --check` pasan.
+
+## Proximo paso
+
+Definir las fechas opcionales `arrivalDate` y `departureDate` de cada parada,
+incluyendo su relacion con las fechas generales del viaje y la regla que debe
+cumplirse cuando ambas fechas existen.
+
+## Tarea activa: fechas opcionales de una parada
+
+Modificar solamente `server/prisma/schema.prisma` para agregar a
+`TripDestination`:
+
+1. `arrivalDate` como `DateTime` opcional con tipo nativo `Date`;
+2. `departureDate` con la misma configuracion.
+
+No se agregaran valores por defecto ni restricciones Prisma adicionales. La
+regla `arrivalDate <= departureDate` y la pertenencia al rango general del
+viaje se implementaran posteriormente en la validacion y el servicio del
+backend. Todavia no se agregaran notas, endpoints ni migracion.
+
+## Fechas opcionales de una parada completadas
+
+- `arrivalDate` y `departureDate` son `DateTime?` con tipo nativo `Date`.
+- Ambos campos admiten planificacion parcial y no tienen valores por defecto.
+- La revision no encontro errores funcionales; `prisma format` aplico la
+  alineacion mecanica del modelo.
+- `prisma validate` y `npm run typecheck` pasan.
+- La pertenencia al rango del viaje se comprobara en dos operaciones futuras:
+  al crear o actualizar una parada y al modificar las fechas generales de un
+  viaje que ya tenga paradas.
+
+## Proximo paso
+
+Agregar las notas opcionales de la parada y cerrar el contrato persistente de
+`TripDestination`. Despues se podra definir la migracion del bloque antes de
+iniciar los esquemas, servicios y endpoints de la funcionalidad.
+
+## Tarea activa: notas opcionales de una parada
+
+Modificar solamente `server/prisma/schema.prisma` para agregar `notes` a
+`TripDestination` como `String?` con tipo nativo `Text`. El campo se ubicara
+despues de las fechas y antes de los atributos `@@` del modelo.
+
+No se agregara un valor por defecto ni una longitud en Prisma. El limite de
+1000 caracteres y la normalizacion de texto vacio se incorporaran en el futuro
+esquema Zod del contrato HTTP. Todavia no se creara una migracion.
+
+## Notas opcionales de una parada completadas
+
+- `TripDestination.notes` es `String?` con tipo nativo `Text`.
+- El campo no tiene valor por defecto y representa la ausencia mediante
+  `null`.
+- `prisma format`, `prisma validate` y `npm run typecheck` pasan.
+
+## Auditoria previa a migracion: indice de destino
+
+La restriccion `@@unique([tripId, position])` ya cubre consultas cuyo primer
+criterio es `tripId`. Falta agregar un indice independiente sobre
+`destinationId`, porque PostgreSQL no lo crea automaticamente por ser llave
+foranea.
+
+Modificar solamente `server/prisma/schema.prisma` para agregar
+`@@index([destinationId])` a `TripDestination`, junto a los demas atributos de
+modelo. No agregar un indice separado sobre `tripId` y no crear todavia la
+migracion.
+
+## Indice de destino completado
+
+- `TripDestination` incluye `@@index([destinationId])`.
+- `prisma validate`, `npm run typecheck` y `git diff --check` pasan.
+
+## Proximo paso
+
+Realizar la revision final del SQL que Prisma propone para `Destination` y
+`TripDestination`; despues crear una unica migracion para este bloque.
+
+## Vista previa SQL revisada
+
+Se ejecuto `prisma migrate diff` desde la base local actual hasta
+`prisma/schema.prisma`. El comando fue de solo lectura y propuso:
+
+- crear `destinations` y `trip_destinations`;
+- crear la clave unica de `providerId`;
+- crear el indice de `destinationId`;
+- crear la unicidad compuesta `tripId + position`;
+- agregar las llaves foraneas hacia `trips` y `destinations`, ambas con borrado
+  en cascada;
+- no eliminar ni modificar tablas o columnas existentes.
+
+La ausencia de un `DEFAULT` SQL para los UUID coincide con las migraciones de
+`User` y `Trip`: `uuid()` es generado por Prisma antes de insertar.
+
+## Tarea activa: crear y revisar la migracion
+
+Desde `server`, generar una unica migracion de desarrollo con el nombre
+`add_destinations_and_trip_destinations` y la opcion `--create-only`. Esta
+primera orden crea `migration.sql` sin aplicarlo a PostgreSQL. Revisar el SQL
+antes de ejecutar una segunda orden `prisma migrate dev` que aplique las
+migraciones pendientes. Al final se comprobaran `prisma migrate status`,
+`prisma validate` y `npm run typecheck`.
+
+## Migracion creada y SQL aprobado
+
+- Se creo `20260813173319_add_destinations_and_trip_destinations` mediante
+  `--create-only`.
+- El SQL crea unicamente `destinations`, `trip_destinations`, sus claves
+  primarias, los tres indices previstos y las dos llaves foraneas.
+- No contiene `DROP`, `TRUNCATE` ni alteraciones de las tablas existentes.
+- `prisma migrate status` confirma que las dos migraciones anteriores estan
+  aplicadas y que esta nueva migracion permanece pendiente.
+
+## Tarea activa: aplicar y verificar la migracion
+
+Desde `server`, ejecutar `npx prisma migrate dev` sin `--name` para aplicar la
+migracion pendiente ya revisada. Despues comprobar el estado, validar el
+esquema y ejecutar el typecheck. No crear otra migracion con un nombre nuevo.
+
+## Migracion de destinos aplicada y verificada
+
+- Las tres migraciones del proyecto estan aplicadas en la base local.
+- `prisma migrate diff` no detecta diferencias entre PostgreSQL y
+  `prisma/schema.prisma`.
+- `prisma validate` confirma que el esquema es valido.
+- Prisma Client no se habia regenerado automaticamente; se ejecuto
+  `prisma generate` y ahora expone `Destination` y `TripDestination`.
+- `npm run typecheck` y `git diff --check` pasan.
+
+## Proximo paso
+
+Disenar el contrato HTTP para agregar una parada a un viaje. Antes de crear
+archivos se definiran la ruta, los datos que pertenecen a parametros y cuerpo,
+las respuestas, los errores y el limite de responsabilidad del primer esquema
+Zod.
+
+## Contrato acordado: agregar una parada
+
+- Metodo y ruta: `POST /api/trips/:tripId/destinations`.
+- La ruta permanece bajo `tripRouter` y requiere autenticacion.
+- `tripId` se valida con el esquema de parametros de viaje existente.
+- El cuerpo contiene `destination`, con el candidato normalizado que ya
+  devuelve la busqueda, y `arrivalDate`, `departureDate` y `notes` opcionales.
+- El cliente no envia `position`; el servicio calcula la siguiente posicion
+  del viaje para evitar depender de estado cliente desactualizado.
+- El servicio comprueba primero que el viaje pertenece al usuario, reutiliza o
+  crea `Destination` mediante `providerId`, valida las fechas y crea siempre
+  una nueva fila `TripDestination`.
+- Repetir un `providerId` reutiliza la ciudad pero puede crear una nueva visita
+  dentro del mismo viaje.
+- La respuesta `201` contiene `data.tripDestination` y el objeto `destination`
+  relacionado, con fechas serializadas como `YYYY-MM-DD` o `null`.
+- Los errores previstos incluyen autenticacion, validacion, viaje inexistente,
+  rango de fechas invalido, fechas fuera del viaje y conflicto excepcional de
+  posicion concurrente.
+
+El backend aceptara los datos normalizados del candidato y validara
+estrictamente su forma. Esto no demuestra criptograficamente que provienen de
+Open-Meteo, pero evita una segunda consulta externa y es una proporcion
+razonable para el alcance del proyecto. Firmar candidatos o mantenerlos en una
+sesion de servidor queda fuera del alcance inicial.
+
+## Tarea activa: esquema reutilizable del candidato
+
+Ampliar `server/src/features/destinations/destination.schemas.ts` con un
+`destinationCandidateSchema` estricto que represente exactamente el resultado
+normalizado: `providerId`, `name`, `country`, `countryCode`, `latitude`,
+`longitude`, `timezone` y `region`. Exportar tambien el tipo inferido
+`DestinationCandidateInput`.
+
+Esta microtarea no crea todavia el esquema de la parada, servicio, mapper,
+controlador ni ruta. Primero se comprobara que el limite entre el dato externo
+normalizado y la entrada HTTP quede correctamente tipado y validado.
+
+## Esquema reutilizable del candidato completado
+
+- `destinationCandidateSchema` usa `z.strictObject` y contiene exactamente los
+  ocho campos del resultado normalizado.
+- Los textos se recortan, `countryCode` se convierte a mayusculas, las
+  coordenadas conservan rangos geograficos y los datos que pueden faltar usan
+  `nullable` sin hacerse opcionales.
+- Las pruebas de ejecucion confirman que se rechazan campos ausentes, campos
+  desconocidos, coordenadas en texto y coordenadas fuera de rango.
+- `DestinationSearchResult` reutiliza ahora `DestinationCandidateInput` para
+  evitar mantener una segunda definicion manual del mismo contrato.
+- `npm run typecheck` y `git diff --check` pasan.
+
+## Proximo paso
+
+Crear en la ubicacion definitiva de la nueva funcionalidad el primer esquema
+del cuerpo de la peticion. La primera microtarea reutilizara el candidato como
+objeto anidado antes de incorporar las fechas y notas opcionales.
+
+## Tarea activa: composicion del esquema de una parada
+
+Crear `server/src/features/trip-destinations/trip-destination.schemas.ts` como
+ubicacion definitiva de los contratos HTTP de la tabla puente. El archivo
+debe:
+
+1. importar `z` y `destinationCandidateSchema`;
+2. exportar `createTripDestinationSchema` como `z.strictObject`;
+3. incluir por ahora solamente la propiedad obligatoria `destination`, cuyo
+   valor usa directamente `destinationCandidateSchema`;
+4. exportar `CreateTripDestinationInput` mediante `z.infer`.
+
+El import local conservara la extension `.js` exigida por `NodeNext`, aunque el
+archivo fuente sea TypeScript. Esta microtarea no duplica los ocho campos, no
+incluye `tripId`, `position`, fechas o notas y no crea las demas capas.
+
+## Composicion del esquema de una parada completada
+
+- Se creo la ubicacion definitiva
+  `server/src/features/trip-destinations/trip-destination.schemas.ts`.
+- `createTripDestinationSchema` es estricto y reutiliza
+  `destinationCandidateSchema` como su propiedad obligatoria `destination`.
+- `CreateTripDestinationInput` se infiere desde el esquema y no duplica el
+  contrato mediante una interfaz manual.
+- La prueba de ejecucion acepta un candidato valido, rechaza la ausencia de
+  `destination`, rechaza `position` como campo exterior desconocido y ubica un
+  identificador invalido en la ruta `destination.providerId`.
+- `npm run typecheck` y `git diff --check` pasan.
+
+## Proximo paso
+
+Ampliar el esquema exterior con `arrivalDate` y `departureDate` opcionales,
+definiendo primero la diferencia entre propiedad omitida y valor `null` en una
+operacion de creacion, y validando el orden cuando ambas fechas existen.
+
+## Fechas del contrato de creacion completadas
+
+- `arrivalDate` y `departureDate` aceptan omision, `null` o una fecha ISO
+  `YYYY-MM-DD`.
+- El refinamiento exterior compara el orden solamente cuando ambas fechas
+  existen y asocia el error a `departureDate`.
+- Se aceptan una sola fecha, dos valores nulos y llegada/salida en el mismo
+  dia; se rechazan el formato invalido y la salida anterior a la llegada.
+- La comparacion con `Trip.startDate` y `Trip.endDate` permanece fuera de Zod y
+  se implementara en el servicio usando el viaje real de PostgreSQL.
+- `npm run typecheck` y `git diff --check` pasan.
+
+## Proximo paso
+
+Agregar `notes` al esquema de creacion como dato opcional y anulable,
+normalizando espacios y definiendo de forma explicita como se trata una cadena
+vacia. Con ello quedara cerrado el cuerpo de `POST` antes de crear el mapper.
+
+## Contrato de creacion de una parada completado
+
+- `notes` acepta omision, `null` o texto de hasta 1000 caracteres.
+- El texto se recorta y una cadena vacia despues de `trim` se transforma en
+  `null`; una propiedad omitida permanece ausente.
+- Las pruebas rechazan texto demasiado largo y valores que no son cadenas,
+  mientras la validacion cruzada de fechas continua funcionando.
+- El cuerpo completo contiene `destination`, `arrivalDate`, `departureDate` y
+  `notes`; no acepta `tripId` ni `position`.
+- `npm run typecheck` y `git diff --check` pasan.
+
+## Proximo paso
+
+Definir el mapper de respuesta de `TripDestination`. El mapper recibira una
+fila de Prisma con `destination` incluido, convertira las fechas opcionales a
+`YYYY-MM-DD` o `null` y construira el contrato publico que devolvera el futuro
+endpoint `POST`.
