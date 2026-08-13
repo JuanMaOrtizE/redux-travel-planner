@@ -5107,3 +5107,151 @@ explicaran en orden: conversion de fechas, autorizacion del viaje, validacion
 contra su rango, reutilizacion del destino, calculo de posicion y transaccion.
 La primera microtarea del servicio introducira solamente una utilidad local de
 conversion `YYYY-MM-DD` a `Date` UTC.
+
+## Ajuste arquitectonico: conversion de fechas compartida
+
+La conversion ya existe como funcion local `toUtcDate` en `trip.service.ts`.
+Como `trip-destinations` necesitara exactamente la misma operacion, no se
+duplicara ni permanecera propiedad exclusiva del servicio de viajes.
+
+## Tarea activa: extraer `toUtcDate`
+
+1. crear `server/src/common/dates/date.utils.ts`;
+2. mover alli `toUtcDate` y exportarla;
+3. importar la utilidad desde `trip.service.ts`;
+4. eliminar la definicion local del servicio;
+5. no crear todavia `trip-destination.service.ts` ni cambiar el comportamiento
+   de viajes.
+
+La utilidad recibe un texto ISO `YYYY-MM-DD` previamente validado y devuelve
+un `Date` a medianoche UTC. Zod conserva la responsabilidad de validar el
+formato; la utilidad solo convierte. Se comprobara con `npm run typecheck`,
+`npm run build` y una ejecucion directa con una fecha concreta.
+
+## Conversion de fechas compartida completada
+
+- Se creo `server/src/common/dates/date.utils.ts` y se exporto `toUtcDate`.
+- `trip.service.ts` importa la utilidad y ya no mantiene una copia local.
+- La prueba directa convierte `2026-12-03` en
+  `2026-12-03T00:00:00.000Z` como objeto `Date`.
+- `npm run typecheck`, `npm run build` y `git diff --check` pasan.
+
+## Proximo paso
+
+Crear `trip-destination.service.ts` con la firma publica de
+`createTripDestination`: recibira `userId`, `tripId` y
+`CreateTripDestinationInput`, y prometera `TripDestinationResponse`. Antes de
+añadir consultas se explicara por que cada dato llega por una fuente diferente
+y como la firma conecta controlador, reglas de negocio y mapper.
+
+## Microtarea actual del servicio: obtener el viaje autorizado
+
+Crear `server/src/features/trip-destinations/trip-destination.service.ts` con
+una funcion interna asincrona `getOwnedTripOrThrow(userId, tripId)`.
+
+- importar `prisma` y `AppError` usando las rutas compartidas existentes;
+- consultar `prisma.trip.findFirst` filtrando simultaneamente `id: tripId` y
+  `userId`;
+- seleccionar solamente `id`, `startDate` y `endDate`;
+- si el resultado es `null`, lanzar `AppError` con HTTP `404`, codigo
+  `TRIP_NOT_FOUND` y mensaje `Viaje no encontrado`;
+- si existe, devolver el objeto seleccionado;
+- no exportar la funcion ni crear aun `createTripDestination`.
+
+Combinar `tripId` y `userId` es autorizacion a nivel de consulta: un viaje
+ajeno se trata igual que uno inexistente. El tipo de retorno puede ser inferido
+por TypeScript desde `findFirst` y el control `if (!trip)`.
+
+## Obtencion del viaje autorizado completada
+
+- Se creo `trip-destination.service.ts` en la ubicacion definitiva.
+- `getOwnedTripOrThrow` filtra simultaneamente por `id` y `userId`.
+- La consulta selecciona solamente `id`, `startDate` y `endDate`.
+- Un viaje ausente o ajeno produce el mismo `AppError` con
+  `404 TRIP_NOT_FOUND`.
+- Despues del control nulo, TypeScript infiere un retorno con el viaje
+  existente y fechas como objetos `Date`.
+- `npm run typecheck`, `npm run build` y `git diff --check` pasan.
+
+## Proximo paso
+
+Definir la validacion del rango de una parada como una funcion pura del mismo
+servicio. Recibira las fechas opcionales ya convertidas y las fechas del viaje,
+permitira valores nulos y lanzara un error si alguna fecha queda fuera del
+intervalo inclusivo `startDate`/`endDate`.
+
+## Microtarea actual: validar fechas contra el viaje
+
+Agregar en `trip-destination.service.ts` una funcion interna
+`assertTripDestinationDatesWithinTrip` que reciba:
+
+1. `trip`, con `startDate: Date` y `endDate: Date`;
+2. `arrivalDate: Date | null`;
+3. `departureDate: Date | null`.
+
+La funcion devuelve `void`. Cada fecha no nula debe ser mayor o igual a
+`trip.startDate` y menor o igual a `trip.endDate`. Si cualquiera queda fuera,
+lanza `AppError(400, "TRIP_DESTINATION_DATES_OUT_OF_RANGE", "Las fechas de la
+parada deben estar dentro del rango del viaje")`.
+
+Los limites son inclusivos, una sola fecha conocida es valida si esta dentro y
+dos valores nulos no producen error. La funcion no comprueba aqui el orden
+llegada/salida, ya cubierto por el esquema de creacion, ni convierte cadenas o
+consulta la base de datos.
+
+## Validacion del rango del viaje completada
+
+- `assertTripDestinationDatesWithinTrip` recibe el rango del viaje y dos
+  fechas `Date | null`.
+- Cada fecha no nula se compara contra ambos limites; las fechas iguales al
+  inicio o final del viaje son validas.
+- Si llegada o salida queda fuera, se lanza
+  `400 TRIP_DESTINATION_DATES_OUT_OF_RANGE`.
+- La funcion permanece interna, no consulta Prisma y no transforma datos.
+- `npm run typecheck`, `npm run build` y `git diff --check` pasan. Las pruebas
+  de ejecucion se realizaran al conectarla al flujo publico del servicio.
+
+## Proximo paso
+
+Agregar una funcion interna que normalice `string | null | undefined` a
+`Date | null` usando `toUtcDate`. Esto conectara la salida del esquema Zod con
+los tipos que esperan Prisma y la validacion de rango, sin confundir omision
+HTTP (`undefined`) con ausencia persistida (`null`).
+
+## Ajuste de ubicacion: fecha opcional compartida
+
+La normalizacion no contiene una regla de `TripDestination`; solo traduce una
+fecha HTTP opcional. Por ello se ubicara junto a `toUtcDate` en
+`common/dates/date.utils.ts` y podra reutilizarse posteriormente.
+
+## Microtarea actual: `toNullableUtcDate`
+
+Agregar y exportar `toNullableUtcDate` en `date.utils.ts`:
+
+- recibe `string | null | undefined`;
+- devuelve explicitamente `Date | null`;
+- si el valor es `null` o `undefined`, devuelve `null`;
+- si es texto, delega la conversion a `toUtcDate`;
+- no valida el formato ni acepta cadenas vacias como ausencia.
+
+Se comprobaran tres entradas concretas: una fecha ISO, `null` y `undefined`.
+No se modificara todavia `trip-destination.service.ts` para usarla.
+
+## Fecha opcional compartida completada
+
+- `toNullableUtcDate` recibe `string | null | undefined` y devuelve
+  `Date | null`.
+- Una fecha ISO se delega a `toUtcDate`; `null` y `undefined` convergen en
+  `null`.
+- La utilidad no acepta silenciosamente una cadena vacia como ausencia ni
+  duplica la construccion UTC.
+- Las pruebas directas de los tres casos, `npm run typecheck`, `npm run build`
+  y `git diff --check` pasan.
+
+## Proximo paso
+
+Introducir la transaccion que agrupara la reutilizacion o creacion de
+`Destination`, el calculo de posicion y la creacion de `TripDestination`.
+Primero se explicara `Prisma.TransactionClient` y se implementara un helper
+que reciba ese cliente para ejecutar `upsert` por `providerId` sin sobrescribir
+un destino compartido ya existente.

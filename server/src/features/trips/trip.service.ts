@@ -3,6 +3,7 @@ import type { CreateTripInput, UpdateTripInput } from "./trip.schemas.js";
 import { toTripResponse, type TripResponse } from "./trip.mapper.js";
 import { AppError } from "../../common/errors/AppError.js";
 import type { TripStatus } from "../../generated/prisma/enums.js";
+import { toUtcDate } from "../../common/dates/date.utils.js";
 
 const allowedStatusTransitions: Record<
   TripStatus,
@@ -13,10 +14,6 @@ const allowedStatusTransitions: Record<
   COMPLETED: [],
   CANCELLED: [],
 };
-
-function toUtcDate(value: string): Date {
-  return new Date(`${value}T00:00:00.000Z`);
-}
 
 function isAllowedStatusTransition(
   currentStatus: TripStatus,
