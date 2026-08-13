@@ -4999,3 +4999,111 @@ Definir el mapper de respuesta de `TripDestination`. El mapper recibira una
 fila de Prisma con `destination` incluido, convertira las fechas opcionales a
 `YYYY-MM-DD` o `null` y construira el contrato publico que devolvera el futuro
 endpoint `POST`.
+
+## Tarea activa: tipos del mapper de una parada
+
+Crear
+`server/src/features/trip-destinations/trip-destination.mapper.ts` y definir:
+
+1. un tipo interno `TripDestinationWithDestination` mediante
+   `Prisma.TripDestinationGetPayload`, describiendo una consulta que incluye
+   `destination`;
+2. un tipo exportado `TripDestinationResponse` con `id`, `tripId`, `position`,
+   `arrivalDate`, `departureDate`, `notes` y un objeto `destination`;
+3. dentro de `destination`, exponer `id`, `providerId`, `name`, `country`,
+   `countryCode`, `region`, `latitude`, `longitude` y `timezone`.
+
+Las fechas del tipo publico son `string | null`; los campos anulables de la
+ciudad y `notes` conservan `string | null`. No se exponen `destinationId` ni
+los timestamps de `Destination`, porque el objeto anidado ya aporta la
+identidad necesaria y esos metadatos no tienen un consumidor en este flujo.
+
+Esta microtarea no implementa aun la funcion del mapper. Primero se validara
+que el tipo de entrada refleje una consulta Prisma real y que el contrato de
+salida no filtre objetos `Date` hacia JSON.
+
+## Microtarea actual del mapper: tipo de entrada
+
+Crear el archivo definitivo
+`server/src/features/trip-destinations/trip-destination.mapper.ts` con
+solamente:
+
+1. el import de tipo `Prisma` desde el cliente generado;
+2. el tipo interno `TripDestinationWithDestination` obtenido mediante
+   `Prisma.TripDestinationGetPayload` y una configuracion que incluya
+   `destination`.
+
+No exportar todavia ese tipo y no agregar el contrato de respuesta ni la
+funcion mapper. La siguiente microtarea construira la salida publica una vez
+confirmado el significado del payload de entrada.
+
+## Tipo de entrada del mapper completado
+
+- Se creo `trip-destination.mapper.ts` en la carpeta definitiva de la
+  funcionalidad.
+- `TripDestinationWithDestination` usa
+  `Prisma.TripDestinationGetPayload<{ include: { destination: true } }>`.
+- El tipo permanece interno y describe las columnas de la parada junto con el
+  objeto relacionado `destination`; no ejecuta una consulta ni cambia la base.
+- No se incluyeron `trip`, contrato de respuesta ni funcion mapper.
+- `npm run typecheck` y `git diff --check` pasan.
+
+## Proximo paso
+
+Definir solamente `TripDestinationResponse`, el tipo publico que separa la
+forma interna de Prisma de la respuesta JSON. La funcion de transformacion se
+implementara en una microtarea posterior.
+
+## Microtarea actual del mapper: tipo de salida
+
+Ampliar `trip-destination.mapper.ts` con el tipo exportado
+`TripDestinationResponse`. Debe contener `id`, `tripId`, `position`,
+`arrivalDate`, `departureDate`, `notes` y `destination`.
+
+- `arrivalDate` y `departureDate` son `string | null` en el contrato HTTP;
+- `notes` conserva `string | null`;
+- `destination` contiene `id`, `providerId`, `name`, `country`, `countryCode`,
+  `region`, `latitude`, `longitude` y `timezone` con sus nulabilidades ya
+  acordadas;
+- no se exponen `destinationId`, el objeto `trip` ni timestamps internos.
+
+Esta microtarea define solamente la promesa publica de la API. No debe usar el
+tipo interno como alias, porque la salida cambia fechas `Date` a texto y omite
+campos de persistencia. Todavia no se implementa la funcion mapper.
+
+## Tipo publico del mapper completado
+
+- `TripDestinationResponse` se exporta desde el mapper.
+- Expone la identidad y datos utiles de la parada, con fechas como
+  `string | null` y el destino persistido como objeto anidado.
+- Omite `destinationId`, el objeto `trip` y los timestamps internos del
+  destino.
+- El tipo publico permanece separado de
+  `TripDestinationWithDestination`, que conserva la forma real de Prisma.
+- `npm run typecheck` y `git diff --check` pasan.
+
+## Proximo paso
+
+Implementar `toTripDestinationResponse`. La funcion recibira el tipo interno,
+devolvera el tipo publico y convertira exclusivamente las fechas opcionales de
+`Date` a `YYYY-MM-DD`, copiando los demas campos permitidos de forma explicita.
+
+## Mapper de una parada completado
+
+- `toTripDestinationResponse` recibe
+  `TripDestinationWithDestination` y declara como salida
+  `TripDestinationResponse`.
+- Las fechas `Date | null` se convierten a `YYYY-MM-DD | null`.
+- Los campos publicos de la parada y del destino se copian explicitamente; un
+  cambio futuro en Prisma no se expone automaticamente por JSON.
+- Las pruebas confirman fechas con valor, fechas nulas y la omision de
+  `destinationId`, `createdAt` y `updatedAt`.
+- `npm run typecheck` y `git diff --check` pasan.
+
+## Proximo paso
+
+Disenar el servicio de creacion antes de implementarlo. Se dividiran y
+explicaran en orden: conversion de fechas, autorizacion del viaje, validacion
+contra su rango, reutilizacion del destino, calculo de posicion y transaccion.
+La primera microtarea del servicio introducira solamente una utilidad local de
+conversion `YYYY-MM-DD` a `Date` UTC.
