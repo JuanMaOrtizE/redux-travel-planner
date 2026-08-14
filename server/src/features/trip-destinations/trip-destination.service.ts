@@ -1,6 +1,7 @@
 import prisma from "../../lib/prisma.js";
 import { AppError } from "../../common/errors/AppError.js";
-import { Prisma } from "../../generated/prisma/client.js";
+import type { Prisma } from "../../generated/prisma/client.js";
+import type { TripStatus } from "../../generated/prisma/enums.js";
 import type { DestinationCandidateInput } from "../destinations/destination.schemas.js";
 import type { CreateTripDestinationInput } from "./trip-destination.schemas.js";
 import {
@@ -17,6 +18,7 @@ async function getOwnedTripOrThrow(userId: string, tripId: string) {
     },
     select: {
       id: true,
+      status: true,
       startDate: true,
       endDate: true,
     },
@@ -27,6 +29,16 @@ async function getOwnedTripOrThrow(userId: string, tripId: string) {
   }
 
   return trip;
+}
+
+function assertTripAllowsDestinationChanges(status: TripStatus): void {
+  if (status !== "PLANNING" && status !== "CONFIRMED") {
+    throw new AppError(
+      409,
+      "TRIP_DESTINATIONS_LOCKED",
+      "No puedes modificar las paradas de un viaje finalizado",
+    );
+  }
 }
 
 function assertTripDestinationDatesWithinTrip(
@@ -94,6 +106,9 @@ export async function createTripDestination(
   input: CreateTripDestinationInput,
 ): Promise<TripDestinationResponse> {
   const trip = await getOwnedTripOrThrow(userId, tripId);
+
+  assertTripAllowsDestinationChanges(trip.status);
+
   const arrivalDate = toNullableUtcDate(input.arrivalDate);
   const departureDate = toNullableUtcDate(input.departureDate);
 
@@ -117,4 +132,19 @@ export async function createTripDestination(
   });
 
   return toTripDestinationResponse(tripDestination);
+}
+
+export async function listTripDestinations(
+  userId: string,
+  tripId: string,
+): Promise<TripDestinationResponse[]> {
+  const trip = await getOwnedTripOrThrow(userId, tripId);
+
+  const tripDestinations = await prisma.tripDestination.findMany({
+    where: { tripId: trip.id },
+    orderBy: { position: "asc" },
+    include: { destination: true },
+  });
+
+  return tripDestinations.map(toTripDestinationResponse);
 }

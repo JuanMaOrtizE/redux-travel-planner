@@ -2,7 +2,10 @@ import type { RequestHandler } from "express";
 import { AppError } from "../../common/errors/AppError.js";
 import { tripParamsSchema } from "../trips/trip.schemas.js";
 import { createTripDestinationSchema } from "./trip-destination.schemas.js";
-import { createTripDestination } from "./trip-destination.service.js";
+import {
+  createTripDestination,
+  listTripDestinations,
+} from "./trip-destination.service.js";
 
 export const createTripDestinationController: RequestHandler = async (
   req,
@@ -23,4 +26,22 @@ export const createTripDestinationController: RequestHandler = async (
   );
 
   return res.status(201).json({ data: { tripDestination } });
+};
+
+export const listTripDestinationsController: RequestHandler = async (
+  req,
+  res,
+) => {
+  const auth = req.auth;
+  if (!auth) {
+    throw new AppError(401, "AUTHENTICATION_REQUIRED", "Debes iniciar sesion");
+  }
+
+  const parsedParams = tripParamsSchema.parse(req.params);
+  const tripDestinations = await listTripDestinations(
+    auth.userId,
+    parsedParams.tripId,
+  );
+
+  return res.status(200).json({ data: { tripDestinations } });
 };

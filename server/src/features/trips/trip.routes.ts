@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { requireAuth } from "../auth/auth.middleware.js";
-import { createTripDestinationController } from "../trip-destinations/trip-destination.controller.js";
+import {
+  createTripDestinationController,
+  listTripDestinationsController,
+} from "../trip-destinations/trip-destination.controller.js";
 import {
   createTripController,
   deleteTripController,
@@ -16,6 +19,11 @@ tripRouter.post(
   "/:tripId/destinations",
   requireAuth,
   createTripDestinationController,
+);
+tripRouter.get(
+  "/:tripId/destinations",
+  requireAuth,
+  listTripDestinationsController,
 );
 tripRouter.get("/", requireAuth, listTripsController);
 tripRouter.get("/:tripId", requireAuth, getTripByIdController);

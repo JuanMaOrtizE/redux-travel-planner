@@ -167,6 +167,15 @@ Reglas de notas de una parada:
   texto vacio para persistir `null`;
 - no se usa un valor por defecto: ausencia de nota se representa con `null`.
 
+Reglas de estado del viaje:
+
+- se pueden agregar, editar, reordenar o eliminar paradas mientras el viaje
+  este en `PLANNING` o `CONFIRMED`;
+- `COMPLETED` y `CANCELLED` son estados finales y su itinerario queda bloqueado
+  para escritura;
+- las consultas del viaje y sus paradas siguen permitidas en estados finales;
+- el servicio aplica esta regla antes de iniciar cualquier escritura.
+
 Indices de la tabla puente:
 
 - la restriccion unica `tripId + position` crea un indice compuesto que cubre

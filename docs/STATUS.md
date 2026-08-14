@@ -5402,3 +5402,106 @@ detalle de un viaje.
 - Enviar `POST /api/trips/:tripId/destinations` con fechas dentro del viaje.
 - Confirmar HTTP `201`, `data.tripDestination`, posicion `1` para la primera
   parada y el objeto `destination` anidado.
+
+## Regla de estado faltante detectada
+
+Antes de ejecutar la prueba exitosa se debe cerrar una regla de negocio que el
+servicio aun no aplica: solo los viajes `PLANNING` o `CONFIRMED` aceptan cambios
+en sus paradas. `COMPLETED` y `CANCELLED` conservan su itinerario para consulta,
+pero quedan bloqueados para escritura.
+
+## Tarea activa: bloquear paradas en viajes finalizados
+
+- Incluir `status` en la consulta de `getOwnedTripOrThrow`.
+- Comprobar el estado despues de obtener el viaje y antes de normalizar o
+  persistir la parada.
+- Lanzar HTTP `409` con un codigo de negocio especifico para viajes bloqueados.
+- Verificar despues un caso permitido y los dos estados finales.
+
+## Bloqueo de paradas por estado completado
+
+- `getOwnedTripOrThrow` obtiene tambien el estado persistido del viaje.
+- `assertTripAllowsDestinationChanges` permite solamente `PLANNING` y
+  `CONFIRMED`.
+- `COMPLETED` y `CANCELLED` producen HTTP `409` con el codigo
+  `TRIP_DESTINATIONS_LOCKED` antes de iniciar la transaccion.
+- `TripStatus` se importa como tipo desde el archivo de enums generado,
+  siguiendo la convencion del servicio de viajes.
+- TypeScript, build, Prisma y `git diff --check` pasan.
+
+## Proximo paso
+
+Ejecutar en Postman la prueba exitosa con un viaje editable y repetir la
+peticion contra viajes `COMPLETED` y `CANCELLED` para comprobar el bloqueo.
+
+## Prueba HTTP de creacion exitosa completada
+
+- Una peticion autenticada creo una parada y devolvio la estructura
+  `data.tripDestination` acordada.
+- El viaje ya tenia dos paradas y el servicio asigno correctamente
+  `position: 3`.
+- Las fechas y notas omitidas se persistieron y serializaron como `null`.
+- La respuesta incluyo el destino relacionado con sus IDs interno y externo.
+
+## Proximo paso
+
+Probar el mismo `POST` con viajes `CANCELLED` y `COMPLETED`, usando viajes de
+prueba o ya finalizados para no cerrar de manera irreversible un viaje real.
+
+## Pruebas de bloqueo por estado completadas
+
+- Postman confirmo HTTP `409` y `TRIP_DESTINATIONS_LOCKED` para los estados
+  finales.
+- La validacion ocurre antes de la transaccion y no crea una parada.
+- El flujo de creacion del backend queda verificado para exito y bloqueo por
+  estado.
+
+## Proximo paso
+
+Crear `GET /api/trips/:tripId/destinations` para que el detalle de un viaje
+pueda obtener sus paradas ordenadas. Primero se implementara solamente la
+consulta del servicio; despues se conectaran controlador y ruta.
+
+## Consulta de paradas en el servicio completada
+
+- `listTripDestinations` comprueba primero que el viaje pertenezca al usuario.
+- La consulta filtra por el ID autorizado y ordena por `position` ascendente.
+- Cada fila incluye `destination`, como exige el mapper compartido.
+- `map(toTripDestinationResponse)` transforma automaticamente cada parada del
+  arreglo a su contrato HTTP.
+- Los viajes finalizados pueden consultarse aunque no permitan escrituras.
+- TypeScript, build, Prisma y `git diff --check` pasan.
+
+## Proximo paso
+
+Agregar al controlador la lectura de paradas y registrar
+`GET /api/trips/:tripId/destinations` bajo `tripRouter`.
+
+## Controlador para listar paradas completado
+
+- `listTripDestinationsController` exige autenticacion y valida `tripId` con el
+  esquema existente.
+- Delega la consulta al servicio con `userId` y `tripId`.
+- Responde HTTP `200` con `{ data: { tripDestinations } }`.
+- Se corrigio la capitalizacion de `tripDestinations` para mantener el contrato
+  camelCase esperado por el cliente.
+- TypeScript, build y `git diff --check` pasan.
+
+## Proximo paso
+
+Registrar la ruta GET anidada en `trip.routes.ts` y verificarla mediante una
+peticion autenticada.
+
+## Endpoint para listar paradas completado
+
+- `GET /api/trips/:tripId/destinations` quedo registrado bajo `tripRouter`.
+- La ruta ejecuta `requireAuth` antes de
+  `listTripDestinationsController`.
+- TypeScript, build y `git diff --check` pasan.
+- Una prueba sin sesion devolvio HTTP `401`, confirmando que Express reconoce
+  la ruta y aplica la proteccion.
+
+## Proximo paso
+
+Probar el GET en Postman con una sesion activa y confirmar que el viaje usado
+en la prueba anterior devuelve sus tres paradas ordenadas por `position`.
