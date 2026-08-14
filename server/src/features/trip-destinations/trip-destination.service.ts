@@ -1,5 +1,13 @@
 import prisma from "../../lib/prisma.js";
 import { AppError } from "../../common/errors/AppError.js";
+import { Prisma } from "../../generated/prisma/client.js";
+import type { DestinationCandidateInput } from "../destinations/destination.schemas.js";
+import type { CreateTripDestinationInput } from "./trip-destination.schemas.js";
+import {
+  toTripDestinationResponse,
+  type TripDestinationResponse,
+} from "./trip-destination.mapper.js";
+import { toNullableUtcDate } from "../../common/dates/date.utils.js";
 
 async function getOwnedTripOrThrow(userId: string, tripId: string) {
   const trip = await prisma.trip.findFirst({
@@ -44,4 +52,69 @@ function assertTripDestinationDatesWithinTrip(
       "Las fechas de la parada deben estar dentro del rango del viaje",
     );
   }
+}
+
+async function getOrCreateDestination(
+  tx: Prisma.TransactionClient,
+  candidate: DestinationCandidateInput,
+) {
+  return tx.destination.upsert({
+    where: {
+      providerId: candidate.providerId,
+    },
+    update: {},
+    create: {
+      providerId: candidate.providerId,
+      name: candidate.name,
+      country: candidate.country,
+      countryCode: candidate.countryCode,
+      latitude: candidate.latitude,
+      longitude: candidate.longitude,
+      timezone: candidate.timezone,
+      region: candidate.region,
+    },
+  });
+}
+
+async function getNextPosition(
+  tx: Prisma.TransactionClient,
+  tripId: string,
+): Promise<number> {
+  const positions = await tx.tripDestination.aggregate({
+    where: { tripId },
+    _max: { position: true },
+  });
+
+  return (positions._max.position ?? 0) + 1;
+}
+
+export async function createTripDestination(
+  userId: string,
+  tripId: string,
+  input: CreateTripDestinationInput,
+): Promise<TripDestinationResponse> {
+  const trip = await getOwnedTripOrThrow(userId, tripId);
+  const arrivalDate = toNullableUtcDate(input.arrivalDate);
+  const departureDate = toNullableUtcDate(input.departureDate);
+
+  assertTripDestinationDatesWithinTrip(trip, arrivalDate, departureDate);
+
+  const tripDestination = await prisma.$transaction(async (tx) => {
+    const destination = await getOrCreateDestination(tx, input.destination);
+    const position = await getNextPosition(tx, trip.id);
+
+    return tx.tripDestination.create({
+      data: {
+        tripId: trip.id,
+        destinationId: destination.id,
+        position,
+        arrivalDate,
+        departureDate,
+        notes: input.notes ?? null,
+      },
+      include: { destination: true },
+    });
+  });
+
+  return toTripDestinationResponse(tripDestination);
 }

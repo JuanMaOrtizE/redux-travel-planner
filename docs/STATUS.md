@@ -5255,3 +5255,150 @@ Introducir la transaccion que agrupara la reutilizacion o creacion de
 Primero se explicara `Prisma.TransactionClient` y se implementara un helper
 que reciba ese cliente para ejecutar `upsert` por `providerId` sin sobrescribir
 un destino compartido ya existente.
+
+## Microtarea actual: reutilizar o crear `Destination`
+
+Agregar a `trip-destination.service.ts` una funcion interna asincrona
+`getOrCreateDestination(tx, candidate)`:
+
+- `tx` usa el tipo `Prisma.TransactionClient`;
+- `candidate` usa `DestinationCandidateInput`;
+- ejecutar `tx.destination.upsert` buscando por el `providerId` unico;
+- usar un objeto vacio en `update` para devolver sin sobrescribir el destino
+  cuando ya existe;
+- mapear explicitamente en `create` los ocho campos normalizados del candidato;
+- dejar que TypeScript infiera el retorno `Promise<Destination>`;
+- no exportar ni invocar todavia el helper.
+
+`TransactionClient` ofrece las operaciones de modelos dentro del bloque
+atomico, pero omite metodos que iniciarian otra transaccion. Usar el cliente
+global dentro del helper dejaria esa operacion fuera del futuro rollback.
+
+`upsert` significa actualizar o insertar. En este caso la rama `update: {}` no
+cambia datos: un `providerId` existente reutiliza la fila compartida. La rama
+`create` solo se ejecuta si no existe y crea `providerId`, nombre, pais, codigo,
+region, coordenadas y zona horaria.
+
+## Reutilizacion o creacion de destino completada
+
+- `getOrCreateDestination` recibe `Prisma.TransactionClient` y el candidato
+  validado.
+- `upsert` busca por el `providerId` unico.
+- La rama existente usa `update: {}` y no sobrescribe la ciudad compartida.
+- La rama nueva mapea explicitamente los ocho campos normalizados.
+- La funcion permanece interna y aun no es invocada, por lo que esta tarea no
+  escribio datos en PostgreSQL.
+- `npm run typecheck`, `npm run build`, `prisma validate` y
+  `git diff --check` pasan.
+
+## Proximo paso
+
+Crear un helper transaccional que calcule la siguiente posicion de una parada.
+Consultara la posicion maxima del viaje y devolvera `1` cuando no haya paradas
+o `max + 1` cuando ya existan. Todavia no creara `TripDestination`.
+
+## Microtarea actual: calcular la siguiente posicion
+
+Agregar a `trip-destination.service.ts` una funcion interna
+`getNextPosition(tx, tripId)`:
+
+- recibir `Prisma.TransactionClient` y el identificador del viaje;
+- declarar el retorno `Promise<number>`;
+- consultar `tx.tripDestination.aggregate` filtrando por `tripId`;
+- solicitar solamente el maximo de `position`;
+- devolver `1` si el maximo es `null` o `max + 1` en caso contrario;
+- no invocar todavia el helper ni crear una parada.
+
+Se usa el maximo en lugar del conteo porque una secuencia con posiciones `1` y
+`3` contiene dos filas, pero su siguiente posicion segura es `4`, no `3`.
+
+## Calculo de la siguiente posicion completado
+
+- `getNextPosition` recibe el cliente transaccional y el `tripId`.
+- El agregado filtra las paradas del viaje y obtiene solamente el maximo de
+  `position`.
+- Sin paradas devuelve `1`; con una posicion maxima devuelve `max + 1`.
+- Se usa el nombre `positions` porque el resultado no representa una suma.
+- El helper permanece interno y aun no ejecuta ninguna escritura.
+- `npm run typecheck`, `npm run build`, `prisma validate` y
+  `git diff --check` pasan.
+
+## Proximo paso
+
+Crear gradualmente la funcion publica `createTripDestination`. Primero recibira
+el usuario, el viaje y el cuerpo validado; comprobara la propiedad del viaje,
+normalizara las fechas opcionales y aplicara la regla de rango. La transaccion
+y las escrituras se incorporaran despues de verificar esa preparacion.
+
+## Preparacion de `createTripDestination` completada
+
+- La funcion publica recibe `userId`, `tripId` y `CreateTripDestinationInput`.
+- Su contrato final declara `Promise<TripDestinationResponse>`.
+- Antes de escribir, comprueba que el viaje pertenezca al usuario.
+- Normaliza `arrivalDate` y `departureDate` a `Date | null`.
+- Aplica la regla que exige que las fechas esten dentro del rango del viaje.
+- El unico error actual de TypeScript es el retorno pendiente de la funcion.
+
+## Microtarea actual: transaccion de creacion
+
+Agregar dentro de `createTripDestination` una transaccion que:
+
+- obtenga o cree el destino seleccionado usando `tx`;
+- calcule la siguiente posicion del viaje usando el mismo `tx`;
+- cree `TripDestination` con ambos identificadores, posicion, fechas y notas;
+- incluya la relacion `destination` en el resultado de Prisma;
+- guarde el resultado de la transaccion para mapearlo en el paso siguiente.
+
+## Creacion transaccional de una parada completada
+
+- `createTripDestination` verifica primero la propiedad del viaje y el rango
+  de las fechas.
+- La transaccion reutiliza o crea `Destination`, calcula la posicion y crea
+  `TripDestination` usando el mismo cliente `tx`.
+- La relacion se crea con el ID interno del destino, no con `providerId`.
+- La consulta incluye `destination`, permitiendo que el mapper produzca la
+  respuesta publica con fechas `YYYY-MM-DD`.
+- La funcion devuelve `Promise<TripDestinationResponse>`.
+- `npm run typecheck`, `npm run build`, `prisma validate` y
+  `git diff --check` pasan.
+
+## Endurecimiento considerado
+
+Manejar el caso limite en que dos solicitudes simultaneas calculen la misma
+posicion. La restriccion unica de Prisma protege los datos, pero el error
+`P2002` debe convertirse en un conflicto HTTP controlado en lugar de llegar al
+middleware como un error interno `500`.
+
+## Conflicto concurrente aplazado
+
+El tratamiento especifico de `P2002` se aplaza para no introducir ahora una
+ramificacion dedicada a dos solicitudes simultaneas. La restriccion
+`@@unique([tripId, position])` sigue protegiendo los datos, pero este caso raro
+responderia temporalmente como error interno `500`. Queda registrado como
+endurecimiento pendiente del endpoint.
+
+## Endpoint para agregar una parada completado
+
+- Se creo `trip-destination.controller.ts` en la feature responsable.
+- El controlador exige autenticacion, valida `tripId` y el cuerpo por separado
+  y delega la operacion al servicio.
+- `POST /api/trips/:tripId/destinations` quedo registrado bajo `tripRouter`.
+- La respuesta exitosa usa HTTP `201` y `{ data: { tripDestination } }`.
+- TypeScript, build, Prisma y `git diff --check` pasan.
+- Una prueba HTTP sin sesion confirmo que la ruta existe y responde `401` antes
+  de procesar el cuerpo.
+
+## Proximo paso
+
+Verificar el caso exitoso con una sesion y un viaje reales. Despues se podra
+crear la mutation de RTK Query que enviara el destino seleccionado desde el
+detalle de un viaje.
+
+## Microtarea actual: prueba HTTP autenticada
+
+- Iniciar cliente y servidor e iniciar sesion desde la aplicacion.
+- Elegir un viaje existente y conservar su UUID.
+- Buscar un destino y reutilizar el objeto normalizado devuelto por la busqueda.
+- Enviar `POST /api/trips/:tripId/destinations` con fechas dentro del viaje.
+- Confirmar HTTP `201`, `data.tripDestination`, posicion `1` para la primera
+  parada y el objeto `destination` anidado.
