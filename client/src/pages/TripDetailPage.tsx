@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { useGetTripQuery } from "../features/trips/tripsApi";
 import DeleteTripAction from "../features/trips/DeleteTripAction";
 import TripStatusActions from "../features/trips/TripStatusActions";
+import TripDestinationsSection from "../features/trip-destinations/TripDestinationsSection";
 
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>();
@@ -125,6 +126,7 @@ export default function TripDetailPage() {
 
         <div className="mt-8">
           <TripStatusActions tripId={trip.id} status={trip.status} />
+          <TripDestinationsSection tripId={trip.id} />
         </div>
 
         <div className="mt-10 border-t border-slate-200 pt-6">

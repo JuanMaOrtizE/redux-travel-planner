@@ -5505,3 +5505,138 @@ peticion autenticada.
 
 Probar el GET en Postman con una sesion activa y confirmar que el viaje usado
 en la prueba anterior devuelve sus tres paradas ordenadas por `position`.
+
+## Prueba autenticada de listado completada
+
+- Postman confirmo HTTP `200` con `data.tripDestinations`.
+- Las paradas del viaje se devolvieron ordenadas por `position` y con su objeto
+  `destination` anidado.
+- El flujo backend de crear y listar paradas queda verificado.
+
+## Proximo paso
+
+Crear en `client/src/features/trip-destinations/` los tipos definitivos de la
+parada y de la respuesta de listado. Despues se definira la query de RTK Query
+para `GET /api/trips/:tripId/destinations`.
+
+## Tipos cliente de paradas completados
+
+- `Destination` compone el resultado de busqueda con el ID interno persistido.
+- `TripDestination` representa la parada, sus fechas y el destino anidado.
+- `ListTripDestinationsResponse` coincide con
+  `{ data: { tripDestinations } }`.
+- Los archivos se movieron desde `server/src` a sus ubicaciones definitivas en
+  `client/src`; tambien se corrigio `Respose` a `Response`.
+- Build, lint y `git diff --check` pasan.
+
+## Proximo paso
+
+Crear `tripDestinationsApi.ts` e introducir la query de RTK Query para listar
+las paradas de un viaje por su `tripId`.
+
+## Microtarea actual: query de paradas por viaje
+
+- Crear `client/src/features/trip-destinations/tripDestinationsApi.ts`.
+- Inyectar `getTripDestinations` en el API slice compartido.
+- Declarar `ListTripDestinationsResponse` como respuesta y `string` como
+  argumento `tripId`.
+- Construir `GET trips/:tripId/destinations`.
+- Exportar `useGetTripDestinationsQuery`.
+- No agregar todavia tags, mutation ni componentes.
+
+## Query RTK Query de paradas completada
+
+- `tripDestinationsApi.ts` inyecta `getTripDestinations` en el API slice
+  compartido.
+- La query recibe `tripId: string` y solicita
+  `GET trips/:tripId/destinations`.
+- Se exporta `useGetTripDestinationsQuery`.
+- Se corrigio el callback de `endpoints`: ahora devuelve el objeto de
+  definiciones en lugar de `void`.
+- Build, lint y `git diff --check` pasan.
+
+## Proximo paso
+
+Crear el componente definitivo que consuma `useGetTripDestinationsQuery` y
+represente carga inicial, error, lista vacia y lista ordenada antes de integrarlo
+en `TripDetailPage`.
+
+## Microtarea actual: seccion de paradas del viaje
+
+- Crear `TripDestinationsSection.tsx` dentro de la feature
+  `trip-destinations`.
+- Recibir `tripId: string` y suscribirse con
+  `useGetTripDestinationsQuery(tripId)`.
+- Diferenciar carga inicial, error sin datos, actualizacion en segundo plano,
+  error conservando cache, lista vacia y lista con datos.
+- Usar un `ol` para expresar semanticamente el orden de las paradas.
+- Mantener el vocabulario visual existente: superficies blancas, bordes slate,
+  teal para acciones y estados semanticos accesibles.
+- No integrar todavia el componente en `TripDetailPage`.
+
+## Seccion de paradas creada
+
+- `TripDestinationsSection` recibe `tripId` y consume la query tipada.
+- Distingue carga inicial, error sin datos, actualizacion, error conservando
+  cache, lista vacia y lista con datos.
+- La lista usa `ol` y muestra posicion, destino, contexto geografico, fechas y
+  notas.
+- Las fechas se presentan con `Intl.DateTimeFormat` en `es-CO` y UTC para no
+  desplazar el dia recibido como fecha de calendario.
+- El skeleton respeta `prefers-reduced-motion` y los mensajes usan roles
+  accesibles.
+- Build, lint y `git diff --check` pasan.
+
+## Proximo paso
+
+Integrar `TripDestinationsSection` en `TripDetailPage` y verificar visualmente
+los estados con el navegador.
+
+## Seccion de paradas integrada
+
+- `TripDetailPage` importa `TripDestinationsSection` y le entrega `trip.id`.
+- La seccion aparece despues de las acciones de estado y antes de la zona de
+  peligro, manteniendo la jerarquia de la pagina.
+- Al montarse crea la suscripcion RTK Query independiente de la consulta del
+  viaje.
+- Build, lint y `git diff --check` pasan.
+- La verificacion visual queda pendiente porque el navegador integrado no pudo
+  conectarse durante esta sesion; no se detecto un error de la aplicacion.
+
+## Proximo paso
+
+Abrir un detalle de viaje en la sesion autenticada y revisar visualmente la
+lista y el estado vacio. Despues se definira la mutation para agregar una
+parada desde el cliente y su estrategia de invalidacion de cache.
+
+## Microtarea actual: contrato cliente para crear una parada
+
+- Ampliar `tripDestination.types.ts` con el cuerpo, argumento y respuesta de
+  la mutation.
+- El cuerpo recibira `DestinationSearchResult`, porque la ciudad seleccionada
+  aun no tiene ID interno en el cliente.
+- `tripId` permanecera fuera del cuerpo y servira para construir la URL.
+- Fechas y notas aceptaran omision o `null`, igual que el contrato backend.
+- La respuesta reutilizara `TripDestination`, que ya contiene el destino
+  persistido.
+
+## Contrato cliente de creacion completado
+
+- `CreateTripDestinationBody` representa exclusivamente el JSON enviado al
+  endpoint.
+- El destino de entrada usa `DestinationSearchResult`: todavia no necesita el
+  `id` interno que asigna la base de datos.
+- `CreateTripDestinationRequest` separa `tripId`, usado en la URL, de `body`,
+  usado como cuerpo de la peticion.
+- `CreateTripDestinationResponse` representa la parada ya persistida y
+  reutiliza `TripDestination`.
+- `arrivalDate`, `departureDate` y `notes` pueden omitirse o enviarse como
+  `null`, de acuerdo con el contrato del backend.
+- Build, lint y `git diff --check` pasan.
+
+## Proximo paso
+
+Definir la etiqueta de cache `TripDestinations` y agregar la mutation de
+creacion. La query proporcionara una etiqueta por `tripId`; una creacion
+exitosa invalidara esa misma etiqueta para actualizar solamente la lista del
+viaje afectado.

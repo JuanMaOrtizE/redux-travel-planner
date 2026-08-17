@@ -9,6 +9,10 @@ export type DestinationSearchResult = {
   region: string | null;
 };
 
+export type Destination = DestinationSearchResult & {
+  id: string;
+};
+
 export type SearchDestinationsResponse = {
   data: { destinations: DestinationSearchResult[] };
 };
