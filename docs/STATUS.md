@@ -5640,3 +5640,124 @@ Definir la etiqueta de cache `TripDestinations` y agregar la mutation de
 creacion. La query proporcionara una etiqueta por `tripId`; una creacion
 exitosa invalidara esa misma etiqueta para actualizar solamente la lista del
 viaje afectado.
+
+## Microtarea actual: identificar la cache de paradas
+
+- Registrar `TripDestinations` en `tagTypes` del API slice compartido.
+- Hacer que `getTripDestinations` proporcione una etiqueta cuyo `id` sea el
+  `tripId` consultado.
+- No crear todavia la mutation ni invalidar etiquetas: primero se comprobara
+  que la query identifica correctamente cada lista por viaje.
+
+## Cache de paradas identificada
+
+- `TripDestinations` esta registrado en `tagTypes` del API slice compartido.
+- `getTripDestinations` proporciona una etiqueta especifica cuyo `id` es el
+  `tripId` recibido por la query.
+- Las listas de dos viajes distintos ya pueden invalidarse por separado.
+- Build, lint y `git diff --check` pasan.
+
+## Microtarea actual: mutation para crear una parada
+
+- Importar los tipos de argumento y respuesta ya definidos.
+- Crear `createTripDestination` con `builder.mutation`.
+- Separar `tripId`, que construye la URL, de `body`, que se envia como JSON.
+- Invalidar la etiqueta del viaje solamente cuando el POST termine con exito.
+- Exportar el hook generado `useCreateTripDestinationMutation`.
+
+## Mutation de creacion de parada completada
+
+- `createTripDestination` recibe `CreateTripDestinationRequest` y devuelve
+  `CreateTripDestinationResponse`.
+- `tripId` construye la URL y `body` se envia mediante `POST`.
+- Una respuesta exitosa invalida solamente
+  `TripDestinations/{tripId}`; un error conserva la cache actual.
+- Se exporta `useCreateTripDestinationMutation`.
+- Durante la revision se corrigieron mecanicamente el nombre singular de la
+  mutation y la errata `POSR` por `POST`.
+- Build, lint y `git diff --check` pasan.
+
+## Proximo paso
+
+Definir la frontera de seleccion entre el buscador existente y el flujo del
+viaje: al elegir un candidato, el detalle debe entregarlo a la mutation junto
+con su `tripId`, sin duplicar la logica de consulta de destinos ni convertir
+todavia el buscador general en un formulario provisional.
+
+## Microtarea actual: callback de seleccion del buscador
+
+- Declarar props para que `DestinationSearch` pueda recibir opcionalmente
+  `onSelectDestination`.
+- El callback recibira el objeto `DestinationSearchResult` correspondiente al
+  candidato pulsado.
+- Mostrar el boton `Seleccionar destino` en cada resultado solamente cuando
+  exista el callback.
+- El buscador no conocera `tripId`, no importara la mutation y no guardara
+  datos; la persistencia seguira perteneciendo a la feature
+  `trip-destinations`.
+- La pantalla general `/destinations` conservara su comportamiento actual al
+  renderizar el componente sin props.
+
+## Callback de seleccion completado
+
+- `DestinationSearch` acepta opcionalmente `onSelectDestination`.
+- Cada boton entrega al padre el `DestinationSearchResult` de su propia fila.
+- Sin callback no se renderizan acciones inertes, por lo que `/destinations`
+  conserva su comportamiento actual.
+- El boton usa una jerarquia secundaria con borde teal, separacion y foco
+  visible; el boton principal del formulario sigue siendo `Buscar destinos`.
+- El buscador no conoce `tripId` ni importa la mutation de paradas.
+- Se corrigio mecanicamente un salto de linea accidental dentro del string de
+  clases.
+- Build, lint y `git diff --check` pasan.
+
+## Proximo paso
+
+Crear `AddTripDestinationSection.tsx` dentro de `trip-destinations`. Este
+componente recibira el `tripId`, renderizara `DestinationSearch` con su callback
+y ejecutara `useCreateTripDestinationMutation` al seleccionar un candidato.
+Antes de integrarlo se definiran los estados de envio para impedir selecciones
+duplicadas y comunicar exito o error.
+
+## Microtarea actual: estado controlado de seleccion
+
+- Ampliar las props de `DestinationSearch` con el estado de seleccion y el
+  `providerId` del candidato que se esta procesando.
+- Desactivar todos los botones de seleccion mientras exista una creacion en
+  curso, evitando dobles clics y selecciones paralelas accidentales.
+- Mostrar `Agregando...` solamente en la fila elegida; las demas conservaran
+  su etiqueta, aunque permanezcan desactivadas.
+- `DestinationSearch` seguira sin crear estado de mutation: recibira estos
+  valores desde el componente de `trip-destinations` que se construira despues.
+
+## Estado controlado de seleccion completado
+
+- `DestinationSearch` recibe opcionalmente `isSelectingDestination` y
+  `selectingProviderId`, con valores predeterminados seguros para su uso
+  independiente.
+- Durante una seleccion se desactivan todos los botones para impedir peticiones
+  paralelas accidentales.
+- Solamente la fila cuyo `providerId` coincide muestra `Agregando...` y expone
+  `aria-busy`.
+- Los controles desactivados conservan contraste y una apariencia coherente
+  con el vocabulario visual del proyecto.
+- El buscador no importa ni administra la mutation.
+- Build, lint y `git diff --check` pasan.
+
+## Proximo paso
+
+Crear `AddTripDestinationSection.tsx` como orquestador: recibira `tripId`,
+mantendra temporalmente el `providerId` elegido, ejecutara
+`useCreateTripDestinationMutation` y entregara al buscador el estado de envio.
+
+## Microtarea actual: orquestador de creacion
+
+- Crear `AddTripDestinationSection.tsx` en la feature `trip-destinations`.
+- Recibir `tripId: string` mediante props.
+- Usar `useCreateTripDestinationMutation` para obtener el disparador y
+  `isLoading`.
+- Mantener en estado local solamente el `providerId` del candidato pendiente.
+- Al seleccionar un candidato, enviar `{ tripId, body: { destination } }` y
+  limpiar el identificador local tanto en exito como en error.
+- Pasar callback, `isLoading` y `providerId` a `DestinationSearch`.
+- No integrar todavia el componente ni agregar mensajes visuales de resultado.

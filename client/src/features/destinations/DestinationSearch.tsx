@@ -8,6 +8,12 @@ import {
 import type { DestinationSearchResult } from "./destination.types";
 import { useSearchDestinationsQuery } from "./destinationsApi";
 
+type DestinationSearchProps = {
+  onSelectDestination?: (destination: DestinationSearchResult) => void;
+  isSelectingDestination?: boolean;
+  selectingProviderId?: string | null;
+};
+
 function getDestinationContext(destination: DestinationSearchResult): string {
   const country = destination.country ?? destination.countryCode;
   const locationParts = [destination.region, country].filter(
@@ -36,7 +42,11 @@ function getDestinationSearchErrorMessage(error: unknown): string {
   return "No pudimos completar la búsqueda. Intenta nuevamente.";
 }
 
-export default function DestinationSearch() {
+export default function DestinationSearch({
+  onSelectDestination,
+  isSelectingDestination = false,
+  selectingProviderId = null,
+}: DestinationSearchProps) {
   const {
     register,
     handleSubmit,
@@ -247,37 +257,58 @@ export default function DestinationSearch() {
 
         {hasCurrentResponse && destinations.length > 0 && (
           <ul className="mt-4 divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white">
-            {destinations.map((destination) => (
-              <li className="min-w-0 p-5" key={destination.providerId}>
-                <p className="wrap-break-words font-semibold text-slate-900">
-                  {destination.name}
-                </p>
-                <p className="mt-1 wrap-break-words text-sm text-slate-600">
-                  {getDestinationContext(destination)}
-                </p>
+            {destinations.map((destination) => {
+              const isSelectingThisDestination =
+                isSelectingDestination &&
+                selectingProviderId === destination.providerId;
 
-                <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-xs text-slate-600">
-                  <div className="flex flex-wrap gap-1">
-                    <dt className="font-medium text-slate-700">Coordenadas:</dt>
-                    <dd>
-                      {destination.latitude.toFixed(4)},{" "}
-                      {destination.longitude.toFixed(4)}
-                    </dd>
-                  </div>
+              return (
+                <li className="min-w-0 p-5" key={destination.providerId}>
+                  <p className="wrap-break-words font-semibold text-slate-900">
+                    {destination.name}
+                  </p>
+                  <p className="mt-1 wrap-break-words text-sm text-slate-600">
+                    {getDestinationContext(destination)}
+                  </p>
 
-                  {destination.timezone && (
-                    <div className="flex min-w-0 flex-wrap gap-1">
+                  <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-xs text-slate-600">
+                    <div className="flex flex-wrap gap-1">
                       <dt className="font-medium text-slate-700">
-                        Zona horaria:
+                        Coordenadas:
                       </dt>
-                      <dd className="wrap-break-words">
-                        {destination.timezone}
+                      <dd>
+                        {destination.latitude.toFixed(4)},{" "}
+                        {destination.longitude.toFixed(4)}
                       </dd>
                     </div>
-                  )}
-                </dl>
-              </li>
-            ))}
+
+                    {destination.timezone && (
+                      <div className="flex min-w-0 flex-wrap gap-1">
+                        <dt className="font-medium text-slate-700">
+                          Zona horaria:
+                        </dt>
+                        <dd className="wrap-break-words">
+                          {destination.timezone}
+                        </dd>
+                      </div>
+                    )}
+                  </dl>
+                  {onSelectDestination ? (
+                    <button
+                      aria-busy={isSelectingThisDestination}
+                      className="mt-4 inline-flex items-center justify-center rounded-lg border border-teal-700 px-3 py-2 text-sm font-semibold text-teal-800 transition-colors hover:bg-teal-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-50 disabled:text-slate-500"
+                      disabled={isSelectingDestination}
+                      type="button"
+                      onClick={() => onSelectDestination(destination)}
+                    >
+                      {isSelectingThisDestination
+                        ? "Agregando..."
+                        : "Seleccionar destino"}
+                    </button>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
