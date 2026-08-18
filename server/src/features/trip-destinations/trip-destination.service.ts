@@ -148,3 +148,82 @@ export async function listTripDestinations(
 
   return tripDestinations.map(toTripDestinationResponse);
 }
+export async function deleteTripDestination(
+  userId: string,
+  tripId: string,
+  tripDestinationId: string,
+): Promise<void> {
+  const trip = await getOwnedTripOrThrow(userId, tripId);
+
+  assertTripAllowsDestinationChanges(trip.status);
+
+  await prisma.$transaction(async (tx) => {
+    const tripDestination = await getTripDestinationOrThrow(
+      tx,
+      trip.id,
+      tripDestinationId,
+    );
+
+    await tx.tripDestination.delete({
+      where: { id: tripDestination.id },
+    });
+
+    await compactTripDestinationPositions(
+      tx,
+      trip.id,
+      tripDestination.position,
+    );
+  });
+}
+
+async function getTripDestinationOrThrow(
+  tx: Prisma.TransactionClient,
+  tripId: string,
+  tripDestinationId: string,
+) {
+  const tripDestination = await tx.tripDestination.findFirst({
+    where: {
+      id: tripDestinationId,
+      tripId,
+    },
+    select: {
+      id: true,
+      position: true,
+    },
+  });
+
+  if (!tripDestination) {
+    throw new AppError(
+      404,
+      "TRIP_DESTINATION_NOT_FOUND",
+      "Parada no encontrada",
+    );
+  }
+
+  return tripDestination;
+}
+
+async function compactTripDestinationPositions(
+  tx: Prisma.TransactionClient,
+  tripId: string,
+  deletedPosition: number,
+) {
+  const tripDestinations = await tx.tripDestination.findMany({
+    where: {
+      tripId,
+      position: { gt: deletedPosition },
+    },
+    orderBy: { position: "asc" },
+    select: {
+      id: true,
+      position: true,
+    },
+  });
+
+  for (const tripDestination of tripDestinations) {
+    await tx.tripDestination.update({
+      where: { id: tripDestination.id },
+      data: { position: tripDestination.position - 1 },
+    });
+  }
+}

@@ -5968,3 +5968,110 @@ otro viaje pueda eliminarse aunque el usuario conozca su identificador.
   `TRIP_DESTINATION_NOT_FOUND`.
 - Devolver la parada encontrada. Todavia no invocar el helper ni implementar
   el borrado.
+
+## Localizacion segura de una parada completada
+
+- `getTripDestinationOrThrow` recibe el cliente transaccional y ambos IDs.
+- La consulta combina `id: tripDestinationId` con `tripId`, por lo que una
+  parada de otro viaje no coincide.
+- El helper espera el resultado con `await`, selecciona solamente `id` y
+  `position`, y responde con `TRIP_DESTINATION_NOT_FOUND` cuando recibe `null`.
+- El typecheck del servidor y `git diff --check` pasan.
+
+## Proximo paso
+
+Crear un helper transaccional que compacte las posiciones posteriores a la
+parada eliminada. Si se quita la posicion 2 de una secuencia 1, 2, 3 y 4, las
+posiciones 3 y 4 deben convertirse en 2 y 3 sin violar la restriccion unica
+`tripId + position`.
+
+## Microtarea actual: compactar posiciones posteriores
+
+- Crear el helper interno `compactTripDestinationPositions` en
+  `trip-destination.service.ts`.
+- Recibir `tx`, `tripId` y `deletedPosition`.
+- Consultar las paradas del viaje con posicion mayor a la eliminada,
+  ordenadas ascendentemente, seleccionando `id` y `position`.
+- Recorrerlas secuencialmente y actualizar cada posicion a `position - 1`.
+- No usar `Promise.all`: actualizar en paralelo podria intentar ocupar una
+  posicion que la parada anterior todavia no ha liberado.
+- Todavia no invocar el helper ni crear la funcion publica de eliminacion.
+
+## Compactacion de posiciones completada
+
+- `compactTripDestinationPositions` consulta solamente las paradas posteriores
+  del mismo viaje.
+- La consulta devuelve `id` y `position` en orden ascendente.
+- El recorrido usa `for...of` y espera cada actualizacion antes de comenzar la
+  siguiente, evitando colisiones con `tripId + position`.
+- Si no hay posiciones posteriores, el arreglo vacio no produce escrituras.
+- El typecheck del servidor y `git diff --check` pasan.
+
+## Proximo paso
+
+Crear la funcion publica `deleteTripDestination`. Primero comprobara que el
+viaje pertenece al usuario y permite cambios; despues, dentro de una unica
+transaccion, localizara la parada, la eliminara y compactara las posiciones.
+
+## Microtarea actual: servicio de eliminacion
+
+- Exportar `deleteTripDestination` desde `trip-destination.service.ts`.
+- Recibir `userId`, `tripId` y `tripDestinationId`, todos como `string`, y
+  devolver `Promise<void>`.
+- Reutilizar `getOwnedTripOrThrow` y
+  `assertTripAllowsDestinationChanges` antes de escribir.
+- Abrir una sola `prisma.$transaction`.
+- Dentro de ella, localizar la parada con `getTripDestinationOrThrow`, borrar
+  esa fila por su `id` y despues llamar
+  `compactTripDestinationPositions` con la posicion liberada.
+- No devolver la parada eliminada ni borrar `Destination`.
+- Todavia no crear controlador ni registrar la ruta.
+
+## Servicio de eliminacion completado
+
+- `deleteTripDestination` comprueba primero propiedad y estado del viaje.
+- Una unica transaccion localiza la parada dentro del viaje, elimina solamente
+  `TripDestination` y compacta las posiciones posteriores.
+- La funcion usa `trip.id`, no `userId`, al comprobar la pertenencia de la
+  parada.
+- El retorno es `Promise<void>` y el destino reutilizable permanece intacto.
+- Se retiro una implementacion parcial duplicada al completar la funcion.
+- El typecheck del servidor y `git diff --check` pasan.
+
+## Proximo paso
+
+Crear `deleteTripDestinationController`: comprobar autenticacion, validar los
+dos parametros con `deleteTripDestinationParamsSchema`, invocar el servicio y
+responder `204` sin cuerpo. La ruta se registrara en una microtarea posterior.
+
+## Controlador de eliminacion completado
+
+- `deleteTripDestinationController` conserva la comprobacion defensiva de
+  autenticacion usada por los demas controladores.
+- `deleteTripDestinationParamsSchema` valida conjuntamente `tripId` y
+  `tripDestinationId` desde `req.params`.
+- El controlador pasa `auth.userId` y ambos parametros al servicio.
+- El exito responde `204 No Content` mediante `res.status(204).send()`.
+- No contiene consultas Prisma ni reglas de propiedad, estado u orden.
+- El typecheck del servidor y `git diff --check` pasan.
+
+## Proximo paso
+
+Importar `deleteTripDestinationController` en `trip.routes.ts` y registrar
+`DELETE /:tripId/destinations/:tripDestinationId` con `requireAuth`. Despues se
+probara el endpoint con una parada intermedia y un viaje finalizado.
+
+## Endpoint para eliminar una parada completado
+
+- `trip.routes.ts` importa `deleteTripDestinationController`.
+- La ruta `DELETE /:tripId/destinations/:tripDestinationId` quedo agrupada con
+  las demas rutas anidadas de paradas y protegida por `requireAuth`.
+- Typecheck, build y `git diff --check` pasan.
+- El servidor activo responde 200 en salud y la nueva ruta responde 401 sin
+  cookie, confirmando que Express la reconoce y ejecuta autenticacion.
+
+## Proximo paso
+
+Probar en Postman una eliminacion autenticada. Se elegira una parada intermedia
+de un viaje editable para comprobar la respuesta 204 y la compactacion; luego
+se intentara eliminar una parada de un viaje finalizado para confirmar el 409.
