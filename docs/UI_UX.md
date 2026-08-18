@@ -123,6 +123,16 @@ responsive.
 - Durante el refetch provocado por la invalidacion, el detalle conserva la
   informacion visible y muestra un aviso de actualizacion.
 
+## Estado visible en la lista de viajes
+
+- Cada tarjeta de `/trips` muestra una etiqueta de estado junto al titulo.
+- Una linea superior solida de `2px` refuerza la identificacion sin convertir
+  la tarjeta en una alerta ni usar gradientes decorativos.
+- Planificacion usa ambar, confirmado azul, completado verde y cancelado rojo.
+- La lista y el detalle comparten las mismas clases semanticas de la etiqueta.
+- El encabezado interno permite salto de linea para que titulos largos y
+  etiquetas no se superpongan en pantallas estrechas.
+
 ## Busqueda de destinos
 
 - La pantalla sera una herramienta protegida y orientada a una tarea concreta,

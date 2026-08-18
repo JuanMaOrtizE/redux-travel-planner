@@ -4,12 +4,12 @@ import { destinationCandidateSchema } from "../destinations/destination.schemas.
 export const createTripDestinationSchema = z
   .strictObject({
     destination: destinationCandidateSchema,
-    arrivalDate: z
-      .iso.date("La fecha de llegada debe usar el formato YYYY-MM-DD")
+    arrivalDate: z.iso
+      .date("La fecha de llegada debe usar el formato YYYY-MM-DD")
       .nullable()
       .optional(),
-    departureDate: z
-      .iso.date("La fecha de salida debe usar el formato YYYY-MM-DD")
+    departureDate: z.iso
+      .date("La fecha de salida debe usar el formato YYYY-MM-DD")
       .nullable()
       .optional(),
     notes: z
@@ -31,6 +31,16 @@ export const createTripDestinationSchema = z
     },
   );
 
+export const deleteTripDestinationParamsSchema = z.strictObject({
+  tripId: z.uuid("El identificador del viaje debe ser un UUID valido"),
+  tripDestinationId: z.uuid(
+    "El identificador de la parada debe ser un UUID valido",
+  ),
+});
+
+export type DeleteTripDestinationParams = z.infer<
+  typeof deleteTripDestinationParamsSchema
+>;
 export type CreateTripDestinationInput = z.infer<
   typeof createTripDestinationSchema
 >;

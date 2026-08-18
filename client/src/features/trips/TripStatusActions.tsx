@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { getTripStatusLabel } from "./trip.formatters";
+import { tripStatusBadgeClassNames } from "./tripStatus.styles";
 import type { TripStatus } from "./trip.types";
 import { useUpdateTripMutation } from "./tripsApi";
 
@@ -48,13 +49,6 @@ const actionsByStatus: Record<TripStatus, StatusAction[]> = {
   CANCELLED: [],
 };
 
-const statusClassNames: Record<TripStatus, string> = {
-  PLANNING: "bg-amber-100 text-amber-900",
-  CONFIRMED: "bg-sky-100 text-sky-900",
-  COMPLETED: "bg-emerald-100 text-emerald-900",
-  CANCELLED: "bg-red-100 text-red-900",
-};
-
 export default function TripStatusActions({
   tripId,
   status,
@@ -101,7 +95,7 @@ export default function TripStatusActions({
         </div>
 
         <span
-          className={`rounded-full px-3 py-1 text-sm font-semibold ${statusClassNames[status]}`}
+          className={`rounded-full px-3 py-1 text-sm font-semibold ${tripStatusBadgeClassNames[status]}`}
         >
           {getTripStatusLabel(status)}
         </span>

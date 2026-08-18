@@ -4,6 +4,7 @@ import { useGetTripQuery } from "../features/trips/tripsApi";
 import DeleteTripAction from "../features/trips/DeleteTripAction";
 import TripStatusActions from "../features/trips/TripStatusActions";
 import TripDestinationsSection from "../features/trip-destinations/TripDestinationsSection";
+import AddTripDestinationSection from "../features/trip-destinations/AddTripDestinationSection";
 
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>();
@@ -69,6 +70,9 @@ export default function TripDetailPage() {
     );
   }
 
+  const canEditTripDestinations =
+    trip.status === "PLANNING" || trip.status === "CONFIRMED";
+
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
       <section className="max-w-2xl">
@@ -127,6 +131,9 @@ export default function TripDetailPage() {
         <div className="mt-8">
           <TripStatusActions tripId={trip.id} status={trip.status} />
           <TripDestinationsSection tripId={trip.id} />
+          {canEditTripDestinations ? (
+            <AddTripDestinationSection tripId={trip.id} />
+          ) : null}
         </div>
 
         <div className="mt-10 border-t border-slate-200 pt-6">

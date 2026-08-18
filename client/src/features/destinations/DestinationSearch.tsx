@@ -155,7 +155,7 @@ export default function DestinationSearch({
         {isUninitialized && (
           <p className="mt-3 text-sm text-slate-600">
             Escribe al menos dos caracteres y selecciona «Buscar destinos» para
-            consultar candidatos.
+            consultar candidatos.lima
           </p>
         )}
 

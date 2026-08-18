@@ -5761,3 +5761,210 @@ mantendra temporalmente el `providerId` elegido, ejecutara
   limpiar el identificador local tanto en exito como en error.
 - Pasar callback, `isLoading` y `providerId` a `DestinationSearch`.
 - No integrar todavia el componente ni agregar mensajes visuales de resultado.
+
+## Orquestador de creacion completado
+
+- `AddTripDestinationSection` recibe `tripId` como prop desestructurada.
+- El hook de mutation aporta el disparador y `isLoading`; no se duplica ese
+  estado con `useState`.
+- El estado local conserva solamente el `providerId` del candidato pendiente.
+- El handler evita peticiones paralelas, ejecuta el POST con
+  `{ tripId, body: { destination } }` y limpia el identificador en `finally`.
+- `DestinationSearch` recibe el callback y ambos valores necesarios para
+  bloquear los botones y señalar la fila activa.
+- Se agrego mecanicamente un comentario al `catch` para documentar que RTK
+  Query conserva el error.
+- Build, lint y `git diff --check` pasan.
+
+## Proximo paso
+
+Representar en `AddTripDestinationSection` los resultados de la mutation:
+confirmar accesiblemente la parada creada y traducir los errores del backend,
+incluido el bloqueo de viajes finalizados. El componente seguira sin integrarse
+en `TripDetailPage` hasta completar estos estados.
+
+## Microtarea actual: resultado visible de la creacion
+
+- Extraer `data`, `isError`, `isSuccess`, `error` y `reset` del estado de la
+  mutation, ademas de `isLoading`.
+- Limpiar el resultado anterior con `reset()` antes de una nueva seleccion.
+- Mostrar un mensaje `role="status"` con el nombre confirmado por la respuesta
+  cuando la creacion termine correctamente.
+- Mostrar un mensaje `role="alert"` que traduzca 400, 401, 404, 409 y
+  `FETCH_ERROR` cuando la mutation falle.
+- Mantener la invalidacion exclusivamente en exito; un error no debe provocar
+  un GET nuevo ni reemplazar la lista actual.
+- No integrar todavia el componente en `TripDetailPage`.
+
+## Resultado visible de la creacion completado
+
+- El estado de la mutation expone `data`, `isLoading`, `isError`, `isSuccess`,
+  `error` y `reset` sin duplicarlos con estado local.
+- Cada intento limpia primero el resultado anterior mediante `reset()`.
+- El exito usa el nombre de la parada confirmada por el backend y se anuncia
+  con `role="status"`.
+- Los errores 400, 401, 404, 409 y `FETCH_ERROR` se traducen a mensajes de
+  interfaz y se anuncian con `role="alert"`.
+- La invalidacion continua ocurriendo solamente en exito; un error conserva la
+  lista en cache.
+- Build, lint y `git diff --check` pasan.
+
+## Proximo paso
+
+Integrar `AddTripDestinationSection` en `TripDetailPage` cerca de la lista de
+paradas. La accion se mostrara solamente para viajes `PLANNING` o `CONFIRMED`;
+los viajes `COMPLETED` y `CANCELLED` conservaran la lista en modo de consulta.
+
+## Microtarea actual: integracion condicionada en el detalle
+
+- Dar a `AddTripDestinationSection` una seccion con encabezado visible,
+  descripcion y separacion coherente respecto a la lista.
+- Importar el componente en `TripDetailPage`.
+- Derivar `canEditTripDestinations` desde el estado actual del viaje: sera
+  verdadero solamente para `PLANNING` y `CONFIRMED`.
+- Renderizar siempre `TripDestinationsSection` y renderizar la seccion de
+  creacion solamente cuando `canEditTripDestinations` sea verdadero.
+- Mantener el backend como autoridad final: la condicion cliente evita una
+  accion imposible, pero no reemplaza la respuesta 409 del servicio.
+
+## Integracion condicionada de paradas completada
+
+- `TripDetailPage` consulta y muestra las paradas en todos los estados del
+  viaje.
+- `canEditTripDestinations` habilita la seccion para agregar solamente en
+  viajes `PLANNING` y `CONFIRMED`.
+- `COMPLETED` y `CANCELLED` conservan la lista en modo de consulta y no
+  presentan una accion que el backend rechazaria.
+- `AddTripDestinationSection` quedo ubicado junto a la lista y mantiene
+  separadas la busqueda reutilizable y la mutation de creacion.
+- Se corrigio mecanicamente el orden y el espaciado de las clases de los
+  mensajes de exito y error.
+- Build, lint y `git diff --check` pasan. El build conserva un aviso no
+  bloqueante por un chunk principal ligeramente superior a 500 kB.
+
+## Proximo paso
+
+Validar manualmente en el navegador el flujo integrado con dos viajes: uno
+`PLANNING` o `CONFIRMED`, donde debe poder agregarse una parada y actualizarse
+la lista automaticamente; y otro `COMPLETED` o `CANCELLED`, donde la lista debe
+seguir visible sin mostrar la seccion para agregar. Esta comprobacion cerrara
+la primera experiencia completa de destinos antes de iniciar el mapa.
+
+## Validacion manual del flujo de paradas completada
+
+- En un viaje editable se pudo buscar y agregar un destino.
+- La mutation mostro sus estados visuales y la lista se actualizo despues de
+  la invalidacion de cache.
+- En un viaje finalizado la lista siguio disponible y la seccion para agregar
+  no se mostro.
+- El usuario confirmo que el flujo completo funciona correctamente.
+
+## Fase 8 completada - Destinos y API externa
+
+- La busqueda externa ocurre en el backend y devuelve candidatos normalizados.
+- Los destinos seleccionados se persisten y se relacionan con viajes mediante
+  paradas ordenadas.
+- El cliente permite buscar, seleccionar, crear y consultar las paradas de
+  cada viaje.
+- Las reglas de fechas y estados finales permanecen protegidas por el backend.
+- RTK Query mantiene sincronizada la lista activa mediante tags por `tripId`.
+
+## Proximo paso
+
+Iniciar la fase 9 con la base tecnica del mapa. Antes de instalar dependencias,
+se explicara la responsabilidad de Leaflet, React Leaflet y sus tipos, ademas
+de la ubicacion definitiva del primer componente de mapa.
+
+## Ajuste de secuencia antes del mapa
+
+La revision funcional detecto dos pendientes que conviene resolver antes de
+iniciar la fase 9:
+
+1. mejorar `/trips` para mostrar el estado de cada viaje. El contrato ya envia
+   `status`; el pendiente es exclusivamente de presentacion y reutilizara
+   `getTripStatusLabel`;
+2. completar la eliminacion de paradas. Esta operacion ya estaba acordada en
+   `DATA_MODEL.md`: solamente se permitira en viajes `PLANNING` o `CONFIRMED`,
+   identificara la relacion mediante `tripDestinationId` y no eliminara el
+   destino reutilizable.
+
+La eliminacion usara una ruta anidada bajo el viaje, comprobara pertenencia y
+estado en el backend y mantendra coherente el orden de las paradas restantes.
+En el cliente, una mutation invalidara el tag `TripDestinations` del `tripId`
+solo cuando la eliminacion termine correctamente.
+
+## Proximo paso revisado
+
+Mostrar primero el estado en las tarjetas de `/trips`. Despues se implementara
+la eliminacion de paradas de extremo a extremo y se validara manualmente. La
+fase de mapas comenzara cuando esos dos pendientes queden cerrados.
+
+## Estado visible en `/trips` completado
+
+- Cada tarjeta muestra el estado traducido junto a su titulo.
+- La linea superior de `2px` usa el mismo color semantico que la etiqueta.
+- `tripStatus.styles.ts` centraliza los colores compartidos por la lista y el
+  detalle del viaje.
+- El encabezado de la tarjeta usa `flex-wrap` para conservar el comportamiento
+  responsive con titulos largos.
+- Build, lint, detector de layout y `git diff --check` pasan. El build conserva
+  el aviso no bloqueante del chunk principal superior a 500 kB.
+
+## Proximo paso
+
+Validar visualmente los cuatro estados en `/trips`. Despues se iniciara el
+contrato backend para eliminar una parada sin borrar el destino reutilizable.
+
+## Contrato acordado: eliminar una parada
+
+- Metodo y ruta:
+  `DELETE /api/trips/:tripId/destinations/:tripDestinationId`.
+- `tripId` identifica el viaje y permite comprobar que pertenece al usuario.
+- `tripDestinationId` identifica la visita concreta; no se usa
+  `destinationId` porque un destino puede repetirse dentro del mismo viaje.
+- La operacion elimina solamente `TripDestination`. El registro reutilizable
+  de `Destination` permanece guardado.
+- En exito responde `204 No Content`.
+- Un viaje inexistente o ajeno responde 404; una parada inexistente o que no
+  pertenece al viaje responde 404; un viaje finalizado responde 409.
+- Despues de eliminar, las posiciones posteriores se compactaran para
+  conservar una secuencia visible continua.
+- El borrado y la compactacion ocurriran en una sola transaccion.
+
+## Microtarea actual: parametros de eliminacion de una parada
+
+Ampliar `trip-destination.schemas.ts` con un esquema estricto para `req.params`
+que valide `tripId` y `tripDestinationId` como UUID. Exportar tambien el tipo
+inferido correspondiente. Todavia no se crearan servicio, controlador ni ruta.
+
+## Parametros de eliminacion completados
+
+- `deleteTripDestinationParamsSchema` valida los dos segmentos como UUID y
+  rechaza propiedades desconocidas.
+- `DeleteTripDestinationParams` expone el tipo inferido con la convencion
+  PascalCase de TypeScript.
+- Se agregaron mensajes diferenciados para el identificador del viaje y el de
+  la parada.
+- La prueba directa acepta dos UUID validos, rechaza un UUID invalido y rechaza
+  un parametro adicional.
+- El typecheck del servidor y `git diff --check` pasan.
+
+## Proximo paso
+
+Preparar en `trip-destination.service.ts` la localizacion segura de una parada
+por `tripDestinationId` y `tripId`. La consulta debe impedir que una parada de
+otro viaje pueda eliminarse aunque el usuario conozca su identificador.
+
+## Microtarea actual: localizar la parada dentro del viaje
+
+- Crear un helper interno `getTripDestinationOrThrow` en
+  `trip-destination.service.ts`.
+- Recibir `tx: Prisma.TransactionClient`, `tripId` y `tripDestinationId`.
+- Consultar `tx.tripDestination.findFirst` filtrando simultaneamente por ambos
+  identificadores.
+- Seleccionar solamente `id` y `position`, los datos que necesitara el borrado
+  y la compactacion posterior.
+- Si no existe coincidencia, lanzar 404 con codigo
+  `TRIP_DESTINATION_NOT_FOUND`.
+- Devolver la parada encontrada. Todavia no invocar el helper ni implementar
+  el borrado.
