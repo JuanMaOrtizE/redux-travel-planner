@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { TripDestination } from "./tripDestination.types";
 import { useGetTripDestinationsQuery } from "./tripDestinationsApi";
 import DeleteTripDestinationAction from "./DeleteTripDestinationAction";
@@ -82,12 +83,24 @@ export default function TripDestinationsSection({
 
   const tripDestinations =
     tripDestinationsResponse?.data.tripDestinations ?? [];
+
   const hasCurrentResponse = tripDestinationsResponse !== undefined;
+
   const showLoadingState =
     isLoading || (isFetching && tripDestinationsResponse === undefined);
+
   const showInitialError = isError && !hasCurrentResponse && !isFetching;
+
   const showRefreshingState = isFetching && hasCurrentResponse;
+
   const showRefreshError = isError && hasCurrentResponse && !isFetching;
+
+  const [confirmingTripDestinationId, setConfirmingTripDestinationId] =
+    useState<string | null>(null);
+
+  const hasActiveTripDestinationConfirmation = tripDestinations.some(
+    (tripDestination) => tripDestination.id === confirmingTripDestinationId,
+  );
 
   return (
     <section
@@ -241,6 +254,19 @@ export default function TripDestinationsSection({
                     destinationName={tripDestination.destination.name}
                     tripDestinationId={tripDestination.id}
                     tripId={tripId}
+                    isConfirming={
+                      confirmingTripDestinationId === tripDestination.id
+                    }
+                    onOpenConfirmation={() =>
+                      setConfirmingTripDestinationId(tripDestination.id)
+                    }
+                    onCloseConfirmation={() =>
+                      setConfirmingTripDestinationId(null)
+                    }
+                    isDisabled={
+                      hasActiveTripDestinationConfirmation &&
+                      confirmingTripDestinationId !== tripDestination.id
+                    }
                   />
                 ) : null}
               </li>

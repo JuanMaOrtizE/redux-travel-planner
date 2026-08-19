@@ -1,34 +1,40 @@
 import { MapPinMinus } from "lucide-react";
-import { useState } from "react";
 import { useDeleteTripDestinationMutation } from "./tripDestinationsApi";
 
 type DeleteTripDestinationActionProps = {
   tripId: string;
   tripDestinationId: string;
   destinationName: string;
+  isConfirming: boolean;
+  onOpenConfirmation: () => void;
+  onCloseConfirmation: () => void;
+  isDisabled: boolean;
 };
 
 export default function DeleteTripDestinationAction({
   tripId,
   tripDestinationId,
   destinationName,
+  isConfirming,
+  onOpenConfirmation,
+  onCloseConfirmation,
+  isDisabled,
 }: DeleteTripDestinationActionProps) {
-  const [isConfirming, setIsConfirming] = useState(false);
-
   const [deleteTripDestination, { isLoading, isError, isSuccess, reset }] =
     useDeleteTripDestinationMutation();
   const isActionLocked = isLoading || isSuccess;
 
   function handleOpenConfirmation() {
+    if (isDisabled) return;
     reset();
-    setIsConfirming(true);
+    onOpenConfirmation();
   }
 
   function handleCancelConfirmation() {
     if (isActionLocked) return;
 
     reset();
-    setIsConfirming(false);
+    onCloseConfirmation();
   }
 
   async function handleConfirmDelete() {
@@ -54,14 +60,18 @@ export default function DeleteTripDestinationAction({
           <p className="font-semibold text-slate-950">
             ¿Quitar {destinationName} del recorrido?
           </p>
-          <p className="mt-1 text-sm leading-5 text-slate-700">
-            El destino seguirá disponible para otros viajes.
-          </p>
           {isError ? (
-            <p role="alert">
+            <p
+              className="mt-1 text-sm font-medium leading-5 text-red-800"
+              role="alert"
+            >
               No pudimos quitar esta parada. Intenta nuevamente.
             </p>
-          ) : null}
+          ) : (
+            <p className="mt-1 text-sm leading-5 text-slate-700">
+              El destino seguirá disponible para otros viajes.
+            </p>
+          )}
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
@@ -94,9 +104,10 @@ export default function DeleteTripDestinationAction({
 
   return (
     <button
-      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-red-700 transition-colors hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
+      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-red-700 transition-colors hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
       type="button"
       onClick={handleOpenConfirmation}
+      disabled={isDisabled}
     >
       <MapPinMinus aria-hidden="true" size={18} />
       <span className="sr-only">Quitar {destinationName} del recorrido</span>

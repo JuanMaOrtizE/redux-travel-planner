@@ -6355,3 +6355,94 @@ los textos, alerta y botones sin afectar las demas paradas.
 
 Completar el estilo del mensaje de error y evitar que dos paradas mantengan
 confirmaciones abiertas simultaneamente, sin modificar el flujo de la mutation.
+
+## Microtarea actual: error local al quitar una parada
+
+- Mantener siempre visible la pregunta principal de confirmacion.
+- Mostrar la aclaracion sobre el destino reutilizable mientras no exista error.
+- Cuando `isError` sea `true`, reemplazar esa aclaracion por la alerta del
+  servidor en lugar de acumular una tercera linea.
+- Conservar `role="alert"` y aplicar un tratamiento tipografico rojo compacto,
+  sin crear otra tarjeta dentro del overlay.
+- No modificar la mutation, los handlers, la invalidacion ni el blur.
+
+## Error local de eliminacion completado
+
+- La pregunta principal permanece visible en todos los estados.
+- El error reemplaza la aclaracion secundaria mediante un ternario, por lo que
+  el overlay no acumula una tercera linea.
+- La alerta conserva `role="alert"` y usa texto rojo compacto con contraste
+  suficiente.
+- `reset()` sigue restaurando el estado normal al abrir o cancelar.
+- Build, lint y `git diff --check` pasan. El aviso conocido del chunk principal
+  superior a 500 kB permanece sin bloquear la funcionalidad.
+
+## Proximo paso
+
+Elevar el identificador de la parada en confirmacion a
+`TripDestinationsSection` para permitir una sola confirmacion abierta a la vez.
+
+## Microtarea actual: una sola confirmacion de parada
+
+- Crear en `TripDestinationsSection` un estado
+  `confirmingTripDestinationId: string | null`.
+- El ID identifica cual fila esta confirmando; `null` representa que ninguna
+  confirmacion esta abierta.
+- Convertir `DeleteTripDestinationAction` en un componente controlado mediante
+  `isConfirming`, `onOpenConfirmation` y `onCloseConfirmation`.
+- Retirar su `useState` local, pero conservar en el componente la mutation y
+  sus estados de carga, error y exito.
+- En el `map`, comparar el ID del estado con `tripDestination.id` y pasar
+  callbacks que abran esa fila o restauren `null`.
+- No cambiar todavia la peticion DELETE, la invalidacion, el overlay ni los
+  estilos.
+
+## Confirmacion unica de parada completada
+
+- `TripDestinationsSection` conserva el unico estado de coordinacion mediante
+  `confirmingTripDestinationId: string | null`.
+- Cada fila compara ese valor con `tripDestination.id`, por lo que solo una
+  puede recibir `isConfirming={true}`.
+- `DeleteTripDestinationAction` ya no tiene un `useState` local para la
+  confirmacion y recibe estado y callbacks desde el padre.
+- La mutation y sus estados permanecen encapsulados en la accion de la fila.
+- Se ajusto mecanicamente el orden del import de React.
+- Build, lint y `git diff --check` pasan. El aviso conocido del chunk principal
+  superior a 500 kB permanece sin bloquear la funcionalidad.
+
+## Proximo paso
+
+Endurecer la coordinacion durante una eliminacion pendiente: impedir que el
+usuario cambie la confirmacion activa mientras el DELETE o su actualizacion
+posterior siguen bloqueados.
+
+## Microtarea actual: bloqueo exclusivo de confirmacion
+
+- Derivar en `TripDestinationsSection` si el ID confirmado todavia pertenece a
+  la lista actual, sin crear un segundo estado.
+- Pasar a cada `DeleteTripDestinationAction` una prop booleana `isDisabled`.
+- Deshabilitar las acciones de las otras filas mientras exista una
+  confirmacion activa y valida.
+- Mantener habilitada la fila activa para que pueda cancelar, reintentar o
+  confirmar.
+- Cuando el refetch de exito retire la fila, el ID dejara de coincidir con la
+  lista y las acciones restantes volveran a habilitarse automaticamente.
+- No mover la mutation ni modificar sus tags, la peticion DELETE o el overlay.
+
+## Bloqueo exclusivo de confirmacion completado
+
+- `hasActiveTripDestinationConfirmation` se deriva con `some()` a partir del
+  ID confirmado y la lista actual, sin duplicar estado.
+- Solo las filas distintas a la activa reciben `isDisabled={true}`.
+- El boton compacto usa el atributo nativo `disabled`, estilos visibles y una
+  guarda defensiva antes de abrir la confirmacion.
+- En error la fila permanece activa; tras un exito, el refetch elimina la fila
+  y el valor derivado libera automaticamente las acciones restantes.
+- Build, lint y `git diff --check` pasan. El aviso conocido del chunk principal
+  superior a 500 kB permanece sin bloquear la funcionalidad.
+
+## Proximo paso
+
+Validar manualmente el flujo completo en el navegador: apertura exclusiva,
+cancelacion, error con reintento y eliminacion exitosa con refetch. Despues se
+cerrara el hito de eliminacion de paradas.
