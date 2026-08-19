@@ -6075,3 +6075,283 @@ probara el endpoint con una parada intermedia y un viaje finalizado.
 Probar en Postman una eliminacion autenticada. Se elegira una parada intermedia
 de un viaje editable para comprobar la respuesta 204 y la compactacion; luego
 se intentara eliminar una parada de un viaje finalizado para confirmar el 409.
+
+## Eliminacion backend validada manualmente
+
+- Una peticion autenticada elimino una parada de un viaje editable y respondio
+  `204 No Content` sin cuerpo.
+- La consulta posterior mostro las posiciones restantes compactadas.
+- Un intento sobre un viaje `COMPLETED` o `CANCELLED` respondio 409 con codigo
+  `TRIP_DESTINATIONS_LOCKED`.
+- El flujo backend de eliminacion queda completado y verificado.
+
+## Proximo paso
+
+Agregar al cliente el contrato y la mutation RTK Query para eliminar una
+parada. La mutation recibira `tripId` y `tripDestinationId`, enviara el
+`DELETE` sin body e invalidara `TripDestinations` solamente cuando termine con
+exito. La interfaz de confirmacion se construira despues.
+
+## Microtarea actual: contrato cliente de eliminacion
+
+- Agregar `DeleteTripDestinationRequest` a
+  `client/src/features/trip-destinations/tripDestination.types.ts`.
+- El tipo contendra `tripId: string` y `tripDestinationId: string`.
+- No se definira un body porque los dos datos forman parte de la URL.
+- No se definira un tipo de respuesta: el endpoint devuelve 204 sin JSON y la
+  mutation utilizara `void` como resultado.
+- Todavia no modificar `tripDestinationsApi.ts` ni crear controles visuales.
+
+## Contrato cliente de eliminacion completado
+
+- `DeleteTripDestinationRequest` contiene solamente `tripId` y
+  `tripDestinationId`.
+- El contrato no agrega body ni un tipo de respuesta para el 204.
+- Build, lint y `git diff --check` pasan. El build conserva el aviso conocido
+  del chunk principal superior a 500 kB.
+
+## Proximo paso
+
+Agregar `deleteTripDestination` a `tripDestinationsApi.ts` como
+`builder.mutation<void, DeleteTripDestinationRequest>`. Construira la URL
+anidada, enviara `DELETE` e invalidara la tag del viaje solamente en exito.
+
+## Microtarea actual: mutation para eliminar una parada
+
+- Importar `DeleteTripDestinationRequest` en `tripDestinationsApi.ts`.
+- Agregar `deleteTripDestination` con resultado `void` y argumento
+  `DeleteTripDestinationRequest`.
+- Construir `trips/${tripId}/destinations/${tripDestinationId}` y usar metodo
+  `DELETE`, sin body.
+- Usar `invalidatesTags` condicionado: devolver la tag
+  `TripDestinations/tripId` en exito y un arreglo vacio en error.
+- Exportar `useDeleteTripDestinationMutation` junto a los hooks existentes.
+- Todavia no usar el hook en un componente ni agregar botones.
+
+## Mutation de eliminacion completada
+
+- `deleteTripDestination` usa resultado `void` y recibe
+  `DeleteTripDestinationRequest`.
+- La URL contiene los IDs del viaje y de la parada, usa metodo `DELETE` y no
+  envia body.
+- La tag `TripDestinations/tripId` se invalida solamente cuando no existe
+  error; una lista activa repetira su GET y mostrara las posiciones compactadas.
+- `useDeleteTripDestinationMutation` quedo exportado.
+- Build, lint y `git diff --check` pasan. El aviso conocido del chunk principal
+  superior a 500 kB permanece sin bloquear esta funcionalidad.
+
+## Proximo paso
+
+Definir la experiencia de eliminacion dentro de la lista de paradas: la accion
+se mostrara solamente cuando el viaje permita cambios, pedira confirmacion,
+representara loading/error y ejecutara la mutation sin duplicar la lista en
+estado local.
+
+## Microtarea actual revisada: accion de una parada
+
+- Completar el scaffold existente `DeleteTripDestinationAction.tsx` dentro de
+  `trip-destinations`.
+- Mantener sus props `tripId`, `tripDestinationId` y `destinationName`.
+- Crear primero solamente el boton accesible con `MapPinMinus`; todavia no
+  agregar estado local, capa de confirmacion ni ejecutar la mutation.
+- En pasos posteriores el componente se renderizara dentro del `<li>`. La fila
+  sera el ancestro `relative` y la confirmacion del componente podra usar
+  `absolute inset-0` para cubrir solamente esa parada.
+
+## Paso posterior
+
+Agregar a `DeleteTripDestinationAction` el estado local de confirmacion y una
+capa absoluta limitada a la fila con fondo semitransparente y `backdrop-blur`.
+Luego se conectara `useDeleteTripDestinationMutation` con sus estados de carga
+y error.
+
+## Libreria de iconos del cliente
+
+- Se instalo `lucide-react` como dependencia de ejecucion del cliente.
+- Se eligio un unico conjunto SVG para mantener consistencia visual y permitir
+  importar solamente los iconos utilizados.
+- La eliminacion de una parada usara `MapPinMinus`, con nombre accesible en el
+  boton compacto y texto visible dentro de la confirmacion en linea.
+- No se instalo un paquete de tipos adicional porque la libreria incluye sus
+  definiciones de TypeScript.
+
+## Proximo paso
+
+Completar primero el boton accesible del scaffold
+`DeleteTripDestinationAction.tsx`. Despues se integrara en la fila y se
+incorporara la confirmacion desenfocada solamente para viajes editables.
+
+## Boton para quitar una parada completado
+
+- `DeleteTripDestinationAction` muestra `MapPinMinus` dentro de un boton de
+  `44 x 44 px` con hover y foco visible.
+- El nombre accesible incluye el destino mediante texto `sr-only` y el SVG se
+  oculta de tecnologias de asistencia.
+- Se retiro un import accidental desde el cliente hacia el Prisma generado del
+  servidor.
+- Build, lint y `git diff --check` pasan. El aviso conocido del chunk principal
+  superior a 500 kB permanece sin bloquear la tarea.
+
+## Proximo paso
+
+Preparar primero el estado local de confirmacion dentro de
+`DeleteTripDestinationAction`. El boton no se integrara todavia para evitar
+mostrar una accion sin respuesta visible. Despues se conectara la mutation y,
+cuando el componente sea funcional, se renderizara solamente en filas
+editables.
+
+## Estado local de confirmacion completado
+
+- `DeleteTripDestinationAction` usa `isConfirming` para alternar entre el
+  icono y el contenido de confirmacion.
+- El clic en el icono abre la confirmacion y `Cancelar` restaura el estado
+  inicial.
+- `Cancelar` recibe el foco al montarse para ofrecer una salida segura por
+  teclado.
+- Todavia no se renderiza la accion en la lista ni se ejecuta el DELETE.
+- Build, lint y `git diff --check` pasan. El aviso conocido del chunk principal
+  superior a 500 kB permanece sin bloquear la tarea.
+
+## Proximo paso
+
+Conectar `useDeleteTripDestinationMutation` dentro del componente. Se agregara
+la accion final `Quitar parada`, se representaran loading y error y se
+mantendra la confirmacion abierta cuando el servidor rechace la operacion.
+
+## Revision de la conexion de la mutation
+
+- El import del hook, las tres props y la llamada a
+  `useDeleteTripDestinationMutation` estan ubicados correctamente.
+- El build falla porque el trigger, los estados de la mutation, `reset` y los
+  dos IDs fueron declarados antes de ser utilizados.
+- Lint confirma las mismas variables sin uso.
+- No se ocultaran los avisos ni se agregaran prefijos `_`; la implementacion se
+  dividira para que cada dato aparezca cuando ya tenga una responsabilidad.
+
+## Microtarea reiniciada
+
+- Desestructurar inicialmente solo el trigger `deleteTripDestination` del hook.
+- Crear `handleConfirmDelete`, enviar `tripId` y `tripDestinationId` y esperar
+  el resultado mediante `.unwrap()` dentro de `try/catch`.
+- Agregar el boton `Quitar parada` conectado al handler.
+- Todavia no desestructurar `isLoading`, `isError`, `isSuccess` ni `reset`; esos
+  estados se incorporaran en la microtarea posterior.
+
+## Trigger de eliminacion conectado
+
+- `DeleteTripDestinationAction` desestructura inicialmente solo el trigger de
+  la mutation.
+- `handleConfirmDelete` envia `tripId` y `tripDestinationId` dentro del objeto
+  requerido y espera el resultado mediante `.unwrap()`.
+- El error queda capturado para que el estado visual se incorpore en el
+  siguiente paso.
+- El boton `Quitar parada` ejecuta el handler.
+- Build, lint y `git diff --check` pasan. El aviso conocido del chunk principal
+  superior a 500 kB permanece sin bloquear la tarea.
+
+## Proximo paso
+
+Agregar primero `isLoading` al resultado del hook y usarlo para impedir una
+segunda peticion, bloquear `Cancelar` y `Quitar parada`, y mostrar el texto
+`Quitando...`. Los estados de error y exito se agregaran despues.
+
+## Loading de eliminacion completado
+
+- El hook expone `isLoading` para la mutation de la parada concreta.
+- Los handlers de cancelar y confirmar incluyen una guarda contra ejecuciones
+  mientras el DELETE esta pendiente.
+- Ambos botones se deshabilitan y la accion final muestra `Quitando...`.
+- El contenedor usa `aria-busy` para comunicar el estado ocupado.
+- Build, lint y `git diff --check` pasan. El aviso conocido del chunk principal
+  superior a 500 kB permanece sin bloquear la tarea.
+
+## Proximo paso
+
+Agregar solamente `isError` y `reset`: limpiar un error anterior al abrir o
+cancelar, y mostrar una alerta dentro de la confirmacion cuando el DELETE
+falle. `isSuccess` se incorporara despues.
+
+## Error y reset de eliminacion completados
+
+- El hook expone `isError` y `reset` junto a `isLoading`.
+- Abrir o cancelar limpia el resultado anterior de la mutation mediante
+  `reset()`.
+- Un DELETE fallido conserva abierta la confirmacion y muestra una alerta con
+  `role="alert"`.
+- Un error no invalida la tag de la lista y, por tanto, no provoca un GET
+  adicional.
+- Build, lint y `git diff --check` pasan. El aviso conocido del chunk principal
+  superior a 500 kB permanece sin bloquear la tarea.
+
+## Proximo paso
+
+Agregar `isSuccess` para mantener bloqueada la confirmacion despues del 204 y
+mostrar `Actualizando...` mientras la invalidacion obtiene la lista sin la
+parada eliminada.
+
+## Exito de eliminacion completado
+
+- El hook expone `isSuccess` despues de que el backend confirma el DELETE.
+- `isActionLocked` combina `isLoading` e `isSuccess` para bloquear handlers,
+  botones y cancelacion tanto durante la peticion como durante la actualizacion
+  posterior.
+- La accion muestra `Quitando...` mientras espera el 204 y `Actualizando...`
+  despues del exito.
+- La confirmacion no se cierra manualmente: al integrarla, la invalidacion de
+  la lista provocara el GET y la fila eliminada dejara de renderizarse.
+- Build, lint y `git diff --check` pasan. El aviso conocido del chunk principal
+  superior a 500 kB permanece sin bloquear la tarea.
+
+## Proximo paso
+
+Integrar `DeleteTripDestinationAction` en cada fila editable. Se propagara
+`canEditTripDestinations` desde `TripDetailPage`, se volvera cada `<li>` un
+ancestro `relative` y se pasaran los tres datos requeridos al componente.
+Todavia no se aplicara el overlay con blur.
+
+## Accion de eliminacion integrada
+
+- `TripDetailPage` pasa `canEditTripDestinations` a la seccion de paradas.
+- `TripDestinationsSection` muestra la accion solamente para viajes
+  `PLANNING` o `CONFIRMED`.
+- Cada instancia recibe el ID del viaje, `TripDestination.id` y el nombre del
+  destino. No se usa `Destination.id` para identificar la visita.
+- Las filas usan `relative` e `items-start`, preparando el limite espacial del
+  overlay sin aplicarlo todavia.
+- Build, lint y `git diff --check` pasan. El aviso conocido del chunk principal
+  superior a 500 kB permanece sin bloquear la tarea.
+
+## Proximo paso
+
+Convertir la confirmacion en una capa `absolute inset-0` limitada por el
+`<li>`, aplicar fondo blanco semitransparente y `backdrop-blur`, y dar estilo a
+los textos, alerta y botones sin afectar las demas paradas.
+
+## Overlay local de confirmacion integrado
+
+- La confirmacion usa `absolute inset-0` y queda limitada por la fila
+  `relative` de la parada seleccionada.
+- El fondo `bg-white/30` y `backdrop-blur-sm` conservan visible, pero
+  desenfocada, la informacion que queda debajo.
+- La informacion y las acciones estan agrupadas por responsabilidad.
+- En movil se apilan verticalmente y desde `sm` se distribuyen en una fila sin
+  comprimir los botones.
+- El titulo y el texto secundario ya tienen jerarquia tipografica.
+- Build, lint y `git diff --check` pasan. El aviso conocido del chunk principal
+  superior a 500 kB permanece sin bloquear la funcionalidad.
+
+## Botones de confirmacion de parada completados
+
+- `Cancelar` usa el tratamiento neutral con borde y fondo blanco del resto del
+  producto.
+- `Quitar parada` usa fondo rojo solido e incluye `MapPinMinus` junto al texto.
+- Ambos controles representan hover, foco visible y estado disabled.
+- Durante `Quitando...` y `Actualizando...` permanecen bloqueados mediante
+  `isActionLocked`.
+- Build, lint y `git diff --check` pasan. El aviso conocido del chunk principal
+  superior a 500 kB permanece sin bloquear la funcionalidad.
+
+## Proximo paso
+
+Completar el estilo del mensaje de error y evitar que dos paradas mantengan
+confirmaciones abiertas simultaneamente, sin modificar el flujo de la mutation.

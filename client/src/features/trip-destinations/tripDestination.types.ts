@@ -32,3 +32,8 @@ export type CreateTripDestinationRequest = {
 export type CreateTripDestinationResponse = {
   data: { tripDestination: TripDestination };
 };
+
+export type DeleteTripDestinationRequest = {
+  tripId: string;
+  tripDestinationId: string;
+};

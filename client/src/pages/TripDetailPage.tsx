@@ -130,7 +130,10 @@ export default function TripDetailPage() {
 
         <div className="mt-8">
           <TripStatusActions tripId={trip.id} status={trip.status} />
-          <TripDestinationsSection tripId={trip.id} />
+          <TripDestinationsSection
+            canEditTripDestinations={canEditTripDestinations}
+            tripId={trip.id}
+          />
           {canEditTripDestinations ? (
             <AddTripDestinationSection tripId={trip.id} />
           ) : null}

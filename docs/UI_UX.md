@@ -166,3 +166,36 @@ responsive.
 - La navegacion principal anuncia `Destinos` cuando la pantalla ya ofrece una
   accion util. Los enlaces usan un estado activo visible y pueden envolver en
   pantallas estrechas sin imponer anchos fijos.
+
+## Eliminacion de una parada
+
+- `lucide-react` sera la unica libreria de iconos del cliente para conservar
+  un trazo y unas proporciones consistentes entre acciones.
+- La accion de la fila usara `MapPinMinus`: comunica que se quita una parada
+  del recorrido con mas precision que una papelera, que podria sugerir que se
+  borra tambien el destino reutilizable.
+- El boton compacto podra mostrar solamente el icono, pero conservara un area
+  interactiva minima de `44 x 44 px`, foco visible y un texto accesible con el
+  nombre del destino. El significado no dependera solamente del color rojo.
+- Dentro de la confirmacion en linea, la accion final conservara icono y texto
+  visible porque es una accion destructiva que debe ser inequivoca.
+- La accion se llamara `Quitar parada`, porque elimina la visita del viaje y
+  no el destino reutilizable.
+- Cada parada editable tendra una accion secundaria roja, sin convertir toda
+  la fila en una zona de peligro.
+- La confirmacion sera progresiva y permanecera dentro de los limites de la
+  fila afectada; no usara un dialogo ni cubrira el resto de la pagina.
+- Una capa posicionada sobre la fila aplicara un fondo blanco semitransparente
+  y `backdrop-blur` al contenido de la parada. El desenfoque sera deliberado y
+  local: comunicara que esa fila esta temporalmente bloqueada, no se usara como
+  decoracion general de la interfaz.
+- Sobre la informacion desenfocada apareceran la pregunta, la aclaracion sobre
+  el destino reutilizable y las acciones `Cancelar` y `Quitar parada`.
+- La capa no saldra de la fila y reservara altura suficiente para que el texto,
+  los botones y un posible error no se recorten en pantallas estrechas.
+- Mientras la mutation este pendiente, ambas acciones quedaran bloqueadas. El
+  error permanecera dentro de la misma fila. En exito, la lista activa mostrara
+  su estado de actualizacion durante el refetch y la fila desaparecera con la
+  respuesta actualizada.
+- Los viajes `COMPLETED` y `CANCELLED` no mostraran esta accion; el backend
+  conservara la proteccion 409 como autoridad final.

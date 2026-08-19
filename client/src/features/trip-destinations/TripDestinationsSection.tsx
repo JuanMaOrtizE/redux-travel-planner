@@ -1,7 +1,9 @@
 import type { TripDestination } from "./tripDestination.types";
 import { useGetTripDestinationsQuery } from "./tripDestinationsApi";
+import DeleteTripDestinationAction from "./DeleteTripDestinationAction";
 
 type TripDestinationsSectionProps = {
+  canEditTripDestinations: boolean;
   tripId: string;
 };
 
@@ -66,6 +68,7 @@ function getTripDestinationsErrorMessage(error: unknown): string {
 }
 
 export default function TripDestinationsSection({
+  canEditTripDestinations,
   tripId,
 }: TripDestinationsSectionProps) {
   const {
@@ -191,8 +194,7 @@ export default function TripDestinationsSection({
             Este viaje todavía no tiene paradas
           </p>
           <p className="mt-2 max-w-prose text-sm leading-6 text-slate-600">
-            Cuando agregues un destino, aparecerá aquí según su orden de
-            visita.
+            Cuando agregues un destino, aparecerá aquí según su orden de visita.
           </p>
         </div>
       ) : null}
@@ -200,11 +202,13 @@ export default function TripDestinationsSection({
       {hasCurrentResponse && tripDestinations.length > 0 ? (
         <ol className="mt-5 divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white">
           {tripDestinations.map((tripDestination) => {
-            const destinationContext =
-              getDestinationContext(tripDestination);
+            const destinationContext = getDestinationContext(tripDestination);
 
             return (
-              <li className="flex min-w-0 gap-4 p-5" key={tripDestination.id}>
+              <li
+                className="relative min-h-32 flex min-w-0 items-start gap-4 p-5"
+                key={tripDestination.id}
+              >
                 <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-semibold text-teal-800">
                   <span className="sr-only">Parada </span>
                   {tripDestination.position}
@@ -231,6 +235,14 @@ export default function TripDestinationsSection({
                     </p>
                   ) : null}
                 </div>
+
+                {canEditTripDestinations ? (
+                  <DeleteTripDestinationAction
+                    destinationName={tripDestination.destination.name}
+                    tripDestinationId={tripDestination.id}
+                    tripId={tripId}
+                  />
+                ) : null}
               </li>
             );
           })}

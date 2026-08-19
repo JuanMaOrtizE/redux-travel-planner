@@ -2,6 +2,7 @@ import { api } from "../../services/api";
 import type {
   CreateTripDestinationRequest,
   CreateTripDestinationResponse,
+  DeleteTripDestinationRequest,
   ListTripDestinationsResponse,
 } from "./tripDestination.types";
 
@@ -27,9 +28,26 @@ export const tripDestinationsApi = api.injectEndpoints({
         invalidatesTags: (_result, error, { tripId }) =>
           error ? [] : [{ type: "TripDestinations", id: tripId }],
       }),
+
+      deleteTripDestination: builder.mutation<
+        void,
+        DeleteTripDestinationRequest
+      >({
+        query: ({ tripId, tripDestinationId }) => {
+          return {
+            url: `trips/${tripId}/destinations/${tripDestinationId}`,
+            method: "DELETE",
+          };
+        },
+        invalidatesTags: (_result, error, { tripId }) =>
+          error ? [] : [{ type: "TripDestinations", id: tripId }],
+      }),
     };
   },
 });
 
-export const { useGetTripDestinationsQuery, useCreateTripDestinationMutation } =
-  tripDestinationsApi;
+export const {
+  useGetTripDestinationsQuery,
+  useCreateTripDestinationMutation,
+  useDeleteTripDestinationMutation,
+} = tripDestinationsApi;
