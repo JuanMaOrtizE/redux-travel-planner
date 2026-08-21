@@ -6603,3 +6603,243 @@ agregaran los marcadores sin modificar otra vez la logica de la vista.
   cada marcador tenga un nombre accesible.
 - Mantener `MapViewportController` como responsable exclusivo del encuadre y
   conservar la query en `TripDestinationsSection`.
+
+## Implementacion de marcadores revisada
+
+- Cada `TripDestination` produce exactamente un `Marker` con su propia tupla
+  `[latitude, longitude]`.
+- `tripDestination.id` funciona como clave estable de la capa y permite que
+  React retire el marcador correcto cuando cambia la lista.
+- Cada marcador expone un `alt` unico con el orden y el nombre de la parada, y
+  un `title` con el nombre del destino.
+- La creacion de marcadores no modifica la responsabilidad de
+  `MapViewportController`, que sigue ocupandose solamente del encuadre.
+- Build, lint y `git diff --check` pasan. Permanece el aviso conocido del chunk
+  principal de aproximadamente 660 kB.
+
+## Proximo paso
+
+Validar visualmente que el icono predeterminado de Leaflet carga, que existe un
+marcador por parada y que agregar o eliminar una parada actualiza marcadores y
+encuadre. Despues se incorporara un `Popup` como hijo de cada marcador para
+mostrar la informacion de esa parada.
+
+## Microtarea actual: primer popup de la parada
+
+- Importar `Popup` desde `react-leaflet` y anidarlo como hijo de cada
+  `Marker`; esa relacion hace que Leaflet lo abra al activar el marcador.
+- No proporcionar `position` al popup, porque hereda el punto geografico del
+  marcador al que pertenece.
+- Mostrar inicialmente solo `Parada {position}` y el nombre del destino para
+  aprender el flujo de la capa sin duplicar todavia formatters de la lista.
+- No crear `useState`, handlers, otra query ni una peticion adicional: React
+  Leaflet y Leaflet administran la apertura y el cierre.
+- Mantener sin cambios `MapViewportController`, las coordenadas, las keys y la
+  logica de RTK Query.
+
+## Criterio para la siguiente iteracion
+
+Una vez validada la asociacion marcador-popup, extraer las utilidades de
+contexto geografico y fechas a una ubicacion compartida antes de enriquecer el
+contenido con pais, region y fechas. No se duplicaran esas reglas dentro del
+mapa.
+
+## Primer popup de parada completado
+
+- `Popup` esta anidado dentro de cada `Marker`, por lo que Leaflet administra
+  su apertura y cierre sin estado React ni handlers propios.
+- La captura manual confirma que el icono predeterminado carga y que el popup
+  se posiciona sobre el marcador correspondiente.
+- El contenido distingue el orden mediante `Parada {position}` y presenta el
+  nombre como dato principal.
+- Se corrigio mecanicamente el numero aislado del primer renglon para que su
+  significado no dependa del contexto de la lista.
+- Build, lint y `git diff --check` pasan. Permanece el aviso conocido del chunk
+  principal de aproximadamente 661 kB.
+
+## Proximo paso
+
+Extraer las funciones de presentacion de ubicacion y fechas que actualmente
+viven dentro de `TripDestinationsSection` a una utilidad de la misma feature.
+Despues, lista y popup podran reutilizarlas sin duplicar reglas.
+
+## Microtarea actual: formatters compartidos de una parada
+
+- Crear `tripDestination.formatters.ts` dentro de
+  `features/trip-destinations`, siguiendo la convencion existente de
+  `trip.formatters.ts`.
+- Mover a ese archivo `dateFormatter`, `formatDate`,
+  `getDestinationContext` y `getDateLabel` sin cambiar su comportamiento.
+- Exportar solamente `getDestinationContext` y `getDateLabel`; el formateador
+  de `Intl` y `formatDate` permanecen como detalles privados del modulo.
+- Importar ambas funciones desde `TripDestinationsSection` y retirar sus
+  declaraciones locales.
+- Mantener `getTripDestinationsErrorMessage` en la seccion, porque solo
+  interpreta el estado de error de esa query y no describe una parada.
+- No usar todavia los formatters en el popup; primero se validara que esta
+  extraccion no cambia la lista existente.
+
+## Formatters compartidos completados
+
+- Se creo `tripDestination.formatters.ts` dentro de la feature definitiva.
+- `getDestinationContext` y `getDateLabel` son la API publica del modulo;
+  `dateFormatter` y `formatDate` permanecen privados.
+- `TripDestinationsSection` importa ambas funciones y ya no contiene sus
+  implementaciones locales.
+- El formatter de errores permanece en la seccion porque pertenece al flujo de
+  su query y no a la presentacion reutilizable de una parada.
+- Build, lint y `git diff --check` pasan. Permanece el aviso conocido del chunk
+  principal de aproximadamente 661 kB.
+
+## Proximo paso
+
+Consumir los formatters compartidos desde `TripDestinationsMap` para agregar al
+popup el contexto geografico y la etiqueta de fechas, con renderizado
+condicional cuando la ubicacion secundaria sea `null`.
+
+## Microtarea actual: enriquecer el popup con datos compartidos
+
+- Importar `getDestinationContext` y `getDateLabel` desde
+  `tripDestination.formatters.ts` en `TripDestinationsMap`.
+- Calcular `destinationContext` dentro del `map`, usando el mismo
+  `tripDestination` que produce el marcador.
+- Mostrar el contexto geografico debajo del nombre solo cuando el formatter
+  devuelva un `string`; si devuelve `null`, no crear un renglon vacio.
+- Mostrar siempre la etiqueta de fechas, incluida la salida
+  `Fechas por definir` cuando ambas fechas sean `null`.
+- Conservar una jerarquia compacta: orden, nombre, ubicacion y fechas. Las notas
+  no se agregaran todavia para evitar que el popup duplique toda la ficha.
+- No modificar formatters, viewport, markers, RTK Query ni estado React.
+
+## Popup enriquecido revisado
+
+- `TripDestinationsMap` reutiliza `getDestinationContext` y `getDateLabel`; la
+  lista y el mapa presentan las mismas reglas desde una sola fuente.
+- Cada popup muestra orden, nombre, contexto geografico cuando existe y una
+  etiqueta de fechas incluso cuando estan por definir.
+- La captura manual confirma el popup de la segunda parada, el encuadre de dos
+  destinos, los mosaicos, controles y atribucion de OpenStreetMap.
+- Se corrigio un `<p>` anidado dentro de otro `<p>`: la condicion ahora envuelve
+  el elemento completo y produce HTML valido cuando el contexto es `null`.
+- Build, lint y `git diff --check` pasan. Permanece el aviso conocido del chunk
+  principal de aproximadamente 662 kB.
+
+## Fase 9 completada
+
+- El detalle del viaje integra mapa, encuadre reactivo, un marcador accesible
+  por parada y popups con resumen util.
+- La implementacion reutiliza la query existente y no duplica cache ni estado
+  de servidor.
+- No se agrega una linea de recorrido porque no forma parte del alcance de la
+  fase y las paradas no representan necesariamente un trayecto terrestre.
+
+## Proximo paso
+
+Iniciar la fase 10 con el itinerario y las actividades por dia. Antes de crear
+codigo se revisaran el modelo de datos y las decisiones existentes para dividir
+la funcionalidad en backend, contrato y frontend sin mezclar presupuesto o
+clima en la primera microtarea.
+
+## Refinamiento solicitado despues de la fase 9
+
+- La lista de paradas y el mapa se sincronizaran mediante una seleccion local:
+  elegir una parada centrara el mapa, aplicara un zoom util y abrira su popup.
+- La seleccion sera estado temporal de interfaz en `TripDestinationsSection`,
+  no estado de servidor ni un slice de Redux.
+- El contenido de la fila sera el control de seleccion y la accion de eliminar
+  permanecera como boton hermano; no se crearan elementos interactivos
+  anidados.
+- La fase 10 comenzara despues de cerrar este refinamiento solicitado.
+
+## Microtarea actual: seleccion accesible en la lista
+
+- Agregar `selectedTripDestinationId: string | null` mediante `useState` en
+  `TripDestinationsSection`.
+- Derivar `isSelected` para cada parada dentro del `map` comparando IDs.
+- Envolver el numero y el bloque informativo en un `button type="button"`, sin
+  incluir `DeleteTripDestinationAction` dentro de ese boton.
+- Al activarlo, guardar `tripDestination.id`; usar `aria-pressed` para expresar
+  la seleccion y un fondo completo suave para mostrarla visualmente.
+- Mantener el `<li>` como ancestro `relative` para que la confirmacion de
+  eliminacion siga limitada a su propia fila.
+- No pasar todavia la seleccion al mapa ni modificar Leaflet en esta
+  microtarea.
+
+## Seleccion accesible de la lista completada
+
+- `selectedTripDestinationId` almacena solo el ID estable de la relacion y
+  permite una unica parada seleccionada.
+- Cada fila deriva `isSelected`, actualiza `aria-pressed` y usa un fondo teal
+  completo como feedback visual.
+- Numero e informacion forman un boton real; `DeleteTripDestinationAction`
+  permanece como hermano y su overlay conserva el `<li>` relativo.
+- Durante la revision se sustituyeron `div`, `h3` y `p` internos por `span`
+  de bloque, ya que el contenido de un `button` debe ser contenido de frase.
+- Se agregaron la transicion de color con alternativa para movimiento reducido
+  y se retiraron espacios accidentales de la clase.
+- Build, lint y `git diff --check` pasan. Permanece el aviso conocido del chunk
+  principal de aproximadamente 662 kB.
+
+## Microtarea actual: centrar el mapa en la parada seleccionada
+
+- Pasar `selectedTripDestinationId` desde `TripDestinationsSection` hasta
+  `TripDestinationsMap` y `MapViewportController`.
+- Resolver el ID contra `tripDestinations` dentro del controlador del viewport;
+  el estado continuara almacenando solo el ID y no duplicara el objeto de la
+  parada.
+- Si el ID corresponde a una parada existente, usar `map.setView` con sus
+  coordenadas y zoom `12`, sin animacion, y terminar el efecto para impedir que
+  el encuadre general sobrescriba inmediatamente ese enfoque.
+- Si no hay seleccion o el ID ya no existe, conservar el comportamiento actual:
+  una parada usa `setView` y varias usan `fitBounds`.
+- Incluir `selectedTripDestinationId` en las dependencias del efecto.
+- No abrir aun el popup automaticamente; esa interaccion requerira controlar la
+  instancia del marcador y sera la siguiente microtarea.
+
+Se corrigio la division anterior, que proponia pasar una prop sin consumirla.
+Propagar y usar la seleccion forman una sola responsabilidad comprobable y
+evitan datos sin uso entre componentes.
+
+## Centrado por seleccion revisado
+
+- `selectedTripDestinationId` recorre la cadena completa desde la seccion hasta
+  `MapViewportController`.
+- El controlador resuelve la relacion seleccionada y usa sus coordenadas con
+  `setView` y zoom `12`.
+- Durante la revision se corrigio una salida anticipada que detenía el efecto
+  cuando no habia seleccion e impedia ejecutar el encuadre general.
+- Tambien se agrego la prop que faltaba al renderizar
+  `MapViewportController` y se retiro una comprobacion redundante sobre una
+  tupla que siempre existe despues de crearla.
+- Si el ID seleccionado queda obsoleto tras eliminar una parada, la busqueda no
+  encuentra la relacion y el controlador vuelve de forma segura al encuadre de
+  las paradas restantes.
+- Build, lint y `git diff --check` pasan. Permanece el aviso conocido del chunk
+  principal de aproximadamente 662 kB.
+
+## Proximo paso
+
+Corregir primero el ciclo de vida de la seleccion cuando cambia la composicion
+de la lista. Si se agrega o elimina una parada, `TripDestinationsSection`
+limpiara `selectedTripDestinationId`; asi el mapa abandonara el enfoque
+individual y volvera a encuadrar la coleccion actualizada. La dependencia sera
+`tripDestinations.length`, no la referencia completa del arreglo, para evitar
+cancelar una seleccion por una actualizacion que conserve las mismas paradas.
+
+Despues se abrira automaticamente el popup del marcador correspondiente a la
+parada seleccionada. Antes de implementar se explicara como obtener la instancia
+de cada marcador sin duplicar el estado y como coordinarla con el cambio de
+viewport.
+
+## Caso limite detectado: agregar con una parada seleccionada
+
+- `createTripDestination` invalida en exito el tag `TripDestinations` del viaje.
+- Como la query de la seccion mantiene una suscripcion activa, RTK Query solicita
+  la lista actualizada y `tripDestinations` aumenta de longitud.
+- Sin limpiar la seleccion local, el controlador sigue encontrando el ID
+  anterior y su rama `setView(..., 12)` conserva el enfoque individual.
+- La regla de interfaz acordada es que un cambio en la composicion del recorrido
+  finaliza la seleccion: la fila deja de estar resaltada y `fitBounds` muestra
+  todas las paradas actuales.
+- Si la mutation falla, no se invalida el tag, la longitud no cambia y la
+  seleccion se conserva.

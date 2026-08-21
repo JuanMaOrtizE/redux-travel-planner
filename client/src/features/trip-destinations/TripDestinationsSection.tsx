@@ -1,5 +1,8 @@
-import { useState } from "react";
-import type { TripDestination } from "./tripDestination.types";
+import { useEffect, useState } from "react";
+import {
+  getDateLabel,
+  getDestinationContext,
+} from "./tripDestination.formatters";
 import { useGetTripDestinationsQuery } from "./tripDestinationsApi";
 import DeleteTripDestinationAction from "./DeleteTripDestinationAction";
 import TripDestinationsMap from "./TripDestinationsMap";
@@ -8,51 +11,6 @@ type TripDestinationsSectionProps = {
   canEditTripDestinations: boolean;
   tripId: string;
 };
-
-const dateFormatter = new Intl.DateTimeFormat("es-CO", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-  timeZone: "UTC",
-});
-
-function formatDate(value: string): string {
-  return dateFormatter.format(new Date(`${value}T00:00:00.000Z`));
-}
-
-function getDestinationContext(
-  tripDestination: TripDestination,
-): string | null {
-  const { destination } = tripDestination;
-  const country = destination.country ?? destination.countryCode;
-  const parts = [destination.region, country].filter(
-    (value): value is string => value !== null,
-  );
-
-  return parts.length > 0 ? parts.join(", ") : null;
-}
-
-function getDateLabel(tripDestination: TripDestination): string {
-  const { arrivalDate, departureDate } = tripDestination;
-
-  if (arrivalDate && departureDate) {
-    if (arrivalDate === departureDate) {
-      return formatDate(arrivalDate);
-    }
-
-    return `${formatDate(arrivalDate)} – ${formatDate(departureDate)}`;
-  }
-
-  if (arrivalDate) {
-    return `Llegada: ${formatDate(arrivalDate)}`;
-  }
-
-  if (departureDate) {
-    return `Salida: ${formatDate(departureDate)}`;
-  }
-
-  return "Fechas por definir";
-}
 
 function getTripDestinationsErrorMessage(error: unknown): string {
   if (typeof error === "object" && error !== null && "status" in error) {
@@ -98,6 +56,14 @@ export default function TripDestinationsSection({
 
   const [confirmingTripDestinationId, setConfirmingTripDestinationId] =
     useState<string | null>(null);
+
+  const [selectedTripDestinationId, setSelectedTripDestinationId] = useState<
+    string | null
+  >(null);
+
+  useEffect(() => {
+    setSelectedTripDestinationId(null);
+  }, [tripDestinations.length]);
 
   const hasActiveTripDestinationConfirmation = tripDestinations.some(
     (tripDestination) => tripDestination.id === confirmingTripDestinationId,
@@ -215,42 +181,56 @@ export default function TripDestinationsSection({
 
       {hasCurrentResponse && tripDestinations.length > 0 ? (
         <div className="mt-5 space-y-4">
-          <TripDestinationsMap tripDestinations={tripDestinations} />
+          <TripDestinationsMap
+            selectedTripDestinationId={selectedTripDestinationId}
+            tripDestinations={tripDestinations}
+          />
           <ol className="divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white">
             {tripDestinations.map((tripDestination) => {
               const destinationContext = getDestinationContext(tripDestination);
+              const isSelected =
+                selectedTripDestinationId === tripDestination.id;
 
               return (
                 <li
-                  className="relative min-h-32 flex min-w-0 items-start gap-4 p-5"
+                  className={`relative flex min-h-32 min-w-0 items-start gap-4 p-5 transition-colors motion-reduce:transition-none ${isSelected ? "bg-teal-50" : "bg-white"}`}
                   key={tripDestination.id}
                 >
-                  <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-semibold text-teal-800">
-                    <span className="sr-only">Parada </span>
-                    {tripDestination.position}
-                  </span>
+                  <button
+                    aria-pressed={isSelected}
+                    className="flex min-w-0 flex-1 cursor-pointer items-start gap-4 rounded-lg text-left focus-visible:outline-2 focus-visible:outline-teal-700"
+                    onClick={() =>
+                      setSelectedTripDestinationId(tripDestination.id)
+                    }
+                    type="button"
+                  >
+                    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-semibold text-teal-800">
+                      <span className="sr-only">Parada </span>
+                      {tripDestination.position}
+                    </span>
 
-                  <div className="min-w-0 flex-1">
-                    <h3 className="wrap-break-words font-semibold text-slate-900">
-                      {tripDestination.destination.name}
-                    </h3>
+                    <span className="min-w-0 flex-1">
+                      <span className="block wrap-break-words font-semibold text-slate-900">
+                        {tripDestination.destination.name}
+                      </span>
 
-                    {destinationContext ? (
-                      <p className="mt-1 wrap-break-words text-sm text-slate-600">
-                        {destinationContext}
-                      </p>
-                    ) : null}
+                      {destinationContext ? (
+                        <span className="mt-1 block wrap-break-words text-sm text-slate-600">
+                          {destinationContext}
+                        </span>
+                      ) : null}
 
-                    <p className="mt-3 text-sm font-medium text-slate-700">
-                      {getDateLabel(tripDestination)}
-                    </p>
+                      <span className="mt-3 block text-sm font-medium text-slate-700">
+                        {getDateLabel(tripDestination)}
+                      </span>
 
-                    {tripDestination.notes ? (
-                      <p className="mt-2 wrap-break-words text-sm leading-6 text-slate-600">
-                        {tripDestination.notes}
-                      </p>
-                    ) : null}
-                  </div>
+                      {tripDestination.notes ? (
+                        <span className="mt-2 block wrap-break-words text-sm leading-6 text-slate-600">
+                          {tripDestination.notes}
+                        </span>
+                      ) : null}
+                    </span>
+                  </button>
 
                   {canEditTripDestinations ? (
                     <DeleteTripDestinationAction

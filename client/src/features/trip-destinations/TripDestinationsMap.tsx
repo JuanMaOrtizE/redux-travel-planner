@@ -1,18 +1,25 @@
 import { useEffect } from "react";
-import { MapContainer, Marker, TileLayer, useMap } from "react-leaflet";
+import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import type { TripDestination } from "./tripDestination.types";
+import {
+  getDateLabel,
+  getDestinationContext,
+} from "./tripDestination.formatters";
 
 type MapPosition = [number, number];
 
 type TripDestinationsMapProps = {
+  selectedTripDestinationId: string | null;
   tripDestinations: TripDestination[];
 };
 
 type MapViewportControllerProps = {
+  selectedTripDestinationId: string | null;
   tripDestinations: TripDestination[];
 };
 
 function MapViewportController({
+  selectedTripDestinationId,
   tripDestinations,
 }: MapViewportControllerProps) {
   const map = useMap();
@@ -22,6 +29,20 @@ function MapViewportController({
       tripDestination.destination.latitude,
       tripDestination.destination.longitude,
     ]);
+
+    const selectedTripDestination = tripDestinations.find(
+      (tripDestination) => tripDestination.id === selectedTripDestinationId,
+    );
+
+    if (selectedTripDestination) {
+      const selectedPosition: MapPosition = [
+        selectedTripDestination.destination.latitude,
+        selectedTripDestination.destination.longitude,
+      ];
+
+      map.setView(selectedPosition, 12, { animate: false });
+      return;
+    }
 
     const firstPosition = positions[0];
 
@@ -42,12 +63,13 @@ function MapViewportController({
       maxZoom: 10,
       animate: false,
     });
-  }, [map, tripDestinations]);
+  }, [map, tripDestinations, selectedTripDestinationId]);
 
   return null;
 }
 
 export default function TripDestinationsMap({
+  selectedTripDestinationId,
   tripDestinations,
 }: TripDestinationsMapProps) {
   const positions: MapPosition[] = tripDestinations.map((tripDestination) => [
@@ -85,10 +107,38 @@ export default function TripDestinationsMap({
             tripDestination.destination.latitude,
             tripDestination.destination.longitude,
           ];
+          const destinationContext = getDestinationContext(tripDestination);
 
-          return <Marker key={tripDestination.id} position={markerPosition} />;
+          return (
+            <Marker
+              alt={`Parada ${tripDestination.position}: ${tripDestination.destination.name}`}
+              key={tripDestination.id}
+              position={markerPosition}
+              title={tripDestination.destination.name}
+            >
+              <Popup>
+                <p className="text-xs font-medium text-teal-700">
+                  Parada {tripDestination.position}
+                </p>
+                <p className="mt-1 font-semibold text-slate-900">
+                  {tripDestination.destination.name}
+                </p>
+                {destinationContext ? (
+                  <p className="mt-1 text-sm text-slate-600">
+                    {destinationContext}
+                  </p>
+                ) : null}
+                <p className="mt-2 text-sm font-medium text-slate-700">
+                  {getDateLabel(tripDestination)}
+                </p>
+              </Popup>
+            </Marker>
+          );
         })}
-        <MapViewportController tripDestinations={tripDestinations} />
+        <MapViewportController
+          selectedTripDestinationId={selectedTripDestinationId}
+          tripDestinations={tripDestinations}
+        />
       </MapContainer>
     </div>
   );
