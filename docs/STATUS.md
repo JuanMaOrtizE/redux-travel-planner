@@ -6446,3 +6446,108 @@ posterior siguen bloqueados.
 Validar manualmente el flujo completo en el navegador: apertura exclusiva,
 cancelacion, error con reintento y eliminacion exitosa con refetch. Despues se
 cerrara el hito de eliminacion de paradas.
+
+## Validacion manual de eliminacion completada
+
+- Se comprobo la apertura exclusiva de una confirmacion dentro de su propia
+  fila.
+- Se comprobo la cancelacion sin modificar la lista.
+- Se comprobo el estado de error y la posibilidad de reintentar.
+- Se comprobo la eliminacion exitosa y la actualizacion de la lista mediante el
+  refetch provocado por la invalidacion de cache.
+- El hito de eliminacion de paradas queda cerrado en frontend y backend.
+
+## Fase 9 iniciada: mapa del recorrido
+
+- Las paradas ya proporcionan `latitude` y `longitude` dentro de cada
+  `destination`, por lo que el primer mapa reutilizara la query existente y no
+  requiere otro endpoint.
+- El mapa pertenecera al detalle del viaje y representara espacialmente las
+  paradas que la lista ya muestra en orden.
+- La integracion se hara con Leaflet como motor del mapa y React Leaflet como
+  capa de componentes para React.
+
+## Proximo paso
+
+Preparar las dependencias de mapas compatibles con React 19 y TypeScript. Antes
+de crear el componente se instalaran `leaflet`, `react-leaflet` y las
+declaraciones `@types/leaflet`, y se comprobara que el cliente sigue compilando.
+
+## Dependencias de mapas preparadas
+
+- Se instalaron `leaflet@1.9.4` y `react-leaflet@5.0.0` como dependencias de
+  ejecucion del cliente.
+- Se instalo `@types/leaflet@1.9.22` como dependencia de desarrollo para que
+  TypeScript conozca la API de Leaflet.
+- React Leaflet 5, Leaflet 1.9 y React 19 resolvieron sus `peerDependencies` sin
+  conflictos.
+- Build y lint pasan. Permanece el aviso conocido del chunk principal superior
+  a 500 kB.
+- `npm audit` reporta cuatro avisos asociados a `react-router-dom`, `postcss` y
+  `nanoid`; no proceden de las nuevas dependencias de mapas y no se aplico una
+  correccion automatica fuera del alcance de esta microtarea.
+
+## Proximo paso
+
+Preparar la base visual de Leaflet: importar una sola vez su hoja de estilos y
+crear `TripDestinationsMap` en la feature de paradas con un contenedor de altura
+explicita. La primera version mostrara la capa del mapa antes de agregar
+marcadores y popups.
+
+## CSS base de Leaflet integrado
+
+- `leaflet/dist/leaflet.css` se importa una sola vez desde `main.tsx`.
+- El CSS de Leaflet aparece antes de `index.css`, de modo que los estilos
+  propios del cliente puedan sobrescribir la base cuando sea necesario.
+- La carga global prepara controles, capas, marcadores y popups sin acoplarla a
+  un componente concreto.
+- Build, lint y `git diff --check` pasan. El aviso conocido del chunk principal
+  superior a 500 kB permanece sin bloquear la funcionalidad.
+
+## Proximo paso
+
+Crear la estructura definitiva de `TripDestinationsMap.tsx` y representar la
+primera superficie del mapa con `MapContainer` y `TileLayer`, todavia sin
+marcadores. Se explicaran centro, zoom, proveedor de mosaicos, atribucion y
+altura antes de integrar el componente en el detalle del viaje.
+
+## Microtarea actual: primera superficie del mapa
+
+- Crear `TripDestinationsMap.tsx` dentro de `features/trip-destinations`, ya que
+  representa geograficamente el mismo arreglo de paradas de esa feature.
+- Mantener la query en `TripDestinationsSection`; el mapa recibira
+  `TripDestination[]` mediante props y no creara otra suscripcion de RTK Query.
+- Usar la primera parada como centro inicial, con una guarda para el arreglo
+  vacio y una tupla explicita `[latitude, longitude]`.
+- Renderizar `MapContainer` con altura responsive y `TileLayer` con la URL y la
+  atribucion visibles de OpenStreetMap.
+- Desactivar el zoom con la rueda para que el mapa no capture accidentalmente
+  el desplazamiento vertical de la pagina.
+- Integrar mapa y lista bajo la misma condicion de datos disponibles, sin
+  agregar todavia marcadores, popups ni ajuste automatico de limites.
+
+## Primera superficie del mapa revisada
+
+- `TripDestinationsMap` recibe las paradas por props y reutiliza correctamente
+  la query de `TripDestinationsSection`.
+- `MapContainer`, `TileLayer`, la atribucion, la guarda del arreglo vacio y la
+  altura responsive estan correctamente integrados.
+- Se corrigio mecanicamente el nombre `TripDestinationsMapProps` para seguir la
+  convencion PascalCase de tipos.
+- Se centralizo el espaciado entre mapa y lista con `mt-5 space-y-4` en el
+  contenedor comun.
+- Build, lint y `git diff --check` pasan. Al entrar React Leaflet al bundle, el
+  aviso de tamano crece a aproximadamente 659 kB y queda pendiente revisar
+  division de codigo en la fase de pulido.
+
+## Microtarea actual: sincronizar la vista del mapa
+
+- Las props de `MapContainer` configuran la instancia inicial de Leaflet y no
+  actualizan su vista despues del montaje.
+- Crear un componente hijo interno que use `useMap` y `useEffect` para reaccionar
+  exclusivamente a cambios en `tripDestinations`.
+- Con una sola parada, usar `setView` para centrarla con un zoom util.
+- Con varias paradas, usar `fitBounds` con padding y un zoom maximo para mostrar
+  todo el recorrido.
+- Mantener la misma instancia del mapa; no forzar un remontaje mediante `key`.
+- No agregar todavia marcadores ni popups.

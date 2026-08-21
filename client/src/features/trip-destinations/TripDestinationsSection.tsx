@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { TripDestination } from "./tripDestination.types";
 import { useGetTripDestinationsQuery } from "./tripDestinationsApi";
 import DeleteTripDestinationAction from "./DeleteTripDestinationAction";
+import TripDestinationsMap from "./TripDestinationsMap";
 
 type TripDestinationsSectionProps = {
   canEditTripDestinations: boolean;
@@ -213,66 +214,69 @@ export default function TripDestinationsSection({
       ) : null}
 
       {hasCurrentResponse && tripDestinations.length > 0 ? (
-        <ol className="mt-5 divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white">
-          {tripDestinations.map((tripDestination) => {
-            const destinationContext = getDestinationContext(tripDestination);
+        <div className="mt-5 space-y-4">
+          <TripDestinationsMap tripDestinations={tripDestinations} />
+          <ol className="divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white">
+            {tripDestinations.map((tripDestination) => {
+              const destinationContext = getDestinationContext(tripDestination);
 
-            return (
-              <li
-                className="relative min-h-32 flex min-w-0 items-start gap-4 p-5"
-                key={tripDestination.id}
-              >
-                <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-semibold text-teal-800">
-                  <span className="sr-only">Parada </span>
-                  {tripDestination.position}
-                </span>
+              return (
+                <li
+                  className="relative min-h-32 flex min-w-0 items-start gap-4 p-5"
+                  key={tripDestination.id}
+                >
+                  <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-semibold text-teal-800">
+                    <span className="sr-only">Parada </span>
+                    {tripDestination.position}
+                  </span>
 
-                <div className="min-w-0 flex-1">
-                  <h3 className="wrap-break-words font-semibold text-slate-900">
-                    {tripDestination.destination.name}
-                  </h3>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="wrap-break-words font-semibold text-slate-900">
+                      {tripDestination.destination.name}
+                    </h3>
 
-                  {destinationContext ? (
-                    <p className="mt-1 wrap-break-words text-sm text-slate-600">
-                      {destinationContext}
+                    {destinationContext ? (
+                      <p className="mt-1 wrap-break-words text-sm text-slate-600">
+                        {destinationContext}
+                      </p>
+                    ) : null}
+
+                    <p className="mt-3 text-sm font-medium text-slate-700">
+                      {getDateLabel(tripDestination)}
                     </p>
+
+                    {tripDestination.notes ? (
+                      <p className="mt-2 wrap-break-words text-sm leading-6 text-slate-600">
+                        {tripDestination.notes}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  {canEditTripDestinations ? (
+                    <DeleteTripDestinationAction
+                      destinationName={tripDestination.destination.name}
+                      tripDestinationId={tripDestination.id}
+                      tripId={tripId}
+                      isConfirming={
+                        confirmingTripDestinationId === tripDestination.id
+                      }
+                      onOpenConfirmation={() =>
+                        setConfirmingTripDestinationId(tripDestination.id)
+                      }
+                      onCloseConfirmation={() =>
+                        setConfirmingTripDestinationId(null)
+                      }
+                      isDisabled={
+                        hasActiveTripDestinationConfirmation &&
+                        confirmingTripDestinationId !== tripDestination.id
+                      }
+                    />
                   ) : null}
-
-                  <p className="mt-3 text-sm font-medium text-slate-700">
-                    {getDateLabel(tripDestination)}
-                  </p>
-
-                  {tripDestination.notes ? (
-                    <p className="mt-2 wrap-break-words text-sm leading-6 text-slate-600">
-                      {tripDestination.notes}
-                    </p>
-                  ) : null}
-                </div>
-
-                {canEditTripDestinations ? (
-                  <DeleteTripDestinationAction
-                    destinationName={tripDestination.destination.name}
-                    tripDestinationId={tripDestination.id}
-                    tripId={tripId}
-                    isConfirming={
-                      confirmingTripDestinationId === tripDestination.id
-                    }
-                    onOpenConfirmation={() =>
-                      setConfirmingTripDestinationId(tripDestination.id)
-                    }
-                    onCloseConfirmation={() =>
-                      setConfirmingTripDestinationId(null)
-                    }
-                    isDisabled={
-                      hasActiveTripDestinationConfirmation &&
-                      confirmingTripDestinationId !== tripDestination.id
-                    }
-                  />
-                ) : null}
-              </li>
-            );
-          })}
-        </ol>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
       ) : null}
     </section>
   );
