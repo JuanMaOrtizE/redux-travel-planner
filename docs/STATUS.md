@@ -6551,3 +6551,55 @@ altura antes de integrar el componente en el detalle del viaje.
   todo el recorrido.
 - Mantener la misma instancia del mapa; no forzar un remontaje mediante `key`.
 - No agregar todavia marcadores ni popups.
+
+## Sincronizacion inicial de la vista completada
+
+- `MapViewportController` recibe `tripDestinations` directamente desde la
+  respuesta en cache, sin introducir `useMemo` ni depender de un arreglo
+  derivado que se recree durante cada render.
+- `useMap` recupera la instancia existente de Leaflet y `useEffect` ejecuta
+  `setView` cuando cambia la lista de paradas.
+- La primera parada se transforma a la tupla `MapPosition` antes de entregarla
+  a Leaflet.
+- Abrir estados locales de confirmacion no cambia la dependencia de datos; una
+  eliminacion exitosa y su refetch si producen una lista nueva.
+- Build, lint y `git diff --check` pasan. Permanece el aviso conocido del chunk
+  principal de aproximadamente 659 kB.
+
+## Proximo paso
+
+Completar el controlador de vista: conservar `setView` cuando exista una sola
+parada y usar `fitBounds` cuando existan dos o mas, con padding, zoom maximo y
+movimiento sin animacion. No agregar aun marcadores ni popups.
+
+## Encuadre automatico del recorrido completado
+
+- El efecto transforma la lista actual en `MapPosition[]` solo cuando cambia
+  `tripDestinations`.
+- Cero posiciones terminan el efecto sin llamar a Leaflet.
+- Una posicion usa `setView` con zoom 8 y movimiento sin animacion.
+- Dos o mas posiciones usan `fitBounds` con 32 px de padding, zoom maximo 10 y
+  movimiento sin animacion.
+- El `return` de la rama individual impide que `setView` y `fitBounds` se
+  ejecuten para la misma actualizacion.
+- Build, lint y `git diff --check` pasan. Permanece el aviso conocido del chunk
+  principal de aproximadamente 659 kB.
+
+## Proximo paso
+
+Validar manualmente el encuadre con una, dos y varias paradas, incluida la
+eliminacion de una parada hasta cambiar de `fitBounds` a `setView`. Despues se
+agregaran los marcadores sin modificar otra vez la logica de la vista.
+
+## Microtarea actual: marcadores de las paradas
+
+- Introducir solamente `Marker`; los popups, iconos personalizados y lineas de
+  recorrido quedan fuera de esta microtarea.
+- Renderizar un marcador por cada `TripDestination` como hijo de
+  `MapContainer`, reutilizando latitud y longitud en el orden correcto.
+- Usar `tripDestination.id` como `key` para que React conserve, agregue o retire
+  la capa correcta cuando cambie la lista.
+- Proporcionar un texto `alt` unico con posicion y nombre del destino para que
+  cada marcador tenga un nombre accesible.
+- Mantener `MapViewportController` como responsable exclusivo del encuadre y
+  conservar la query en `TripDestinationsSection`.

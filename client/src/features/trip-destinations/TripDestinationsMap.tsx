@@ -1,6 +1,8 @@
 import { useEffect } from "react";
-import { MapContainer, TileLayer, useMap } from "react-leaflet";
+import { MapContainer, Marker, TileLayer, useMap } from "react-leaflet";
 import type { TripDestination } from "./tripDestination.types";
+
+type MapPosition = [number, number];
 
 type TripDestinationsMapProps = {
   tripDestinations: TripDestination[];
@@ -16,18 +18,28 @@ function MapViewportController({
   const map = useMap();
 
   useEffect(() => {
-    const firstTripDestination = tripDestinations[0];
+    const positions: MapPosition[] = tripDestinations.map((tripDestination) => [
+      tripDestination.destination.latitude,
+      tripDestination.destination.longitude,
+    ]);
 
-    if (!firstTripDestination) {
+    const firstPosition = positions[0];
+
+    if (!firstPosition) {
       return;
     }
 
-    const position: [number, number] = [
-      firstTripDestination.destination.latitude,
-      firstTripDestination.destination.longitude,
-    ];
+    if (positions.length === 1) {
+      map.setView(firstPosition, 8, {
+        animate: false,
+      });
 
-    map.setView(position, map.getZoom(), {
+      return;
+    }
+
+    map.fitBounds(positions, {
+      padding: [32, 32],
+      maxZoom: 10,
       animate: false,
     });
   }, [map, tripDestinations]);
@@ -38,12 +50,10 @@ function MapViewportController({
 export default function TripDestinationsMap({
   tripDestinations,
 }: TripDestinationsMapProps) {
-  const positions: [number, number][] = tripDestinations.map(
-    (tripDestination) => [
-      tripDestination.destination.latitude,
-      tripDestination.destination.longitude,
-    ],
-  );
+  const positions: MapPosition[] = tripDestinations.map((tripDestination) => [
+    tripDestination.destination.latitude,
+    tripDestination.destination.longitude,
+  ]);
 
   const firstPosition = positions[0];
 
@@ -61,7 +71,7 @@ export default function TripDestinationsMap({
     >
       <MapContainer
         center={initialCenter}
-        zoom={4}
+        zoom={6}
         scrollWheelZoom={false}
         className="h-72 w-full sm:h-80"
       >
@@ -69,6 +79,15 @@ export default function TripDestinationsMap({
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
+
+        {tripDestinations.map((tripDestination) => {
+          const markerPosition: MapPosition = [
+            tripDestination.destination.latitude,
+            tripDestination.destination.longitude,
+          ];
+
+          return <Marker key={tripDestination.id} position={markerPosition} />;
+        })}
         <MapViewportController tripDestinations={tripDestinations} />
       </MapContainer>
     </div>
