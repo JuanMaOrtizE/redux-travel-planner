@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import type { Marker as LeafletMarker } from "leaflet";
+import { useEffect, useRef } from "react";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import type { TripDestination } from "./tripDestination.types";
 import {
@@ -17,6 +18,63 @@ type MapViewportControllerProps = {
   selectedTripDestinationId: string | null;
   tripDestinations: TripDestination[];
 };
+
+type TripDestinationMarkerProps = {
+  isSelected: boolean;
+  tripDestination: TripDestination;
+};
+
+function TripDestinationMarker({
+  isSelected,
+  tripDestination,
+}: TripDestinationMarkerProps) {
+  const markerRef = useRef<LeafletMarker | null>(null);
+
+  useEffect(() => {
+    const marker = markerRef.current;
+
+    if (!marker) {
+      return;
+    }
+
+    if (isSelected) {
+      marker.openPopup();
+      return;
+    }
+
+    marker.closePopup();
+  }, [isSelected]);
+
+  const markerPosition: MapPosition = [
+    tripDestination.destination.latitude,
+    tripDestination.destination.longitude,
+  ];
+  const destinationContext = getDestinationContext(tripDestination);
+
+  return (
+    <Marker
+      alt={`Parada ${tripDestination.position}: ${tripDestination.destination.name}`}
+      position={markerPosition}
+      ref={markerRef}
+      title={tripDestination.destination.name}
+    >
+      <Popup>
+        <p className="text-xs font-medium text-teal-700">
+          Parada {tripDestination.position}
+        </p>
+        <p className="mt-1 font-semibold text-slate-900">
+          {tripDestination.destination.name}
+        </p>
+        {destinationContext ? (
+          <p className="mt-1 text-sm text-slate-600">{destinationContext}</p>
+        ) : null}
+        <p className="mt-2 text-sm font-medium text-slate-700">
+          {getDateLabel(tripDestination)}
+        </p>
+      </Popup>
+    </Marker>
+  );
+}
 
 function MapViewportController({
   selectedTripDestinationId,
@@ -102,39 +160,15 @@ export default function TripDestinationsMap({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
 
-        {tripDestinations.map((tripDestination) => {
-          const markerPosition: MapPosition = [
-            tripDestination.destination.latitude,
-            tripDestination.destination.longitude,
-          ];
-          const destinationContext = getDestinationContext(tripDestination);
-
-          return (
-            <Marker
-              alt={`Parada ${tripDestination.position}: ${tripDestination.destination.name}`}
-              key={tripDestination.id}
-              position={markerPosition}
-              title={tripDestination.destination.name}
-            >
-              <Popup>
-                <p className="text-xs font-medium text-teal-700">
-                  Parada {tripDestination.position}
-                </p>
-                <p className="mt-1 font-semibold text-slate-900">
-                  {tripDestination.destination.name}
-                </p>
-                {destinationContext ? (
-                  <p className="mt-1 text-sm text-slate-600">
-                    {destinationContext}
-                  </p>
-                ) : null}
-                <p className="mt-2 text-sm font-medium text-slate-700">
-                  {getDateLabel(tripDestination)}
-                </p>
-              </Popup>
-            </Marker>
-          );
-        })}
+        {tripDestinations.map((tripDestination) => (
+          <TripDestinationMarker
+            isSelected={
+              tripDestination.id === selectedTripDestinationId
+            }
+            key={tripDestination.id}
+            tripDestination={tripDestination}
+          />
+        ))}
         <MapViewportController
           selectedTripDestinationId={selectedTripDestinationId}
           tripDestinations={tripDestinations}

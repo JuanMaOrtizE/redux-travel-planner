@@ -200,7 +200,11 @@ export default function TripDestinationsSection({
                     aria-pressed={isSelected}
                     className="flex min-w-0 flex-1 cursor-pointer items-start gap-4 rounded-lg text-left focus-visible:outline-2 focus-visible:outline-teal-700"
                     onClick={() =>
-                      setSelectedTripDestinationId(tripDestination.id)
+                      setSelectedTripDestinationId((currentId) =>
+                        currentId === tripDestination.id
+                          ? null
+                          : tripDestination.id,
+                      )
                     }
                     type="button"
                   >

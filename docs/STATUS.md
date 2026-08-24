@@ -6843,3 +6843,232 @@ viewport.
   todas las paradas actuales.
 - Si la mutation falla, no se invalida el tag, la longitud no cambia y la
   seleccion se conserva.
+
+## Reinicio de seleccion por cambio de paradas completado
+
+- `TripDestinationsSection` importa `useEffect` y limpia
+  `selectedTripDestinationId` cuando cambia `tripDestinations.length`.
+- Un alta o una eliminacion finaliza el enfoque individual, retira el estado
+  visual seleccionado y permite que `MapViewportController` vuelva a ejecutar
+  el encuadre general.
+- Un refetch con la misma cantidad de paradas no activa el efecto, por lo que la
+  seleccion del usuario se conserva.
+- Build, lint y `git diff --check` pasan. Permanece el aviso conocido del chunk
+  principal de aproximadamente 662 kB.
+
+## Proximo paso
+
+Abrir automaticamente el popup del marcador correspondiente a la parada
+seleccionada. Se explicara primero como conservar una referencia a cada instancia
+de `Marker` y por que esa referencia es distinta del ID guardado en el estado.
+
+## Microtarea actual: sincronizar seleccion y popup
+
+- Extraer el marcador renderizado dentro del `map` a un componente privado
+  `TripDestinationMarker` en el mismo archivo `TripDestinationsMap.tsx`.
+- El componente recibira `tripDestination` e `isSelected`; no tendra estado de
+  servidor ni duplicara `selectedTripDestinationId`.
+- Usar `useRef<LeafletMarker | null>` para conservar la instancia Leaflet que
+  React Leaflet entrega mediante la prop `ref` de `Marker`.
+- Traducir el booleano declarativo a la API imperativa en un `useEffect`: abrir
+  el popup con `openPopup()` cuando `isSelected` sea `true` y cerrarlo con
+  `closePopup()` cuando sea `false`.
+- Mantener `MapViewportController` dedicado al centro y zoom; el nuevo componente
+  sera responsable solo de su marcador y su popup.
+- Sustituir el JSX repetido dentro del `map` por una instancia de
+  `TripDestinationMarker` con una `key` basada en la relacion.
+- Hacer que el boton de la fila alterne la seleccion: pulsar una parada ya
+  seleccionada guardara `null`, en coherencia con `aria-pressed`, cerrara el
+  popup y recuperara el encuadre general.
+- No crear otra query, un slice, un registro global de marcadores ni una nueva
+  dependencia.
+
+## Sincronizacion entre seleccion y popup completada
+
+- `TripDestinationMarker` encapsula una parada del mapa y mantiene su propia
+  referencia tipada a la instancia `LeafletMarker`.
+- Su efecto traduce `isSelected` a `openPopup()` o `closePopup()` sin agregar
+  estado React ni duplicar datos del servidor.
+- El componente principal conserva el recorrido de la lista, la `key` estable y
+  entrega a cada marcador solamente el booleano derivado de la seleccion.
+- El boton de cada fila usa el setter funcional para alternar entre el ID de la
+  parada y `null`; `aria-pressed` ya corresponde a una interaccion conmutable.
+- El viewport sigue separado: `MapViewportController` administra centro y zoom,
+  mientras cada marcador administra exclusivamente la visibilidad de su popup.
+- Build, lint y `git diff --check` pasan. Permanece el aviso conocido del chunk
+  principal de aproximadamente 662 kB.
+
+## Proximo paso
+
+Validar manualmente cuatro transiciones: seleccionar una parada, cambiar a otra,
+deseleccionar la actual y agregar o eliminar una parada mientras existe una
+seleccion. Despues se cerrara el refinamiento del mapa y comenzara la fase 10 de
+itinerario y actividades por dia.
+
+## Fase 10 iniciada: itinerario y actividades
+
+- La primera entrega de la fase se limita a actividades; presupuesto y clima se
+  mantienen fuera para no mezclar tres dominios y tres flujos de datos.
+- No se creara `ItineraryDay`: el dia de la interfaz se derivara de
+  `Activity.startsAt`.
+- `Activity` pertenecera obligatoriamente a un viaje y podra asociarse de forma
+  opcional con una parada.
+- Las horas se persistiran como `DateTime @db.Timestamptz(3)` y los dias del
+  viaje continuaran como `DateTime @db.Date`; son conceptos temporales distintos.
+- Quitar una parada aplicara `SetNull` sobre la asociacion y conservara la
+  actividad; eliminar el viaje eliminara sus actividades mediante `Cascade`.
+
+## Microtarea actual: modelo Prisma de Activity
+
+- Agregar el enum `ActivityStatus` con `PLANNED`, `CONFIRMED`, `COMPLETED` y
+  `CANCELLED`.
+- Agregar los lados inversos `activities Activity[]` a `Trip` y
+  `TripDestination`.
+- Crear `Activity` con IDs UUID, relaciones a viaje y parada, contenido,
+  instantes, estado y marcas de tiempo segun `DATA_MODEL.md`.
+- Agregar los indices `@@index([tripId, startsAt])` y
+  `@@index([tripDestinationId])`, y mapear la tabla como `activities`.
+- Ejecutar solamente `prisma format` y `prisma validate`; la migracion se creara
+  en la siguiente microtarea despues de revisar el contrato.
+
+## Modelo Prisma de Activity revisado
+
+- `ActivityStatus` queda separado de `TripStatus` y contiene los cuatro estados
+  acordados.
+- `Trip` y `TripDestination` exponen sus lados inversos `activities`.
+- `Activity.tripId` y `Activity.trip` son obligatorios y usan `Cascade`; una
+  actividad nunca existe fuera de un viaje.
+- `tripDestinationId` y `tripDestination` son opcionales y usan `SetNull`; una
+  actividad puede ser general y sobrevive si se elimina su parada asociada.
+- Los instantes usan `Timestamptz(3)`, el estado inicia en `PLANNED` y los
+  indices cubren el listado ordenado por viaje y las consultas por parada.
+- Durante la revision se agrego `@@map("activities")`, se corrigio la linea
+  partida de `onDelete: SetNull` y `prisma format` normalizo la sangria.
+- `npx prisma format`, `npx prisma validate` y `git diff --check` pasan.
+
+## Proximo paso
+
+Crear y revisar la migracion de `Activity`. Antes de ejecutarla se explicara que
+objetos SQL deben aparecer: enum, tabla, claves foraneas, acciones de borrado e
+indices. Todavia no se implementaran schemas, servicios ni endpoints.
+
+## Microtarea actual: generar la migracion de Activity sin aplicarla
+
+- Ejecutar desde `server` `npx prisma migrate dev --name add_activities
+  --create-only`.
+- `--create-only` debe crear el directorio y `migration.sql`, pero no aplicar la
+  migracion a la base de datos de desarrollo.
+- Revisar que el SQL cree `ActivityStatus`, la tabla `activities`, su clave
+  primaria, los dos indices y las dos claves foraneas.
+- La clave foranea `tripId` debe usar `ON DELETE CASCADE`; la de
+  `tripDestinationId`, `ON DELETE SET NULL`.
+- `startsAt` debe ser `TIMESTAMPTZ(3)` obligatorio y `endsAt` el mismo tipo
+  permitiendo `NULL`.
+- Los campos inversos `activities Activity[]` no deben producir columnas ni
+  cambios en `trips` o `trip_destinations`.
+- Si Prisma detecta drift y propone resetear la base, no aceptar el reset; se
+  revisara primero la causa.
+- Despues de aprobar el SQL se aplicara la migracion y se ejecutara
+  `npx prisma generate`, que Prisma 7 ya no dispara automaticamente desde
+  `migrate dev`.
+
+## Migracion de Activity generada y revisada
+
+- Se creo `20260824175301_add_activities` mediante `--create-only` y
+  `prisma migrate status` confirma que permanece pendiente.
+- El SQL crea `ActivityStatus` con los cuatro valores acordados y la tabla
+  fisica `activities`.
+- `tripId`, `startsAt`, `title`, `status` y las marcas obligatorias usan
+  `NOT NULL`; la parada, descripcion, fin y ubicacion permiten `NULL`.
+- `startsAt` y `endsAt` usan `TIMESTAMPTZ(3)`.
+- Los indices generados son `activities_tripId_startsAt_idx` y
+  `activities_tripDestinationId_idx`.
+- La relacion al viaje usa `ON DELETE CASCADE` y la relacion opcional a la
+  parada usa `ON DELETE SET NULL`; ambas conservan `ON UPDATE CASCADE`.
+- Los lados inversos de Prisma no generaron columnas ni alteraciones sobre
+  `trips` o `trip_destinations`.
+- No se modificaron migraciones anteriores y `git diff --check` pasa.
+
+## Proximo paso
+
+Aplicar la migracion en la base de desarrollo con `npx prisma migrate dev`,
+confirmar que no quede ninguna migracion pendiente y ejecutar separadamente
+`npx prisma generate`. Despues se comprobara el typecheck del servidor antes de
+crear el primer contrato Zod de actividades.
+
+## Microtarea actual: aplicar Activity y regenerar Prisma Client
+
+- Ejecutar desde `server` `npx prisma migrate dev` sin `--name`, porque la
+  migracion ya existe y solo debe aplicarse.
+- Confirmar con `npx prisma migrate status` que las cuatro migraciones esten
+  aplicadas y el esquema se encuentre actualizado.
+- Ejecutar `npx prisma generate` explicitamente; Prisma 7 no lo ejecuta como
+  parte de `migrate dev`.
+- El cliente se genera en `server/src/generated/prisma` y permanece ignorado por
+  Git mediante `server/.gitignore`.
+- Ejecutar `npm run typecheck` para comprobar que el servidor sigue compilando
+  contra el cliente actualizado.
+- Si Prisma propone un reset, solicita otra migracion o reporta drift, detenerse
+  sin aceptar cambios destructivos y revisar el mensaje.
+
+## Migracion de Activity aplicada
+
+- `npx prisma migrate status` encuentra cuatro migraciones y confirma que la
+  base `redux_travel_planner` esta actualizada.
+- PostgreSQL ya contiene el enum, la tabla, indices y claves foraneas definidos
+  por `20260824175301_add_activities`.
+- `npx prisma generate` actualizo el cliente ignorado por Git; se verificaron el
+  modelo generado `Activity` y los tipos de `ActivityStatus`.
+- `npm run typecheck` pasa con el cliente actualizado.
+- `git diff --check` pasa y los archivos generados no aparecen en el estado de
+  Git.
+
+## Proximo paso
+
+Definir el contrato Zod de creacion de actividades en la ubicacion definitiva
+`server/src/features/activities/activity.schemas.ts`. Primero se separaran las
+validaciones de forma que pertenecen a Zod de las reglas que requieren consultar
+el viaje o la parada y pertenecen al servicio.
+
+## Microtarea actual: contrato Zod para crear Activity
+
+- Crear `server/src/features/activities/activity.schemas.ts` con
+  `createActivitySchema` como `z.strictObject`.
+- El body aceptara `tripDestinationId`, `title`, `description`, `startsAt`,
+  `endsAt` y `locationName`; `tripId` vendra de la URL y `status` usara el valor
+  Prisma predeterminado `PLANNED`.
+- `tripDestinationId` sera UUID, nullable y opcional; `startsAt` sera obligatorio
+  y `endsAt`, nullable y opcional.
+- Las horas usaran `z.iso.datetime({ offset: true })`: se aceptaran `Z` y offsets
+  completos, pero no fechas locales sin zona.
+- `title` se limpiara y exigira entre 2 y 160 caracteres. `description` y
+  `locationName` se limpiaran, limitaran a 2000 y 200 caracteres respectivamente,
+  aceptaran `null` o ausencia y transformaran una cadena vacia en `null`.
+- Un `refine` comparara los milisegundos de ambos instantes cuando exista
+  `endsAt` y asociara el error con ese campo.
+- Exportar `CreateActivityInput` mediante `z.infer`.
+- No convertir todavia los strings a `Date`, consultar Prisma ni validar fechas
+  contra el viaje; esas responsabilidades pertenecen al servicio.
+
+## Contrato Zod de creacion de Activity completado
+
+- Se creo `server/src/features/activities/activity.schemas.ts` siguiendo la
+  convencion plural de los demas contratos del servidor.
+- `createActivitySchema` usa `z.strictObject`, por lo que rechaza propiedades
+  administradas por la URL, Prisma o el servidor, como `tripId` y `status`.
+- Los textos obligatorios se limpian y limitan; los textos opcionales aceptan
+  ausencia o `null` y convierten una cadena vacia en `null`.
+- `startsAt` y `endsAt` exigen ISO con zona horaria, y el refinamiento compara
+  sus instantes en milisegundos para admitir correctamente offsets distintos.
+- `CreateActivityInput` se infiere desde el esquema y evita duplicar a mano el
+  contrato TypeScript.
+- Durante la revision se corrigieron el nombre singular del archivo, el mensaje
+  de error de `endsAt` y dos textos de validacion.
+- `npm run typecheck`, las pruebas dirigidas con `safeParse` y
+  `git diff --check` pasan.
+
+## Proximo paso
+
+Definir el contrato de los parametros de ruta para actividades. `tripId` debe
+validarse como UUID desde `req.params` sin incorporarlo al body; despues se
+podra construir el mapper de respuesta antes de entrar al servicio de creacion.

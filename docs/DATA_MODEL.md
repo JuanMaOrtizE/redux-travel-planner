@@ -218,6 +218,38 @@ Siempre pertenece a un viaje y puede asociarse con una parada concreta. La
 interfaz agrupará actividades por fecha; no se creará inicialmente una tabla
 `ItineraryDay` sin datos propios.
 
+Decisiones para la primera version:
+
+- `status` usara un enum propio `ActivityStatus` con `PLANNED`, `CONFIRMED`,
+  `COMPLETED` y `CANCELLED`; no se reutiliza `TripStatus` porque ambos ciclos de
+  vida pueden evolucionar de forma independiente;
+- `startsAt` sera obligatorio y `endsAt` opcional; ambos se almacenaran como
+  `DateTime` con `@db.Timestamptz(3)` porque representan instantes con hora y no
+  solo dias del calendario;
+- los contratos usaran fechas ISO con zona u offset. La presentacion usara la
+  zona IANA de la parada asociada cuando exista y UTC como respaldo para una
+  actividad general o un destino sin zona;
+- cuando exista `endsAt`, no podra ser anterior a `startsAt`;
+- la fecha local de inicio y, cuando corresponda, la de fin deberan quedar
+  dentro de `Trip.startDate` y `Trip.endDate`;
+- `tripId` sera obligatorio y su relacion usara `onDelete: Cascade`;
+- `tripDestinationId` y la relacion correspondiente seran opcionales y usaran
+  `onDelete: SetNull`, por lo que quitar una parada conserva la actividad como
+  general del viaje;
+- el servicio comprobara que una parada asociada pertenece al mismo viaje que
+  `tripId`; dos claves foraneas validas por separado no garantizan esa regla;
+- las actividades solo podran modificarse mientras el viaje este en `PLANNING`
+  o `CONFIRMED`;
+- `title` usara `VarChar(160)`, `description` sera `Text` opcional y
+  `locationName` usara `VarChar(200)` opcional;
+- el contrato de creacion exigira entre 2 y 160 caracteres para `title`,
+  limitara `description` a 2000 caracteres y normalizara los textos opcionales
+  vacios a `null`;
+- habra un indice compuesto `tripId + startsAt` para listar el itinerario en
+  orden y un indice sobre `tripDestinationId` para consultas por parada y la
+  accion `SetNull`;
+- presupuesto y clima no se incluiran en esta migracion.
+
 ### BudgetItem
 
 Campos previstos:

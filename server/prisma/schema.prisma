@@ -10,6 +10,13 @@ enum TripStatus {
   CANCELLED
 }
 
+enum ActivityStatus {
+  PLANNED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -43,6 +50,7 @@ model Trip {
   currency         String            @db.VarChar(3)
   budgetLimit      Decimal?          @db.Decimal(12, 2)
   tripDestinations TripDestination[]
+  activities       Activity[]
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
@@ -77,8 +85,29 @@ model TripDestination {
   arrivalDate   DateTime?   @db.Date
   departureDate DateTime?   @db.Date
   notes         String?     @db.Text
+  activities    Activity[]
 
   @@unique([tripId, position])
   @@index([destinationId])
   @@map("trip_destinations")
+}
+
+model Activity {
+  id                String           @id @default(uuid()) @db.Uuid
+  tripId            String           @db.Uuid
+  trip              Trip             @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  tripDestinationId String?          @db.Uuid
+  tripDestination   TripDestination? @relation(fields: [tripDestinationId], references: [id], onDelete: SetNull)
+  title             String           @db.VarChar(160)
+  description       String?          @db.Text
+  startsAt          DateTime         @db.Timestamptz(3)
+  endsAt            DateTime?        @db.Timestamptz(3)
+  locationName      String?          @db.VarChar(200)
+  status            ActivityStatus   @default(PLANNED)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([tripId, startsAt])
+  @@index([tripDestinationId])
+  @@map("activities")
 }
