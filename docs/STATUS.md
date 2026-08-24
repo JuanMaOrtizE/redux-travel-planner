@@ -7323,3 +7323,64 @@ Crear el controlador HTTP de actividades. Su responsabilidad sera verificar la
 autenticacion defensiva, validar `req.params` con el contrato reutilizado de
 `Trip`, validar `req.body` con `createActivitySchema`, llamar al servicio y
 responder `201` con `{ data: { activity } }`.
+
+## Controlador de creacion de Activity completado
+
+- Se creo `server/src/features/activities/activity.controller.ts` con
+  `createActivityController` tipado como `RequestHandler`.
+- El controlador conserva la comprobacion defensiva de `req.auth` usada por los
+  demas dominios, aunque la futura ruta tambien tendra `requireAuth`.
+- `req.params` se valida mediante el `tripParamsSchema` reutilizado y `req.body`
+  mediante `createActivitySchema`; ningun dato sin validar llega al servicio.
+- El servicio recibe `auth.userId`, `parsedParams.tripId` y `parsedBody` en ese
+  orden, manteniendo separadas autenticacion, recurso padre y payload.
+- El caso exitoso responde HTTP 201 con la envoltura uniforme
+  `{ data: { activity } }`.
+- Los errores Zod y `AppError` no se capturan localmente; continúan hacia el
+  middleware global de errores.
+- `npm run typecheck`, `npm run build` y `git diff --check` pasan.
+
+## Proximo paso
+
+Registrar `POST /:tripId/activities` con `requireAuth` dentro de
+`features/trips/trip.routes.ts`. Despues se levantara el servidor y se probara el
+flujo real con autenticacion y diferentes casos de validacion.
+
+## Ruta de creacion de Activity registrada
+
+- `trip.routes.ts` importa `createActivityController` desde el dominio de
+  actividades.
+- Se registro `POST /:tripId/activities` dentro de `tripRouter`; como el router
+  esta montado en `/api/trips`, la URL completa es
+  `POST /api/trips/:tripId/activities`.
+- `requireAuth` se ejecuta antes del controlador, por lo que una peticion sin
+  cookie no valida el body ni consulta el viaje.
+- Una prueba contra el servidor compilado alcanzo la ruta y obtuvo HTTP 401 sin
+  autenticacion, confirmando el montaje y el middleware.
+- `npm run typecheck`, `npm run build` y `git diff --check` pasan.
+
+## Proximo paso
+
+Probar en Postman el flujo autenticado de creacion: primero una actividad
+general valida, despues una asociada a una parada y finalmente los errores de
+estado, pertenencia, formato y rango. La evidencia exitosa debe ser HTTP 201 con
+`status: PLANNED` y fechas ISO en UTC.
+
+## Creacion de Activity probada en Postman
+
+- Se uso el viaje `91e8eaa6-dd78-46d0-9d90-c695592db560`, con rango
+  `2026-12-01` a `2026-12-31` y estado `PLANNING`.
+- La creacion de una actividad general fue probada mediante el endpoint
+  autenticado; al omitir `tripDestinationId`, la relacion se almacena como
+  `null`.
+- La creacion asociada se probo con la relacion de parada
+  `5daf6f6c-5343-404c-97e5-5524a5ff425c` del mismo viaje.
+- Ambas rutas de negocio alcanzan la escritura y devuelven la actividad creada
+  con el estado inicial administrado por Prisma.
+
+## Proximo paso
+
+Implementar la lectura del itinerario con `listActivities(userId, tripId)`,
+ordenada por `startsAt` y protegida por pertenencia del viaje. Despues se
+agregaran controlador y ruta `GET /api/trips/:tripId/activities` para comprobar
+que las dos actividades creadas pueden recuperarse.
