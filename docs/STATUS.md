@@ -7072,3 +7072,254 @@ el viaje o la parada y pertenecen al servicio.
 Definir el contrato de los parametros de ruta para actividades. `tripId` debe
 validarse como UUID desde `req.params` sin incorporarlo al body; despues se
 podra construir el mapper de respuesta antes de entrar al servicio de creacion.
+
+## Parametro `tripId`: reutilizacion del contrato existente
+
+- No se creara un schema de parametros dentro de `activities` para la ruta de
+  creacion.
+- `tripParamsSchema`, ubicado en `features/trips/trip.schemas.ts`, ya valida el
+  objeto `{ tripId }` que Express entrega mediante `req.params`.
+- El futuro controlador de actividades importara ese contrato, igual que los
+  controladores de paradas, evitando duplicar la validacion y sus mensajes.
+- Esta decision no mezcla dominios: el parametro identifica el recurso padre
+  `Trip`, mientras `createActivitySchema` sigue siendo responsable solamente
+  del body de la actividad.
+
+## Microtarea actual: mapper de respuesta de Activity
+
+- Crear `server/src/features/activities/activity.mapper.ts` en la ubicacion
+  definitiva del dominio.
+- Declarar `ActivityResponse` con los campos escalares publicos de la actividad:
+  IDs, contenido, instantes, ubicacion, estado y marcas de tiempo.
+- Mantener `tripDestinationId` como `string | null`; la primera version no
+  anidara la parada completa porque la vista de viaje ya consulta sus paradas.
+- Tipar `status` con `ActivityStatus` y la entrada del mapper con el modelo
+  generado `Activity`.
+- Implementar `toActivityResponse` convirtiendo `startsAt`, `createdAt` y
+  `updatedAt` mediante `toISOString()`, y `endsAt` a ISO o `null`.
+- No usar `.slice(0, 10)`: las fechas de actividad representan instantes con
+  hora, a diferencia de las fechas de calendario de `Trip`.
+- No consultar Prisma, validar reglas ni cambiar zonas horarias en el mapper.
+
+## Mapper de respuesta de Activity completado
+
+- `ActivityResponse` expone los campos escalares del modelo con sus nulabilidades
+  reales y mantiene `tripDestinationId` sin anidar ni duplicar la parada.
+- `toActivityResponse` recibe el tipo generado `Activity` y devuelve el contrato
+  publico declarado explicitamente.
+- Los cuatro campos temporales se serializan correctamente: los obligatorios
+  mediante `toISOString()` y `endsAt` mediante una rama segura para `null`.
+- Una prueba dirigida confirmo que `2026-12-03T09:00:00-05:00` se devuelve como
+  `2026-12-03T14:00:00.000Z`, el mismo instante representado en UTC.
+- No fueron necesarios ajustes durante la revision.
+- `npm run typecheck`, la prueba de ejecucion del mapper y
+  `git diff --check` pasan.
+
+## Proximo paso
+
+Disenar el servicio de creacion de actividades. Antes de escribirlo se separaran
+las consultas de pertenencia, las reglas de estado y rango temporal, la
+validacion de la parada opcional, la conversion de strings a `Date` y la
+escritura Prisma para no introducir todo el flujo en un solo bloque.
+
+## Flujo acordado para crear una Activity
+
+1. El controlador entregara `userId`, `tripId` y el body ya validado al
+   servicio.
+2. El servicio comprobara que el viaje pertenece al usuario y cargara estado y
+   rango de fechas.
+3. Solo `PLANNING` y `CONFIRMED` permitiran crear actividades.
+4. Si existe `tripDestinationId`, se comprobara que esa parada pertenece al
+   mismo viaje y se obtendra la zona IANA de su destino; una actividad general
+   usara UTC.
+5. Los strings ISO se convertiran a `Date` y su fecha local se validara contra
+   `Trip.startDate` y `Trip.endDate`.
+6. Se ejecutara una unica escritura `prisma.activity.create` y su resultado se
+   pasara por `toActivityResponse`.
+- No se usara `$transaction` inicialmente: las consultas previas validan reglas,
+  pero la operacion persistente es una sola escritura y no existe un conjunto de
+  escrituras que deba revertirse en bloque.
+
+## Microtarea actual: pertenencia y estado del viaje para Activity
+
+- Crear `server/src/features/activities/activity.service.ts` en su ubicacion
+  definitiva.
+- Importar `prisma`, `AppError` y el tipo `TripStatus`.
+- Crear el helper privado asincrono `getOwnedTripOrThrow(userId, tripId)`.
+- Consultar el viaje con `findFirst`, filtrando simultaneamente por `id` y
+  `userId`, y seleccionar solo `id`, `status`, `startDate` y `endDate`.
+- Lanzar `AppError(404, "TRIP_NOT_FOUND", "Viaje no encontrado")` si la consulta
+  no devuelve un viaje.
+- Crear el helper privado `assertTripAllowsActivityChanges(status)` con retorno
+  `void`.
+- Permitir exclusivamente `PLANNING` y `CONFIRMED`; para cualquier otro estado,
+  lanzar un error 409 con codigo `TRIP_ACTIVITIES_LOCKED`.
+- No implementar todavia `createActivity`, la consulta de la parada, fechas ni
+  escritura. Los helpers privados pueden permanecer sin uso durante esta
+  microtarea porque `noUnusedLocals` no esta activado en el servidor.
+
+## Pertenencia y estado del viaje para Activity completados
+
+- `getOwnedTripOrThrow` filtra conjuntamente por `tripId` y `userId`, por lo que
+  un viaje inexistente y uno ajeno producen la misma respuesta 404 sin revelar
+  recursos de otro usuario.
+- La consulta selecciona solo `id`, `status`, `startDate` y `endDate`, que son
+  los datos requeridos por el flujo de creacion.
+- `assertTripAllowsActivityChanges` usa una lista permitida implicita: solo
+  `PLANNING` y `CONFIRMED` dejan continuar; cualquier estado presente o futuro
+  queda bloqueado por defecto.
+- Durante la revision se corrigieron el codigo y el mensaje copiados del dominio
+  de paradas: ahora usa `TRIP_ACTIVITIES_LOCKED` y menciona actividades.
+- `npm run typecheck` y `git diff --check` pasan.
+
+## Proximo paso
+
+Agregar un helper privado que resuelva la parada opcional de una actividad. Si
+no llega `tripDestinationId`, devolvera UTC; si llega, comprobara simultaneamente
+el ID de la relacion y el viaje padre, y devolvera la zona IANA de su
+`Destination` con UTC como respaldo.
+
+## Microtarea actual: resolver parada y zona horaria de Activity
+
+- Agregar a `activity.service.ts` el helper privado asincrono
+  `resolveActivityTimeZone(tripId, tripDestinationId)`.
+- `tripDestinationId` recibira `string | null | undefined`, igual que el tipo
+  inferido desde el contrato de creacion.
+- Si el valor es `null` o `undefined`, no se consultara Prisma y se devolvera
+  `"UTC"`; se trata de una actividad general del viaje.
+- Si existe un ID, consultar `tripDestination.findFirst` filtrando en el mismo
+  `where` por `id: tripDestinationId` y `tripId`.
+- Seleccionar unicamente la relacion `destination` y, dentro de ella, solo
+  `timezone`; no cargar toda la parada ni todo el destino.
+- Si no existe una relacion que cumpla ambos filtros, lanzar
+  `AppError(404, "TRIP_DESTINATION_NOT_FOUND", "Parada no encontrada")`.
+- Si existe, devolver `tripDestination.destination.timezone ?? "UTC"` para
+  cubrir destinos sin zona horaria almacenada.
+- No llamar todavia este helper, convertir fechas ni implementar
+  `createActivity`.
+
+## Parada y zona horaria de Activity completadas
+
+- `resolveActivityTimeZone` acepta `string | null | undefined`, en concordancia
+  con el tipo inferido por el schema para `tripDestinationId`.
+- La ausencia de parada termina el helper inmediatamente con `UTC` y evita una
+  consulta innecesaria.
+- Cuando existe un ID, `findFirst` exige simultaneamente la relacion y el viaje,
+  impidiendo asociar una actividad con una parada de otro recorrido.
+- El `select` anidado carga solamente `destination.timezone`; una zona nula usa
+  `UTC` como respaldo.
+- Una parada inexistente o ajena produce `TRIP_DESTINATION_NOT_FOUND`.
+- Durante la primera revision se detecto que el parametro solo aceptaba
+  `string`; el estudiante lo corrigio para admitir tambien `null` y
+  `undefined`.
+- `npm run typecheck` y `git diff --check` pasan.
+
+## Proximo paso
+
+Crear en `common/dates/date.utils.ts` una utilidad que reciba un instante `Date`
+y una zona IANA, y devuelva su clave local `YYYY-MM-DD`. Esta conversion sera la
+base para comparar las actividades con el rango de dias de `Trip` sin confundir
+el instante UTC con el dia observado en el destino.
+
+## Microtarea actual: clave de fecha local por zona horaria
+
+- Agregar a `server/src/common/dates/date.utils.ts` la funcion exportada
+  `toDateKeyInTimeZone(value, timeZone): string`.
+- Crear un `Intl.DateTimeFormat` con `timeZone` y las opciones `year`, `month` y
+  `day` en formato de dos digitos cuando corresponda.
+- Usar `formatToParts(value)` para obtener cada componente por su tipo en lugar
+  de depender del orden o separadores de una fecha localizada completa.
+- Buscar las partes `year`, `month` y `day`; si alguna no aparece, lanzar un
+  `Error` tecnico porque la utilidad no puede producir una clave valida.
+- Reconstruir y devolver exactamente `${year}-${month}-${day}`.
+- La funcion no cambiara el objeto `Date`, no consultara Prisma, no conocera el
+  rango del viaje y no manejara errores HTTP.
+- No integrarla todavia en `activity.service.ts`; primero se revisara aislada
+  con casos donde UTC y `America/Bogota` caen en dias diferentes.
+
+## Clave de fecha local por zona horaria completada
+
+- `toDateKeyInTimeZone` usa `Intl.DateTimeFormat` con una zona IANA y extrae
+  `year`, `month` y `day` mediante `formatToParts`.
+- La funcion reconstruye una clave estable `YYYY-MM-DD` sin depender del orden
+  visual ni de los separadores del locale.
+- Una defensa tecnica impide devolver una clave incompleta si faltara alguna de
+  las partes solicitadas.
+- Durante la comprobacion se elimino el esqueleto vacio que ya existia al final
+  del archivo y duplicaba el nombre de la nueva implementacion.
+- La prueba con `2026-12-04T02:00:00.000Z` produjo `2026-12-04` en UTC y
+  `2026-12-03` en `America/Bogota`, y confirmo que el objeto `Date` no se muta.
+- `npm run typecheck`, la prueba dirigida y `git diff --check` pasan.
+
+## Proximo paso
+
+Importar esta utilidad en `activity.service.ts` y crear una regla privada que
+compare las claves locales de `startsAt` y `endsAt` con las claves de
+`Trip.startDate` y `Trip.endDate`. Todavia no se escribira en Prisma.
+
+## Microtarea actual: rango local de fechas de Activity
+
+- Importar `toDateKeyInTimeZone` desde `common/dates/date.utils.ts` dentro de
+  `activity.service.ts`.
+- Crear el helper privado `assertActivityDatesWithinTrip` con retorno `void`.
+- Recibir un viaje reducido `{ startDate: Date; endDate: Date }`, `startsAt` como
+  `Date`, `endsAt` como `Date | null` y `timeZone` como `string`.
+- Convertir las fechas `@db.Date` del viaje a claves `YYYY-MM-DD` mediante
+  `toISOString().slice(0, 10)`; estas fechas no representan instantes locales.
+- Convertir los instantes de la actividad a claves locales mediante
+  `toDateKeyInTimeZone`; no usar `toISOString().slice(0, 10)` para ellos.
+- Considerar fuera del rango una clave menor que el inicio o mayor que el fin.
+  La igualdad con cualquiera de los extremos sera valida.
+- Comprobar siempre `startsAt` y comprobar `endsAt` solo cuando no sea `null`.
+- Si cualquiera queda fuera, lanzar un error 400 con codigo
+  `ACTIVITY_DATES_OUT_OF_TRIP_RANGE` y mensaje que indique que las fechas deben
+  estar dentro del rango del viaje.
+- No repetir la regla `endsAt >= startsAt`, ya cubierta por Zod, ni llamar aun
+  este helper desde `createActivity`.
+
+## Rango local de fechas de Activity completado
+
+- `assertActivityDatesWithinTrip` recibe el rango del viaje, ambos instantes ya
+  convertidos y la zona horaria ya resuelta.
+- Las fechas `@db.Date` del viaje se convierten a sus claves de calendario,
+  mientras los instantes usan `toDateKeyInTimeZone` para obtener el dia visto en
+  el destino.
+- `startsAt` se comprueba siempre y `endsAt` solo cuando no es `null`.
+- Las comparaciones usan `<` y `>`, de modo que el primer y ultimo dia del viaje
+  se aceptan de manera inclusiva.
+- Un inicio o fin fuera del rango lanza el error 400
+  `ACTIVITY_DATES_OUT_OF_TRIP_RANGE`.
+- El helper permanece privado y aun no realiza consultas ni escrituras.
+- `npm run typecheck` y `git diff --check` pasan.
+
+## Proximo paso
+
+Integrar los helpers en la funcion publica `createActivity`: comprobar viaje y
+estado, resolver zona, convertir los strings ISO a `Date`, aplicar el rango,
+ejecutar una unica escritura Prisma y mapear la respuesta.
+
+## Servicio de creacion de Activity completado
+
+- `createActivity(userId, tripId, input)` expone el caso de uso con entrada y
+  retorno tipados mediante `CreateActivityInput` y `ActivityResponse`.
+- El flujo comprueba primero pertenencia y estado del viaje; despues valida la
+  parada opcional y obtiene su zona horaria.
+- `startsAt` se convierte siempre a `Date`; `endsAt` normaliza tanto `null` como
+  ausencia a `null` antes de convertirse.
+- La regla de rango recibe los datos ya preparados y compara los dias locales
+  antes de cualquier escritura.
+- `prisma.activity.create` ejecuta una unica escritura, normaliza los campos
+  opcionales a `null` y omite `status` para usar el valor Prisma `PLANNED`.
+- El modelo creado se transforma inmediatamente mediante
+  `toActivityResponse`, por lo que el servicio no expone objetos `Date`.
+- No se usa `$transaction`, ya que no existe un grupo de escrituras que deba
+  confirmarse o revertirse como unidad.
+- `npm run typecheck`, `npm run build` y `git diff --check` pasan. La insercion
+  real se comprobara cuando el flujo HTTP tenga controlador y ruta.
+
+## Proximo paso
+
+Crear el controlador HTTP de actividades. Su responsabilidad sera verificar la
+autenticacion defensiva, validar `req.params` con el contrato reutilizado de
+`Trip`, validar `req.body` con `createActivitySchema`, llamar al servicio y
+responder `201` con `{ data: { activity } }`.
