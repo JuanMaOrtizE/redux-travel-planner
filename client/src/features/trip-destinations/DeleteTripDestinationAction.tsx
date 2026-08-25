@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { MapPinMinus } from "lucide-react";
 import { useDeleteTripDestinationMutation } from "./tripDestinationsApi";
 
@@ -23,6 +24,16 @@ export default function DeleteTripDestinationAction({
   const [deleteTripDestination, { isLoading, isError, isSuccess, reset }] =
     useDeleteTripDestinationMutation();
   const isActionLocked = isLoading || isSuccess;
+  const openButtonRef = useRef<HTMLButtonElement>(null);
+  const wasConfirmingRef = useRef(isConfirming);
+
+  useEffect(() => {
+    if (wasConfirmingRef.current && !isConfirming) {
+      openButtonRef.current?.focus();
+    }
+
+    wasConfirmingRef.current = isConfirming;
+  }, [isConfirming]);
 
   function handleOpenConfirmation() {
     if (isDisabled) return;
@@ -54,10 +65,10 @@ export default function DeleteTripDestinationAction({
     return (
       <div
         aria-busy={isActionLocked}
-        className="absolute inset-0 z-10 flex flex-col justify-center gap-3 bg-white/30 p-4 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-5"
+        className="z-10 col-start-1 row-start-1 flex min-w-0 flex-col justify-center gap-3 bg-white/10 p-4 backdrop-blur-sm sm:p-5 lg:p-6"
       >
         <div className="min-w-0">
-          <p className="font-semibold text-slate-950">
+          <p className="wrap-break-words font-semibold text-slate-950">
             ¿Quitar {destinationName} del recorrido?
           </p>
           {isError ? (
@@ -74,10 +85,10 @@ export default function DeleteTripDestinationAction({
           )}
         </div>
 
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+        <div className="grid w-full min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
           <button
             autoFocus
-            className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-600 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-600 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
             disabled={isActionLocked}
             onClick={handleCancelConfirmation}
             type="button"
@@ -85,7 +96,7 @@ export default function DeleteTripDestinationAction({
             Cancelar
           </button>
           <button
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-red-700 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-red-700 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
             disabled={isActionLocked}
             onClick={handleConfirmDelete}
             type="button"
@@ -104,10 +115,11 @@ export default function DeleteTripDestinationAction({
 
   return (
     <button
-      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-red-700 transition-colors hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
+      className="absolute right-4 top-4 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-red-700 transition-colors hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent sm:right-5 sm:top-5 lg:right-6 lg:top-6"
       type="button"
       onClick={handleOpenConfirmation}
       disabled={isDisabled}
+      ref={openButtonRef}
     >
       <MapPinMinus aria-hidden="true" size={18} />
       <span className="sr-only">Quitar {destinationName} del recorrido</span>

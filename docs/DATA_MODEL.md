@@ -215,8 +215,9 @@ Campos previstos:
 - `updatedAt`.
 
 Siempre pertenece a un viaje y puede asociarse con una parada concreta. La
-interfaz agrupará actividades por fecha; no se creará inicialmente una tabla
-`ItineraryDay` sin datos propios.
+interfaz presenta primero las actividades generales y agrupa las asociadas bajo
+su `TripDestination`; dentro de cada grupo conserva el orden cronologico del
+endpoint. No se creara inicialmente una tabla `ItineraryDay` sin datos propios.
 
 Decisiones para la primera version:
 

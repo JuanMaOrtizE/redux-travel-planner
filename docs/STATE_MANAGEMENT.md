@@ -189,3 +189,27 @@ una copia del estado del servidor con `useState`. El flujo es:
 `pendingStatus` es estado local de interfaz y solo identifica que texto de
 carga debe mostrarse. No representa ni reemplaza el estado persistido del
 viaje.
+
+## Composicion de las caches del itinerario
+
+`TripItinerarySection` se suscribe a dos entradas de cache distintas para el
+mismo `tripId`:
+
+- `getTripDestinations(tripId)` aporta el recorrido y la informacion geografica;
+- `getActivities(tripId)` aporta la agenda ordenada por el backend.
+
+El componente no copia esos arreglos a un slice ni a `useState`. En cada
+renderizado recorre las actividades y deriva una lista general y un `Map` cuya
+clave es `tripDestinationId`. Esa estructura solo organiza la presentacion; la
+fuente de verdad sigue siendo la cache de RTK Query.
+
+Los estados de ambas consultas permanecen independientes. Un fallo de
+actividades no elimina el mapa ni las paradas ya disponibles, y un refetch con
+datos previos conserva la ultima version visible. Al quitar una parada, la
+mutation invalida las tags `TripDestinations/tripId` y `Activities/tripId`
+porque PostgreSQL elimina la fila puente y convierte en `null` la relacion de
+sus actividades mediante `SetNull`.
+
+La parada seleccionada y la confirmacion abierta si usan `useState`: son estado
+temporal de interfaz, no datos persistidos. Ambos identificadores se limpian
+solo cuando la parada correspondiente deja de existir en la respuesta actual.

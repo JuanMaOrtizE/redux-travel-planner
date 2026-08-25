@@ -185,10 +185,14 @@ responsive.
   la fila en una zona de peligro.
 - La confirmacion sera progresiva y permanecera dentro de los limites de la
   fila afectada; no usara un dialogo ni cubrira el resto de la pagina.
-- Una capa posicionada sobre la fila aplicara un fondo blanco semitransparente
-  y `backdrop-blur` al contenido de la parada. El desenfoque sera deliberado y
-  local: comunicara que esa fila esta temporalmente bloqueada, no se usara como
-  decoracion general de la interfaz.
+- La confirmacion comparte la misma celda de Grid que el resumen y aplica un
+  fondo blanco semitransparente con `backdrop-blur`. Al participar en el flujo,
+  puede aumentar la altura de la parada cuando el nombre o el error ocupen mas
+  lineas. El desenfoque sera deliberado y local: comunicara que ese resumen esta
+  temporalmente bloqueado, no se usara como decoracion general de la interfaz.
+- Sus acciones usan una columna en anchos estrechos y dentro de la columna 4/12;
+  solo pasan a dos columnas cuando hay espacio suficiente. Ambos botones
+  conservan un objetivo tactil minimo de 44 px.
 - Sobre la informacion desenfocada apareceran la pregunta, la aclaracion sobre
   el destino reutilizable y las acciones `Cancelar` y `Quitar parada`.
 - La capa no saldra de la fila y reservara altura suficiente para que el texto,
@@ -199,3 +203,25 @@ responsive.
   respuesta actualizada.
 - Los viajes `COMPLETED` y `CANCELLED` no mostraran esta accion; el backend
   conservara la proteccion 409 como autoridad final.
+
+## Composicion del itinerario en el detalle
+
+- El mapa ocupa todo el ancho disponible para conservar legibilidad geografica
+  y permitir que varios marcadores entren en una misma vista.
+- Las actividades generales, cuando existen, se muestran en un bloque propio
+  antes de las paradas porque no pertenecen a ningun destino concreto.
+- Cada parada usa una sola fila responsive. Desde `lg`, el resumen del destino
+  ocupa cuatro de doce columnas y sus actividades las ocho restantes; en
+  pantallas menores ambas zonas se apilan.
+- La confirmacion para quitar una parada cubre solamente el resumen del destino.
+  Sus actividades permanecen visibles porque, al eliminar la relacion, el
+  backend las conserva como actividades generales mediante `SetNull`.
+- Seleccionar el resumen de una parada centra el mapa. La zona de actividades no
+  activa esa seleccion, evitando que acciones futuras dentro de la agenda
+  cambien el mapa accidentalmente.
+- Si una actividad referencia temporalmente una parada ausente en la cache, no
+  se oculta: aparece en un bloque de relacion pendiente hasta que las consultas
+  vuelvan a estar sincronizadas.
+- La primera version del bloque muestra titulo, estado y ubicacion. La fecha y
+  hora se incorporaran despues de resolver explicitamente la zona IANA de cada
+  grupo; no se mostraran cadenas ISO crudas.

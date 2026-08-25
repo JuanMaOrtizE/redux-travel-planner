@@ -7803,3 +7803,45 @@ la siguiente microtarea de layout colocara mapa y lista de paradas lado a lado
 desde `lg`, conservando su orden vertical en movil. Despues se convertira el
 buscador de paradas en divulgacion progresiva y se retomara la presentacion de
 horas de Activity.
+
+## Itinerario integrado por parada completado
+
+- `TripItinerarySection` reemplaza las secciones independientes de paradas y
+  actividades en el detalle del viaje y coordina las dos consultas existentes.
+- El mapa permanece a ancho completo. Debajo, cada parada usa una fila de doce
+  columnas: cuatro para el destino y ocho para sus actividades desde `lg`; en
+  movil ambas zonas se apilan.
+- Las actividades con `tripDestinationId: null` aparecen en una agenda general
+  anterior a las paradas. Una relacion que no coincide temporalmente con la
+  cache de paradas se presenta como pendiente en lugar de ocultarse.
+- `ActivityGroupList` concentra la presentacion reutilizable y
+  `ItineraryStopRow` limita la seleccion del mapa y la confirmacion de borrado
+  al resumen de la parada.
+- Quitar una parada mantiene visibles sus actividades durante la confirmacion;
+  tras el refetch, `SetNull` hace que reaparezcan en la agenda general.
+- Los estados iniciales, actualizaciones y errores de ambas queries permanecen
+  independientes. Los arreglos remotos no se duplican en estado local.
+- Se retiraron `TripDestinationsSection` y `ActivitiesSection` porque sus
+  responsabilidades quedaron absorbidas por la composicion definitiva.
+- `npm run build` del cliente pasa. Permanece la advertencia conocida sobre el
+  tamano del bundle de produccion.
+
+## Proximo paso
+
+Revisar visualmente el itinerario en escritorio y movil. Una vez aprobado, se
+mostraran fecha, hora, ubicacion y descripcion de cada actividad usando la zona
+IANA de su parada y UTC explicito para la agenda general; despues se agregara el
+formulario de creacion en su ubicacion definitiva.
+
+## Confirmacion de parada adaptada al layout 4/8
+
+- La confirmacion ya no usa `absolute inset-0`, que la dejaba fuera del flujo y
+  permitia que texto y botones invadieran la columna de actividades.
+- El resumen y la confirmacion comparten una celda de Grid. Se conserva el blur
+  local, pero la confirmacion ahora determina la altura necesaria de la parada.
+- La pregunta permite romper nombres largos y las acciones usan una o dos
+  columnas segun el ancho efectivo del resumen.
+- Los botones alcanzan 44 px de alto, el detalle inferior queda deshabilitado y
+  Cancelar devuelve el foco a la accion que abrio la confirmacion.
+- Dos revisiones aisladas identificaron la misma causa estructural. El detector
+  posterior no encontro hallazgos; `npm run lint` y `npm run build` pasan.

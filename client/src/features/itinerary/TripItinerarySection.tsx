@@ -3,8 +3,11 @@ import ActivityGroupList from "../activities/ActivityGroupList";
 import type { Activity } from "../activities/activity.types";
 import { useGetActivitiesQuery } from "../activities/activitiesApi";
 import TripDestinationsMap from "../trip-destinations/TripDestinationsMap";
+import type { TripDestination } from "../trip-destinations/tripDestination.types";
 import { useGetTripDestinationsQuery } from "../trip-destinations/tripDestinationsApi";
 import ItineraryStopRow from "./ItineraryStopRow";
+
+const EMPTY_TRIP_DESTINATIONS: TripDestination[] = [];
 
 type TripItinerarySectionProps = {
   canEditTripDestinations: boolean;
@@ -163,7 +166,7 @@ export default function TripItinerarySection({
   } = useGetActivitiesQuery(tripId);
 
   const tripDestinations =
-    tripDestinationsResponse?.data.tripDestinations ?? [];
+    tripDestinationsResponse?.data.tripDestinations ?? EMPTY_TRIP_DESTINATIONS;
   const activities = activitiesResponse?.data.activities ?? [];
   const hasTripDestinationsResponse = tripDestinationsResponse !== undefined;
   const hasActivitiesResponse = activitiesResponse !== undefined;

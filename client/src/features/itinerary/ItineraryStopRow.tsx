@@ -54,11 +54,12 @@ export default function ItineraryStopRow({
   return (
     <li className="grid min-w-0 bg-white lg:grid-cols-12">
       <div
-        className={`relative flex min-h-32 min-w-0 items-start gap-3 p-4 transition-colors motion-reduce:transition-none sm:p-5 lg:col-span-4 lg:p-6 ${isSelected ? "bg-teal-50" : "bg-white"}`}
+        className={`relative grid min-h-32 min-w-0 transition-colors motion-reduce:transition-none lg:col-span-4 ${isSelected ? "bg-teal-50" : "bg-white"}`}
       >
         <button
           aria-pressed={isSelected}
-          className="flex min-w-0 flex-1 cursor-pointer items-start gap-4 rounded-lg text-left focus-visible:outline-2 focus-visible:outline-teal-700"
+          className="col-start-1 row-start-1 flex min-w-0 cursor-pointer items-start gap-4 rounded-lg p-4 pr-16 text-left focus-visible:outline-2 focus-visible:outline-teal-700 disabled:cursor-default sm:p-5 sm:pr-16 lg:p-6 lg:pr-16"
+          disabled={isConfirming}
           onClick={onToggleSelection}
           type="button"
         >
