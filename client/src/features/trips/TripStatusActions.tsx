@@ -81,7 +81,7 @@ export default function TripStatusActions({
       aria-busy={isLoading}
       className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col items-start gap-3">
         <div>
           <h2
             id="trip-status-title"
@@ -102,7 +102,7 @@ export default function TripStatusActions({
       </div>
 
       {availableActions.length > 0 ? (
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+        <div className="mt-5 grid gap-3">
           {availableActions.map((action) => {
             const isCurrentActionLoading =
               isLoading && pendingStatus === action.nextStatus;

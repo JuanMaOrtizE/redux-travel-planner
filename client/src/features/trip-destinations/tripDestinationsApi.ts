@@ -40,7 +40,12 @@ export const tripDestinationsApi = api.injectEndpoints({
           };
         },
         invalidatesTags: (_result, error, { tripId }) =>
-          error ? [] : [{ type: "TripDestinations", id: tripId }],
+          error
+            ? []
+            : [
+                { type: "TripDestinations", id: tripId },
+                { type: "Activities", id: tripId },
+              ],
       }),
     };
   },

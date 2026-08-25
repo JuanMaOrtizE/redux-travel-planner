@@ -7662,3 +7662,144 @@ primero la consulta.
 Crear una primera seccion de lectura de actividades en el detalle del viaje.
 Usara `useGetActivitiesQuery`, mostrara loading, error, estado vacio y la lista
 basica, sin formulario ni eliminacion todavia.
+
+## Ajuste de secuencia para presentar fechas de Activity
+
+- Antes de renderizar la lista se comprobo la decision de fechas registrada en
+  `DATA_MODEL.md`: una actividad asociada debe mostrarse en la zona IANA de su
+  parada y una actividad general debe usar UTC.
+- No se mostraran cadenas ISO crudas ni se usara implicitamente la zona del
+  navegador, porque ambas opciones pueden comunicar un dia o una hora
+  incorrectos durante el viaje.
+- La seccion podra reutilizar la cache de `getTripDestinations(tripId)` para
+  resolver `tripDestinationId -> destination.timezone`; una segunda
+  suscripcion con el mismo endpoint y argumento no implica duplicar la cache.
+
+## Microtarea actual: formateadores de Activity
+
+- Crear `client/src/features/activities/activity.formatters.ts`.
+- Definir etiquetas en espanol para los cuatro valores de `ActivityStatus`.
+- Crear un formateador de fecha y hora que reciba explicitamente el ISO y la
+  zona IANA; la zona no se decidira dentro del formateador.
+- No crear todavia el componente de la seccion ni agrupar actividades por dia.
+
+## Formateadores de Activity completados
+
+- `activity.formatters.ts` define las etiquetas en espanol mediante
+  `Record<ActivityStatus, string>`, por lo que TypeScript exige cubrir todos los
+  estados.
+- `getActivityStatusLabel` transforma el enum tecnico en texto de interfaz.
+- `formatActivityDateTime` recibe el ISO y una zona IANA obligatoria, y usa
+  `Intl.DateTimeFormat` con locale `es-CO`.
+- El formateador no decide la zona ni aplica un fallback; esa responsabilidad
+  permanecera en la capa que conoce la actividad y sus paradas.
+- `npm run build` del cliente y `git diff --check` pasan. Permanece la
+  advertencia conocida sobre el tamano del bundle.
+
+## Proximo paso
+
+Crear `ActivitiesSection.tsx` en el feature de actividades. Primero se
+integrara la consulta y se derivaran de manera explicita los estados inicial de
+carga, error sin datos, actualizacion con datos previos y lista vacia; despues
+se incorporara el contenido de cada actividad.
+
+## Microtarea actual: estructura y estados de ActivitiesSection
+
+- Crear `client/src/features/activities/ActivitiesSection.tsx` con prop
+  `tripId: string` y consumir `useGetActivitiesQuery(tripId)`.
+- Diferenciar carga inicial, error inicial, actualizacion con datos anteriores,
+  error de actualizacion y estado vacio usando `currentData`.
+- Mostrar inicialmente el titulo y el estado de cada actividad, sin presentar
+  aun fechas ni cadenas ISO.
+- Montar la seccion en `TripDetailPage` despues del bloque de paradas y antes de
+  la zona de peligro.
+- No consultar todavia `TripDestinations` dentro de la seccion ni agregar
+  formulario o eliminacion.
+
+## Estructura y estados de ActivitiesSection completados
+
+- Se creo `ActivitiesSection.tsx` con la prop `tripId` y una suscripcion a
+  `useGetActivitiesQuery(tripId)`.
+- La seccion diferencia carga inicial, error inicial, actualizacion con cache
+  previa, error de actualizacion y respuesta vacia mediante `currentData`.
+- La lista inicial muestra titulo y etiqueta de estado; no presenta aun horas
+  ni cadenas ISO.
+- `TripDetailPage` monta la seccion despues del bloque de paradas y antes de la
+  zona de peligro.
+- La UI mantiene los patrones existentes: skeleton, reintento, datos anteriores
+  durante una actualizacion fallida y estado vacio instructivo.
+- `npm run build` del cliente y `git diff --check` pasan. La inspeccion visual
+  automatizada no pudo iniciarse porque la conexion disponible al navegador
+  local rechazo la sesion antes de abrir una pestana.
+
+## Proximo paso
+
+Probar visualmente la seccion con el servidor local. Despues se resolvera la
+zona de cada actividad mediante las paradas ya almacenadas en cache y se
+incorporaran fecha, hora, ubicacion y descripcion sin mostrar ISO crudo.
+
+## Dependencia de cache detectada antes de mostrar zonas
+
+- Eliminar una `TripDestination` no cambia solamente la lista de paradas.
+- Prisma aplica `onDelete: SetNull` a las actividades relacionadas, por lo que
+  `Activity.tripDestinationId` tambien cambia en el backend.
+- La mutation `deleteTripDestination` invalida actualmente solo
+  `TripDestinations`; una entrada activa de `getActivities(tripId)` podria
+  conservar temporalmente la relacion eliminada.
+- Esta dependencia debe corregirse antes de resolver zonas horarias desde las
+  paradas para evitar una presentacion basada en cache obsoleta.
+
+## Microtarea actual: invalidacion cruzada al eliminar una parada
+
+- Modificar solamente `deleteTripDestination.invalidatesTags`.
+- En exito, invalidar `{ type: "TripDestinations", id: tripId }` y
+  `{ type: "Activities", id: tripId }`.
+- En error, devolver `[]` porque ninguna relacion fue modificada.
+- No cambiar `createTripDestination`: crear una parada no modifica actividades
+  existentes.
+
+## Invalidacion cruzada al eliminar una parada completada
+
+- `deleteTripDestination` invalida en exito las entradas
+  `TripDestinations/tripId` y `Activities/tripId`.
+- En error conserva `[]`, evitando refetch cuando PostgreSQL no cambio.
+- `createTripDestination` permanece limitado a `TripDestinations`.
+- Una seccion de actividades con suscripcion activa podra recuperar el
+  `tripDestinationId: null` producido por `onDelete: SetNull`.
+- `npm run build` del cliente y `git diff --check` pasan. Permanece la
+  advertencia conocida sobre el tamano del bundle.
+
+## Proximo paso
+
+Incorporar en `ActivitiesSection` la consulta compartida de paradas y resolver
+para cada actividad su zona de presentacion: UTC si es general, zona del destino
+si la relacion existe y UTC si el destino no tiene zona almacenada. No se usara
+UTC silenciosamente cuando falten datos por un error de consulta.
+
+## Ajuste visual prioritario: cabecera responsive del detalle
+
+- La critica visual detecto que el `max-w-2xl` interior hacia que el escritorio
+  funcionara como una pantalla movil centrada dentro de `max-w-6xl`.
+- Se retiro esa restriccion para que las secciones posteriores puedan usar el
+  ancho disponible.
+- La cabecera usa un grid de 12 columnas desde `lg`: resumen del viaje en 8 y
+  estado/acciones en 4; en pantallas menores conserva una sola columna.
+- Fechas y presupuesto se presentan en tres columnas desde `sm`, reduciendo
+  altura sin modificar todavia su formato textual.
+- `TripStatusActions` usa una composicion vertical estable dentro de la columna
+  lateral, sin depender de que el viewport sea ancho para colocar botones en
+  fila.
+- El skeleton refleja la nueva proporcion 8/4 y evita un salto estructural al
+  terminar la carga.
+- El analisis previo se ejecuto con dos subagentes independientes y el detector
+  de layout no encontro hallazgos antes ni despues de la implementacion.
+- `npm run build` del cliente y `git diff --check` pasan. Permanece la
+  advertencia conocida sobre el tamano del bundle.
+
+## Proximo paso visual
+
+Revisar la cabecera en escritorio y movil. Si la composicion queda aprobada,
+la siguiente microtarea de layout colocara mapa y lista de paradas lado a lado
+desde `lg`, conservando su orden vertical en movil. Despues se convertira el
+buscador de paradas en divulgacion progresiva y se retomara la presentacion de
+horas de Activity.
