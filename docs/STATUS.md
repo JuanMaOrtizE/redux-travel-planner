@@ -7608,3 +7608,57 @@ y viaje bloqueado por estado.
 Probar el endpoint DELETE en Postman. Una eliminacion exitosa debe responder
 HTTP 204 sin cuerpo; repetir la misma peticion debe responder 404 con el codigo
 `ACTIVITY_NOT_FOUND`.
+
+## Eliminacion de Activity probada
+
+- El endpoint `DELETE /api/trips/:tripId/activities/:activityId` fue probado en
+  Postman.
+- La eliminacion exitosa responde HTTP 204 sin cuerpo.
+- El backend de actividades queda disponible para crear, listar y eliminar.
+
+## Microtarea actual: contratos de Activity en el cliente
+
+- Crear `client/src/features/activities/activity.types.ts` en la ubicacion
+  definitiva del nuevo feature.
+- Representar la respuesta normalizada del backend mediante `Activity`.
+- Definir por separado los contratos de listado, creacion y eliminacion que
+  usara posteriormente RTK Query.
+- No crear todavia el API inyectado, hooks, formulario ni componentes.
+
+## Contratos de Activity en el cliente completados
+
+- Se creo `client/src/features/activities/activity.types.ts`.
+- `Activity` refleja la respuesta normalizada del backend y distingue campos
+  siempre presentes pero anulables de campos opcionales de entrada.
+- Se definieron los contratos para listar, crear y eliminar actividades.
+- `ActivityStatus` limita el estado a los cuatro valores del enum de Prisma.
+- `npm run build` del cliente pasa. El cliente no dispone de script
+  `typecheck`; `npm run lint` no pudo ejecutarse porque la politica de Windows
+  bloqueo el binding nativo de Oxlint, no por un error reportado en el archivo.
+
+## Proximo paso
+
+Crear `client/src/features/activities/activitiesApi.ts` e introducir solamente
+la query `getActivities`, su tag de cache por viaje y el hook generado. Las
+mutations de creacion y eliminacion se agregaran despues de comprender y probar
+primero la consulta.
+
+## Query de Activities en RTK Query completada
+
+- El API base declara el nuevo tag type `Activities`.
+- `activitiesApi.ts` extiende el API compartido mediante `injectEndpoints`; no
+  crea otro reducer, middleware ni `baseUrl`.
+- `getActivities` recibe `tripId`, ejecuta
+  `GET /api/trips/:tripId/activities` y conserva la envoltura de respuesta del
+  backend.
+- Cada consulta proporciona `{ type: "Activities", id: tripId }`, de modo que
+  las futuras mutations actualizaran solo la lista del viaje afectado.
+- Se exporta `useGetActivitiesQuery` para la integracion posterior con React.
+- `npm run build` del cliente y `git diff --check` pasan; permanece solamente la
+  advertencia ya conocida sobre el tamano del bundle.
+
+## Proximo paso
+
+Crear una primera seccion de lectura de actividades en el detalle del viaje.
+Usara `useGetActivitiesQuery`, mostrara loading, error, estado vacio y la lista
+basica, sin formulario ni eliminacion todavia.
