@@ -137,3 +137,37 @@ export async function createActivity(
 
   return toActivityResponse(activity);
 }
+
+export async function deleteActivity(
+  userId: string,
+  tripId: string,
+  activityId: string,
+): Promise<void> {
+  const trip = await getOwnedTripOrThrow(userId, tripId);
+
+  assertTripAllowsActivityChanges(trip.status);
+
+  const deleteResult = await prisma.activity.deleteMany({
+    where: { id: activityId, tripId: trip.id },
+  });
+
+  if (deleteResult.count === 0) {
+    throw new AppError(404, "ACTIVITY_NOT_FOUND", "Actividad no encontrada");
+  }
+}
+
+export async function listActivities(
+  userId: string,
+  tripId: string,
+): Promise<ActivityResponse[]> {
+  const trip = await getOwnedTripOrThrow(userId, tripId);
+
+  const activities = await prisma.activity.findMany({
+    where: {
+      tripId: trip.id,
+    },
+    orderBy: [{ startsAt: "asc" }, { createdAt: "asc" }],
+  });
+
+  return activities.map(toActivityResponse);
+}

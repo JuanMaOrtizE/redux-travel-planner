@@ -43,4 +43,11 @@ export const createActivitySchema = z
     },
   );
 
+export const deleteActivityParamsSchema = z.strictObject({
+  tripId: z.uuid("El identificador del viaje debe ser un UUID válido"),
+  activityId: z.uuid(
+    "El identificador de la actividad debe ser un UUID válido",
+  ),
+});
 export type CreateActivityInput = z.infer<typeof createActivitySchema>;
+export type DeleteActivityParams = z.infer<typeof deleteActivityParamsSchema>;

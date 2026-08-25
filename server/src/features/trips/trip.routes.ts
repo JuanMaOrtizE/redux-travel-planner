@@ -1,5 +1,9 @@
 import { Router } from "express";
-import { createActivityController } from "../activities/activity.controller.js";
+import {
+  createActivityController,
+  deleteActivityController,
+  listActivitiesController,
+} from "../activities/activity.controller.js";
 import { requireAuth } from "../auth/auth.middleware.js";
 import {
   createTripDestinationController,
@@ -17,10 +21,12 @@ import {
 const tripRouter = Router();
 
 tripRouter.post("/", requireAuth, createTripController);
-tripRouter.post(
-  "/:tripId/activities",
+tripRouter.post("/:tripId/activities", requireAuth, createActivityController);
+tripRouter.get("/:tripId/activities", requireAuth, listActivitiesController);
+tripRouter.delete(
+  "/:tripId/activities/:activityId",
   requireAuth,
-  createActivityController,
+  deleteActivityController,
 );
 tripRouter.post(
   "/:tripId/destinations",

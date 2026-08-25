@@ -7384,3 +7384,227 @@ Implementar la lectura del itinerario con `listActivities(userId, tripId)`,
 ordenada por `startsAt` y protegida por pertenencia del viaje. Despues se
 agregaran controlador y ruta `GET /api/trips/:tripId/activities` para comprobar
 que las dos actividades creadas pueden recuperarse.
+
+## Microtarea actual: servicio para listar Activities
+
+- Agregar `listActivities(userId, tripId)` a `activity.service.ts` con retorno
+  explicito `Promise<ActivityResponse[]>`.
+- Reutilizar `getOwnedTripOrThrow` antes de consultar actividades, de modo que
+  un viaje inexistente o ajeno produzca `TRIP_NOT_FOUND`.
+- No llamar `assertTripAllowsActivityChanges`: los estados finales bloquean
+  escrituras, pero el itinerario continua disponible para lectura.
+- Consultar `prisma.activity.findMany` filtrando por `tripId: trip.id`.
+- Ordenar primero por `startsAt` ascendente y usar `createdAt` ascendente como
+  desempate estable para actividades que comienzan en el mismo instante.
+- No usar `include`: el contrato actual devuelve `tripDestinationId` y la vista
+  del viaje consulta las paradas por separado.
+- Transformar el arreglo mediante `activities.map(toActivityResponse)`.
+- Si no hay resultados, devolver `[]`; no convertir un itinerario vacio en un
+  error 404.
+- No crear todavia controlador, ruta, schema adicional ni transaccion.
+
+## Servicio para listar Activities completado
+
+- `listActivities(userId, tripId)` reutiliza la comprobacion de propiedad del
+  viaje y devuelve explicitamente `Promise<ActivityResponse[]>`.
+- No aplica el bloqueo de escritura por estado, por lo que un itinerario
+  finalizado continua disponible para consulta.
+- `findMany` filtra por el viaje comprobado y ordena por `startsAt` y
+  `createdAt` ascendentes.
+- La lista plana no incluye relaciones duplicadas y cada modelo se transforma
+  mediante `toActivityResponse`.
+- Durante la revision se elimino un import duplicado de `ActivityResponse` y se
+  renombro la variable local `trips` a `activities`.
+- Una lectura real del viaje de prueba devolvio las dos actividades creadas; al
+  compartir `startsAt`, el desempate mantuvo primero la actividad creada antes.
+- `npm run typecheck`, `npm run build`, la lectura dirigida y
+  `git diff --check` pasan.
+
+## Proximo paso
+
+Agregar `listActivitiesController` al controlador existente. Validara
+autenticacion y `tripId`, llamara al nuevo servicio y respondera HTTP 200 con
+`{ data: { activities } }`; la ruta GET se registrara despues de revisar esa
+capa.
+
+## Microtarea actual: controlador para listar Activities
+
+- Modificar `server/src/features/activities/activity.controller.ts`; no crear
+  otro archivo de controlador.
+- Ampliar el import del servicio para incluir `listActivities` junto a
+  `createActivity`.
+- Exportar `listActivitiesController` tipado como `RequestHandler`.
+- Mantener la comprobacion defensiva de `req.auth` y el mismo error 401 usado
+  por los otros controladores.
+- Validar solamente `req.params` mediante `tripParamsSchema`; una peticion GET
+  no usa `createActivitySchema` ni procesa `req.body`.
+- Llamar `listActivities(auth.userId, parsedParams.tripId)`.
+- Responder HTTP 200 con `{ data: { activities } }`, incluso cuando el arreglo
+  este vacio.
+- No agregar `try/catch`, reglas de estado, consultas Prisma ni ruta en esta
+  microtarea.
+
+## Controlador para listar Activities completado
+
+- `activity.controller.ts` importa `listActivities` junto al caso de uso de
+  creacion y exporta `listActivitiesController` como `RequestHandler`.
+- La defensa de autenticacion permite usar `auth.userId` de forma segura y
+  conserva el error uniforme de sesion.
+- Solo `req.params` se valida mediante `tripParamsSchema`; el GET no lee ni
+  valida `req.body`.
+- El arreglo devuelto por el servicio se envuelve en el contrato HTTP definido
+  por el proyecto: `{ data: { activities } }`.
+- Un arreglo vacio conserva HTTP 200 y no se transforma en error.
+- No fueron necesarios ajustes durante la revision.
+- `npm run typecheck`, `npm run build` y `git diff --check` pasan.
+
+## Proximo paso
+
+Importar `listActivitiesController` en `trip.routes.ts` y registrar
+`GET /:tripId/activities` con `requireAuth`. Luego probar el endpoint autenticado
+con el viaje usado durante la creacion.
+
+## Ruta para listar Activities registrada
+
+- `trip.routes.ts` importa `listActivitiesController` y registra
+  `GET /:tripId/activities` con `requireAuth`.
+- Las rutas POST y GET de actividades quedaron agrupadas dentro del router para
+  mantener la misma organizacion usada por destinos.
+- La URL completa es `GET /api/trips/:tripId/activities` debido al montaje de
+  `tripRouter` bajo `/api/trips`.
+- Una peticion real sin cookie obtuvo HTTP 401, confirmando que la ruta existe y
+  que la autenticacion se ejecuta antes del controlador.
+- Durante la revision solo se movio mecanicamente la linea GET junto a su POST;
+  no cambio el comportamiento.
+- `npm run typecheck`, `npm run build` y `git diff --check` pasan.
+
+## Proximo paso
+
+Probar el GET autenticado en Postman con el viaje
+`91e8eaa6-dd78-46d0-9d90-c695592db560`. Debe responder HTTP 200 y devolver las
+dos actividades creadas dentro de `data.activities`, en orden estable.
+
+## Listado de Activities probado en Postman
+
+- El endpoint autenticado `GET /api/trips/:tripId/activities` fue probado con el
+  viaje usado durante la creacion.
+- La respuesta HTTP 200 recupera las actividades persistidas mediante el
+  contrato `{ data: { activities } }`.
+- Con creacion y listado verificados, el backend ya cubre el primer flujo
+  vertical del itinerario.
+
+## Proximo paso: eliminacion de Activity
+
+Se cerrara la eliminacion antes de comenzar el frontend para que la interfaz
+pueda crear, consultar y retirar actividades desde su primera integracion.
+
+## Microtarea actual: parametros para eliminar Activity
+
+- Modificar `server/src/features/activities/activity.schemas.ts`.
+- Agregar `deleteActivityParamsSchema` como `z.strictObject` con `tripId` y
+  `activityId`, ambos UUID obligatorios.
+- Usar mensajes especificos para el identificador del viaje y el de la
+  actividad.
+- Exportar `DeleteActivityParams` mediante `z.infer`.
+- No reutilizar `tripParamsSchema`: al ser estricto, rechazaria `activityId`
+  como propiedad desconocida del objeto `req.params`.
+- No agregar body, servicio, controlador ni ruta todavia.
+
+## Parametros para eliminar Activity completados
+
+- `deleteActivityParamsSchema` usa `z.strictObject` y exige `tripId` y
+  `activityId` como UUID.
+- `DeleteActivityParams` se infiere desde el contrato y representa solamente
+  datos de `req.params`, no un body de entrada.
+- Durante la revision se ajustaron mecanicamente el nombre del schema, el nombre
+  del tipo y la concordancia del mensaje de UUID.
+- `npm run typecheck` y `git diff --check` pasan.
+
+## Microtarea actual: servicio para eliminar Activity
+
+- Agregar `deleteActivity(userId, tripId, activityId)` a
+  `activity.service.ts` con retorno `Promise<void>`.
+- Comprobar primero el viaje mediante `getOwnedTripOrThrow` y despues aplicar
+  `assertTripAllowsActivityChanges`; los viajes finalizados conservan lectura,
+  pero bloquean eliminaciones.
+- Ejecutar `prisma.activity.deleteMany` filtrando conjuntamente por
+  `id: activityId` y `tripId: trip.id`.
+- Si `deleteResult.count` es cero, lanzar HTTP 404 con codigo
+  `ACTIVITY_NOT_FOUND` y mensaje `Actividad no encontrada`.
+- No devolver ni mapear la fila eliminada; el futuro controlador respondera
+  `204 No Content`.
+- No usar `$transaction`: existe una sola escritura y no hay posiciones que
+  compactar ni otra operacion que revertir.
+- No crear todavia controlador ni ruta.
+
+## Servicio para eliminar Activity completado
+
+- `deleteActivity(userId, tripId, activityId)` comprueba primero la propiedad
+  del viaje y aplica el bloqueo de escritura por estado.
+- `deleteMany` filtra conjuntamente por la actividad solicitada y por
+  `tripId: trip.id`, el viaje ya autorizado.
+- Un resultado con `count: 0` se traduce a `ACTIVITY_NOT_FOUND` sin revelar si
+  el UUID pertenece a otro viaje.
+- La funcion devuelve `Promise<void>`, no consulta de nuevo la fila ni utiliza
+  mapper.
+- No se usa transaccion porque solo existe una escritura y Activity no mantiene
+  posiciones que deban compactarse.
+- Durante la revision se sustituyo mecanicamente el parametro original `tripId`
+  por `trip.id` dentro del filtro para expresar el limite autorizado.
+- `npm run typecheck`, `npm run build` y `git diff --check` pasan. No se ejecuto
+  una eliminacion real para conservar los datos usados en las pruebas.
+
+## Proximo paso
+
+Agregar `deleteActivityController` al controlador de actividades. Validara
+`deleteActivityParamsSchema`, llamara al servicio con usuario, viaje y actividad
+y respondera HTTP 204 mediante `res.status(204).send()`.
+
+## Revision pendiente del controlador DELETE de Activity
+
+- La autenticacion y `deleteActivityParamsSchema.parse(req.params)` estan
+  correctamente incorporados.
+- La llamada al servicio debe llevar `await`; sin esperarla, un rechazo de
+  `deleteActivity` no forma parte del flujo asincrono del controlador.
+- El parametro `_res` debe volver a llamarse `res` y utilizarse para responder
+  `return res.status(204).send()` despues de una eliminacion exitosa.
+- TypeScript y el build pasan incluso con estas omisiones porque permiten
+  ignorar una promesa y finalizar un `RequestHandler` sin devolver datos; la
+  compilacion no verifica que una respuesta HTTP haya sido cerrada.
+- Despues de corregir el controlador faltara importar
+  `deleteActivityController` en `trip.routes.ts` y registrar
+  `DELETE /:tripId/activities/:activityId` con `requireAuth`.
+
+## Controlador DELETE de Activity completado
+
+- `deleteActivityParamsSchema.parse(req.params)` valida sincronicamente los dos
+  UUID de la URL.
+- `await deleteActivity(...)` mantiene la peticion abierta hasta conocer el
+  resultado de Prisma y permite que los errores lleguen al middleware global.
+- La eliminacion exitosa responde `204 No Content` mediante
+  `res.status(204).send()`.
+- Durante la revision se movio mecanicamente `await` desde `parse()` hasta la
+  llamada asincrona al servicio.
+- `npm run typecheck` pasa.
+
+## Proximo paso
+
+Importar `deleteActivityController` en `trip.routes.ts` y registrar
+`DELETE /:tripId/activities/:activityId` con `requireAuth`. Despues se probara
+en Postman el caso exitoso y los errores de actividad inexistente, viaje ajeno
+y viaje bloqueado por estado.
+
+## Ruta DELETE de Activity registrada
+
+- `trip.routes.ts` importa `deleteActivityController` desde el modulo de
+  actividades.
+- `DELETE /:tripId/activities/:activityId` ejecuta primero `requireAuth` y luego
+  el controlador de eliminacion.
+- El flujo backend de eliminacion de actividades ya esta conectado desde la
+  peticion HTTP hasta Prisma.
+
+## Proximo paso
+
+Probar el endpoint DELETE en Postman. Una eliminacion exitosa debe responder
+HTTP 204 sin cuerpo; repetir la misma peticion debe responder 404 con el codigo
+`ACTIVITY_NOT_FOUND`.
