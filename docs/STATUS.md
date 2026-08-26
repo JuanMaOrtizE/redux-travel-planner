@@ -7911,3 +7911,162 @@ agregara todavia el formulario.
 Iniciar el formulario para crear actividades en el frontend. Antes de escribir
 campos se definira su ubicacion definitiva dentro del itinerario y se separaran
 el estado de React Hook Form, la validacion Zod y la mutation de RTK Query.
+
+## Microtarea actual: mutation createActivity en RTK Query
+
+- Ampliar `client/src/features/activities/activitiesApi.ts`; no crear otro API
+  slice ni modificar el store.
+- Importar `CreateActivityRequest` y `CreateActivityResponse` junto al contrato
+  de listado.
+- Agregar `createActivity` como `builder.mutation`, recibiendo `{ tripId, body }`
+  y ejecutando `POST /trips/:tripId/activities`.
+- En exito, invalidar `{ type: "Activities", id: tripId }`; en error, devolver
+  `[]` para no refetchear una lista que el servidor no modifico.
+- Exportar `useCreateActivityMutation` junto a `useGetActivitiesQuery`.
+- No usar todavia el hook en un componente ni crear schema, mapper o formulario
+  del cliente.
+
+## Criterios de aceptacion
+
+- El tipo de retorno de la mutation coincide con `CreateActivityResponse`.
+- Su argumento coincide con `CreateActivityRequest` y separa el `tripId` usado
+  en la URL del `body` enviado como JSON.
+- Una creacion exitosa actualiza solamente la cache `Activities` del viaje
+  afectado; un error no provoca un GET adicional.
+- El hook generado queda exportado y no se ejecuta ninguna peticion por el solo
+  hecho de definirlo.
+- `npm run lint`, `npm run build` y `git diff --check` pasan.
+
+## Mutation createActivity en RTK Query completada
+
+- `activitiesApi` importa los contratos de entrada y respuesta ya definidos.
+- `createActivity` separa `tripId` para construir la URL y `body` para el JSON
+  del `POST`.
+- En exito invalida solamente `Activities/tripId`; con una suscripcion activa,
+  RTK Query repite el listado y el itinerario recibe la actividad persistida.
+- En error no invalida tags porque el servidor no modifico la lista.
+- `useCreateActivityMutation` queda exportado, pero todavia no se monta en un
+  componente ni ejecuta peticiones.
+- `npm run lint`, `npm run build` y `git diff --check` pasan. Permanece la
+  advertencia conocida sobre el tamano del bundle.
+
+## Microtarea actual: schema del formulario CreateActivity
+
+- Crear `client/src/features/activities/createActivity.schema.ts` en la carpeta
+  definitiva del feature.
+- Representar valores propios de controles HTML, no el contrato HTTP: el
+  selector usara `""` para actividad general y los campos opcionales tambien
+  comenzaran como cadenas vacias.
+- Validar titulo, descripcion y ubicacion con los limites del backend.
+- Validar `startsAt` y `endsAt` como valores locales de `datetime-local` con
+  precision de minutos; `startsAt` sera obligatorio y `endsAt` admitira `""`.
+- Refinar que el final vacio sea valido y que, cuando exista, no sea anterior al
+  inicio.
+- Exportar `CreateActivityFormValues` mediante `z.infer`.
+- No convertir todavia horarios a UTC, no crear mapper, componente ni mutation
+  adicional.
+
+## Criterios de aceptacion
+
+- `tripDestinationId` acepta `""` o un UUID, pero no cualquier cadena.
+- `title` exige de 2 a 160 caracteres despues de `trim`.
+- `description` y `locationName` aceptan `""` y respetan 2000 y 200 caracteres.
+- El inicio exige `YYYY-MM-DDTHH:mm`; el final permite ese formato o `""`.
+- Un final anterior coloca el error en `endsAt`.
+- El tipo se infiere desde Zod y no se duplica manualmente.
+- `npm run lint`, `npm run build` y `git diff --check` pasan.
+
+## Schema del formulario CreateActivity completado
+
+- `createActivity.schema.ts` representa valores de controles HTML y conserva
+  cadenas vacias para relacion general y campos opcionales.
+- `localDateTimeSchema` valida valores reales de `datetime-local` con precision
+  de minutos y permite mensajes distintos para inicio y final.
+- La refinacion acepta un final vacio y coloca en `endsAt` el error cuando el
+  final es anterior al inicio.
+- `CreateActivityFormValues` se infiere desde el schema.
+- Las pruebas dirigidas aceptan actividad general, UUID, final vacio y rango
+  valido; rechazan una fecha inexistente y un final anterior.
+- `npm run lint`, `npm run build` y `git diff --check` pasan. Permanece la
+  advertencia conocida sobre el tamano del bundle.
+
+## Proximo paso: conversion de horario local a instante ISO
+
+- El futuro mapper recibira los valores del formulario y la zona resuelta por
+  la parada seleccionada.
+- `datetime-local` no contiene offset; no se usara `new Date(value)` porque
+  aplicaria la zona del dispositivo del usuario.
+- Se recomienda agregar `date-fns-tz` para convertir una hora local en una zona
+  IANA al instante UTC equivalente, respetando cambios historicos y horario de
+  verano.
+- La dependencia no se instalara sin confirmacion del usuario.
+
+## Dependencias de conversion horaria instaladas
+
+- Con autorizacion del usuario se instalaron `date-fns@4.4.0` y
+  `date-fns-tz@3.2.0` como dependencias de ejecucion del cliente.
+- El mapper usara `fromZonedTime` para interpretar un valor de `datetime-local`
+  dentro de una zona IANA y producir el instante UTC que espera la API.
+- La conversion quedara encapsulada en el limite formulario-HTTP; los
+  componentes no repetiran esta logica.
+- `npm run lint` y `npm run build` pasan. Permanece la advertencia conocida
+  sobre el tamano del bundle.
+- `npm audit` informa cuatro vulnerabilidades ajenas a las dependencias nuevas:
+  una moderada en `postcss` y tres altas asociadas con `nanoid` y
+  `react-router`. No se ejecuto `npm audit fix` porque puede actualizar paquetes
+  centrales y requiere una revision separada.
+
+## Proximo paso
+
+Crear `createActivity.mapper.ts`. Recibira valores validados, la zona resuelta y
+producira `CreateActivityBody`: convertira inicio y final mediante
+`fromZonedTime(...).toISOString()`, omitira textos vacios y convertira la opcion
+general de parada a una propiedad ausente.
+
+## Microtarea actual: mapper del formulario CreateActivity
+
+- Crear `client/src/features/activities/createActivity.mapper.ts`.
+- Exportar `mapCreateActivityFormToBody(values, timeZone)` con retorno explicito
+  `CreateActivityBody`.
+- Recibir `CreateActivityFormValues` y una zona IANA ya resuelta; el mapper no
+  buscara paradas ni decidira cual fue seleccionada.
+- Construir siempre `title` y `startsAt`; convertir el inicio con
+  `fromZonedTime(values.startsAt, timeZone).toISOString()`.
+- Agregar `tripDestinationId`, `description`, `locationName` y `endsAt` solo si
+  sus cadenas no estan vacias.
+- Convertir `endsAt` con la misma zona usada para el inicio.
+- No incluir `tripId`: ese identificador pertenece al envoltorio de la mutation,
+  no al body HTTP.
+- No crear todavia el componente ni llamar el hook de RTK Query.
+
+## Criterios de aceptacion
+
+- Una hora `2026-12-03T10:00` con `America/Bogota` produce
+  `2026-12-03T15:00:00.000Z`.
+- La misma hora con `Asia/Bangkok` produce `2026-12-03T03:00:00.000Z`.
+- Una actividad general omite `tripDestinationId`; los textos y final vacios
+  tambien se omiten.
+- Inicio y final usan exactamente la misma zona.
+- El retorno satisface `CreateActivityBody` sin aserciones de tipo.
+- `npm run lint`, `npm run build` y `git diff --check` pasan.
+
+## Mapper del formulario CreateActivity completado
+
+- `mapCreateActivityFormToBody(values, timeZone)` devuelve explicitamente
+  `CreateActivityBody` y no conoce componentes, queries ni el viaje de la URL.
+- Inicio y final se interpretan mediante `fromZonedTime` con la misma zona y se
+  serializan mediante `toISOString()`.
+- La relacion, los textos opcionales y el final solo se agregan cuando sus
+  cadenas tienen contenido.
+- Una prueba dirigida confirma `10:00` de Bogota como `15:00Z`, `10:00` de
+  Bangkok como `03:00Z`, la conversion del final y la ausencia de propiedades
+  vacias.
+- `npm run lint`, `npm run build` y `git diff --check` pasan. Permanece la
+  advertencia conocida sobre el tamano del bundle.
+
+## Proximo paso
+
+Crear `CreateActivityForm.tsx` en `features/activities` y configurar solamente
+su contrato inicial de React Hook Form: props definitivas, `useForm`,
+`zodResolver` y `defaultValues`. Despues se incorporaran los campos visibles en
+grupos pequenos antes de conectar mapper y mutation.

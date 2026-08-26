@@ -225,3 +225,17 @@ responsive.
 - La primera version del bloque muestra titulo, estado y ubicacion. La fecha y
   hora se incorporaran despues de resolver explicitamente la zona IANA de cada
   grupo; no se mostraran cadenas ISO crudas.
+
+## Creacion de actividades dentro del itinerario
+
+- Existira un unico formulario reutilizable, no uno repetido dentro de cada
+  fila de parada.
+- Se abrira desde la seccion de itinerario mediante divulgacion progresiva para
+  no aumentar permanentemente la verticalidad del detalle.
+- Un selector permitira elegir `Actividad general` o una parada existente. La
+  seleccion determina la relacion y la zona con la que se interpretara el
+  horario local introducido.
+- El formulario vivira en `features/activities`; el coordinador del itinerario
+  solo le proporcionara viaje, rango de fechas y opciones de parada.
+- Los viajes completados o cancelados no mostraran la accion de creacion; el
+  backend conservara la regla de negocio como autoridad final.

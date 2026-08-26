@@ -1,4 +1,5 @@
 import { api } from "../../services/api";
+
 import type { SearchDestinationsResponse } from "./destination.types";
 
 export const destinationsApi = api.injectEndpoints({
