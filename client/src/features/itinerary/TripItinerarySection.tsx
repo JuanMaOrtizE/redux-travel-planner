@@ -102,6 +102,7 @@ type ItineraryActivityGroupProps = {
   activities: Activity[];
   description: string;
   isWarning?: boolean;
+  timeZone: string | null;
   title: string;
 };
 
@@ -109,6 +110,7 @@ function ItineraryActivityGroup({
   activities,
   description,
   isWarning = false,
+  timeZone,
   title,
 }: ItineraryActivityGroupProps) {
   return (
@@ -137,6 +139,7 @@ function ItineraryActivityGroup({
           activities={activities}
           emptyMessage="No hay actividades en este grupo."
           label={title}
+          timeZone={timeZone}
         />
       </div>
     </section>
@@ -186,8 +189,7 @@ export default function TripItinerarySection({
     !areTripDestinationsFetching;
 
   const showActivitiesLoading =
-    areActivitiesLoading ||
-    (areActivitiesFetching && !hasActivitiesResponse);
+    areActivitiesLoading || (areActivitiesFetching && !hasActivitiesResponse);
   const showActivitiesInitialError =
     areActivitiesError && !hasActivitiesResponse && !areActivitiesFetching;
   const showActivitiesRefreshing =
@@ -302,7 +304,9 @@ export default function TripItinerarySection({
             onClick={() => void refetchTripDestinations()}
             type="button"
           >
-            {areTripDestinationsFetching ? "Reintentando..." : "Intentar de nuevo"}
+            {areTripDestinationsFetching
+              ? "Reintentando..."
+              : "Intentar de nuevo"}
           </button>
         </div>
       ) : null}
@@ -321,8 +325,8 @@ export default function TripItinerarySection({
               role="status"
             >
               <p className="text-sm leading-6">
-                {getTripDestinationsErrorMessage(tripDestinationsError)} Mostramos
-                el último recorrido disponible.
+                {getTripDestinationsErrorMessage(tripDestinationsError)}{" "}
+                Mostramos el último recorrido disponible.
               </p>
               <button
                 className="mt-3 rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm font-semibold text-amber-950 transition-colors hover:bg-amber-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
@@ -367,7 +371,9 @@ export default function TripItinerarySection({
                 onClick={() => void refetchActivities()}
                 type="button"
               >
-                {areActivitiesFetching ? "Reintentando..." : "Intentar de nuevo"}
+                {areActivitiesFetching
+                  ? "Reintentando..."
+                  : "Intentar de nuevo"}
               </button>
             </div>
           ) : null}
@@ -402,6 +408,7 @@ export default function TripItinerarySection({
             <ItineraryActivityGroup
               activities={generalActivities}
               description="Planes que no pertenecen a una parada específica."
+              timeZone="UTC"
               title="Agenda general"
             />
           ) : null}
@@ -415,6 +422,7 @@ export default function TripItinerarySection({
                   : "No pudimos relacionarlas con una parada disponible."
               }
               isWarning={!areActivitiesFetching && !areTripDestinationsFetching}
+              timeZone={null}
               title="Relación de parada pendiente"
             />
           ) : null}
@@ -448,9 +456,7 @@ export default function TripItinerarySection({
                   isConfirming={
                     confirmingTripDestinationId === tripDestination.id
                   }
-                  isSelected={
-                    selectedTripDestinationId === tripDestination.id
-                  }
+                  isSelected={selectedTripDestinationId === tripDestination.id}
                   key={tripDestination.id}
                   onCloseConfirmation={() =>
                     setConfirmingTripDestinationId(null)

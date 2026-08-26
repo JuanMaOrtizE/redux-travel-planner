@@ -7845,3 +7845,69 @@ formulario de creacion en su ubicacion definitiva.
   Cancelar devuelve el foco a la accion que abrio la confirmacion.
 - Dos revisiones aisladas identificaron la misma causa estructural. El detector
   posterior no encontro hallazgos; `npm run lint` y `npm run build` pasan.
+
+## Microtarea actual: zona horaria e inicio de Activity
+
+- Ampliar `ActivityGroupList` para recibir una zona IANA resuelta por su
+  componente padre; la lista no debe buscar paradas ni decidir a que destino
+  pertenece una actividad.
+- Usar `formatActivityDateTime(activity.startsAt, timeZone)` y mostrar el inicio
+  debajo del titulo de cada actividad.
+- `ItineraryStopRow` proporcionara la zona de su destino o `UTC` cuando ese
+  destino conocido no tenga zona almacenada.
+- La agenda general proporcionara `UTC` explicitamente.
+- El grupo de relacion pendiente no inventara una zona: mientras la parada no
+  pueda resolverse, mostrara que el horario esta pendiente.
+- No mostrar todavia `endsAt` ni `description`, no modificar contratos, queries,
+  cache ni backend.
+
+## Criterios de aceptacion
+
+- Una actividad de una parada muestra el instante en la hora local del destino.
+- Una actividad general usa UTC y la interfaz lo comunica expresamente.
+- Una relacion pendiente no se formatea silenciosamente como UTC.
+- No se muestran cadenas ISO crudas ni se usa la zona del navegador.
+- Los estados vacio, loading y error actuales permanecen intactos.
+- `npm run lint`, `npm run build` y `git diff --check` pasan.
+
+## Zona horaria e inicio de Activity completados
+
+- `ActivityGroupList` recibe `timeZone: string | null` y no consulta ni intenta
+  relacionar paradas por su cuenta.
+- Cada inicio se presenta mediante `formatActivityDateTime`; el elemento
+  `<time>` conserva el ISO original en `dateTime`.
+- `ItineraryStopRow` proporciona la zona IANA del destino y usa UTC explicito
+  cuando un destino conocido no tiene zona almacenada.
+- La agenda general usa UTC y lo indica junto al horario. Una relacion pendiente
+  muestra `Horario pendiente` y no aplica un fallback silencioso.
+- Se elimino una errata temporal que alteraba la etiqueta de estado.
+- `npm run lint`, `npm run build` y `git diff --check` pasan. Permanece la
+  advertencia conocida sobre el tamano del bundle.
+
+## Proximo paso
+
+Completar el contenido de cada actividad: presentar `endsAt` como un rango
+cuando exista y mostrar `description` sin romper la densidad de la lista. La
+zona resuelta en esta microtarea se reutilizara para ambos extremos; no se
+agregara todavia el formulario.
+
+## Rango horario y descripcion de Activity completados
+
+- Cuando `endsAt` existe, `ActivityGroupList` formatea inicio y fin con la misma
+  zona resuelta y los presenta como un rango.
+- Cada extremo conserva su ISO en un elemento `<time>` independiente; el texto
+  accesible comunica `hasta` y la representacion visual usa un guion.
+- Cuando `endsAt` es `null`, la actividad conserva solamente su inicio y no
+  muestra un final inventado.
+- `description` aparece unicamente cuando existe, con ancho de lectura limitado,
+  altura natural y ruptura de palabras largas.
+- No se cambiaron contratos, queries, cache ni backend.
+- `npm run lint`, `npm run build`, el detector de interfaz y
+  `git diff --check` pasan. Permanece la advertencia conocida sobre el tamano
+  del bundle.
+
+## Proximo paso
+
+Iniciar el formulario para crear actividades en el frontend. Antes de escribir
+campos se definira su ubicacion definitiva dentro del itinerario y se separaran
+el estado de React Hook Form, la validacion Zod y la mutation de RTK Query.

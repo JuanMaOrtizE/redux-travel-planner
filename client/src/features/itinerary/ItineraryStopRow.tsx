@@ -128,6 +128,7 @@ export default function ItineraryStopRow({
             activities={activities}
             emptyMessage="Sin actividades para esta parada."
             label={`Actividades de ${destinationName}`}
+            timeZone={tripDestination.destination.timezone ?? "UTC"}
           />
         ) : null}
       </div>
