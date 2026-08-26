@@ -8070,3 +8070,63 @@ Crear `CreateActivityForm.tsx` en `features/activities` y configurar solamente
 su contrato inicial de React Hook Form: props definitivas, `useForm`,
 `zodResolver` y `defaultValues`. Despues se incorporaran los campos visibles en
 grupos pequenos antes de conectar mapper y mutation.
+
+## Microtarea actual: base funcional de CreateActivityForm
+
+- Crear `client/src/features/activities/CreateActivityForm.tsx` en la ubicacion
+  definitiva.
+- Recibir `tripId`, `tripStartDate`, `tripEndDate`, `tripDestinations`,
+  `onCancel` y `onCreated`.
+- Configurar `useForm<CreateActivityFormValues>` con `zodResolver` y valores
+  iniciales `""` para los seis campos.
+- Consumir `useCreateActivityMutation`; diferenciar errores del formulario de
+  errores HTTP y del estado `isLoading` de la mutation.
+- En submit, resolver `tripDestinationId`: vacio usa UTC; UUID busca la parada
+  actual y usa `destination.timezone ?? "UTC"`; si la parada ya no existe,
+  colocar un error en el selector y no enviar.
+- Crear el body mediante `mapCreateActivityFormToBody`, ejecutar
+  `createActivity({ tripId, body }).unwrap()` y, en exito, hacer `reset()` y
+  llamar `onCreated()`.
+- Renderizar selector de parada, titulo, descripcion, ubicacion, inicio y final;
+  usar `min` y `max` derivados del rango del viaje como ayuda del navegador.
+- Mantener `Cancelar` como boton seguro y `Crear actividad` como accion primaria.
+- No montar todavia el componente dentro del itinerario; primero se revisara de
+  forma aislada.
+
+## Criterios de aceptacion
+
+- Los seis controles usan `register` y muestran su error Zod asociado.
+- `Actividad general` usa valor `""`; cada opcion de parada usa el id de
+  `TripDestination`, no el id reutilizable de `Destination`.
+- El formulario envia horas convertidas con la zona correspondiente y nunca con
+  la zona implicita del navegador.
+- `isLoading` bloquea controles y acciones, y el error HTTP no se confunde con
+  `formState.errors`.
+- Exito limpia el formulario y notifica al padre; error conserva lo escrito.
+- `npm run lint`, `npm run build`, detector de interfaz y `git diff --check`
+  pasan.
+
+## CreateActivityForm completado
+
+- `CreateActivityForm.tsx` contiene los seis controles definitivos y usa el
+  esquema Zod mediante `zodResolver`.
+- El submit diferencia validacion local, conversion de fechas y error HTTP. La
+  zona se obtiene de la parada seleccionada; las actividades generales usan
+  UTC.
+- Una parada ausente produce un error manual en el selector y detiene el envio
+  para evitar convertir silenciosamente con una zona incorrecta.
+- La mutation conserva los valores cuando falla y, cuando tiene exito, limpia
+  el formulario y ejecuta `onCreated`.
+- Los controles y acciones se bloquean durante el envio. El formulario incluye
+  mensajes accesibles, limites visuales basados en el rango del viaje y layout
+  responsive para las fechas.
+- `npm run lint`, `npm run build`, el detector de interfaz y
+  `git diff --check` pasan. Permanece la advertencia conocida sobre el tamano
+  del bundle.
+
+## Proximo paso
+
+Integrar `CreateActivityForm` en `TripItinerarySection` mediante divulgacion
+progresiva: un boton abre una unica instancia del formulario, `onCancel` la
+cierra y `onCreated` la cierra despues del exito. La lista se actualizara por la
+invalidacion del tag `Activities` del viaje.
