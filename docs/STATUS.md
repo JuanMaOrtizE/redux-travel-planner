@@ -8130,3 +8130,59 @@ Integrar `CreateActivityForm` en `TripItinerarySection` mediante divulgacion
 progresiva: un boton abre una unica instancia del formulario, `onCancel` la
 cierra y `onCreated` la cierra despues del exito. La lista se actualizara por la
 invalidacion del tag `Activities` del viaje.
+
+## Microtarea actual: integrar la creacion de actividades
+
+- En `TripDetailPage`, renombrar el permiso local a `canEditItinerary` y pasar a
+  `TripItinerarySection` las fechas inicial y final del viaje.
+- En `TripItinerarySection`, ampliar las props con `tripStartDate`,
+  `tripEndDate` y `canEditItinerary`.
+- Crear el estado temporal `isCreatingActivity`; no guardarlo en Redux porque
+  solo controla una divulgacion local de interfaz.
+- Mostrar junto al resumen del itinerario un boton `Agregar actividad` /
+  `Cerrar formulario` con `aria-expanded` y `aria-controls`.
+- Montar una sola instancia de `CreateActivityForm` entre el encabezado y el
+  contenido del itinerario. Pasarle el viaje, su rango, las paradas actuales y
+  callbacks que cierren el formulario.
+- Mantener el formulario oculto en viajes `COMPLETED` o `CANCELLED`; el backend
+  sigue siendo la autoridad que aplica esta regla de negocio.
+- No agregar la actividad manualmente a un array: la mutation invalida
+  `{ type: "Activities", id: tripId }` y la query activa vuelve a consultar.
+
+## Criterios de aceptacion
+
+- Los viajes editables muestran el control; los finalizados no lo muestran.
+- El control anuncia correctamente si la region esta abierta y no crea mas de
+  una instancia del formulario.
+- Cancelar cierra sin enviar; crear correctamente cierra y la lista se refresca
+  por RTK Query.
+- Un error de creacion mantiene abierto el formulario con sus valores.
+- Se puede crear una actividad general aunque el viaje no tenga paradas.
+- Las fechas de los inputs usan el rango del viaje ya cargado.
+- `npm run lint`, `npm run build`, detector de interfaz y `git diff --check`
+  pasan despues de la implementacion.
+
+## Integracion de CreateActivityForm completada
+
+- `TripDetailPage` usa el permiso semantico `canEditItinerary` y entrega a la
+  seccion el rango del viaje ya cargado.
+- `TripItinerarySection` mantiene `isCreatingActivity` como estado local de
+  divulgacion y muestra un control accesible junto al resumen del itinerario.
+- Una unica instancia de `CreateActivityForm` se monta inline. Cancelar y crear
+  correctamente la cierran; un error conserva el formulario y sus valores.
+- El formulario tambien puede abrirse con una respuesta vacia de paradas para
+  permitir actividades generales.
+- La lista no se modifica manualmente: la invalidacion del tag `Activities` del
+  viaje provoca el refetch de la query activa despues del exito.
+- Se corrigio el nombre de la prop enviada a `ItineraryStopRow`: el padre usa
+  `canEditItinerary`, pero la fila recibe `canEditTripDestinations` porque su
+  accion editable sigue siendo especifica de paradas.
+- `npm run lint`, `npm run build`, el detector de interfaz y
+  `git diff --check` pasan. No se pudo realizar la prueba visual automatizada
+  porque el navegador integrado no estuvo disponible en esta sesion.
+
+## Proximo paso
+
+Probar en el navegador la apertura, cancelacion, error y creacion exitosa de una
+actividad general y otra asociada a una parada. Despues, revisar el resultado y
+definir la siguiente capacidad del modulo de actividades.

@@ -82,7 +82,7 @@ export default function TripDetailPage() {
     );
   }
 
-  const canEditTripDestinations =
+  const canEditItinerary =
     trip.status === "PLANNING" || trip.status === "CONFIRMED";
 
   return (
@@ -155,10 +155,12 @@ export default function TripDetailPage() {
         </div>
 
         <TripItinerarySection
-          canEditTripDestinations={canEditTripDestinations}
+          canEditItinerary={canEditItinerary}
           tripId={trip.id}
+          tripStartDate={trip.startDate}
+          tripEndDate={trip.endDate}
         />
-        {canEditTripDestinations ? (
+        {canEditItinerary ? (
           <AddTripDestinationSection tripId={trip.id} />
         ) : null}
         <div className="mt-10 border-t border-slate-200 pt-6">

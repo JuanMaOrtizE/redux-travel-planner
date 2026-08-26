@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import ActivityGroupList from "../activities/ActivityGroupList";
+import CreateActivityForm from "../activities/CreateActivityForm";
 import type { Activity } from "../activities/activity.types";
 import { useGetActivitiesQuery } from "../activities/activitiesApi";
 import TripDestinationsMap from "../trip-destinations/TripDestinationsMap";
@@ -10,8 +11,10 @@ import ItineraryStopRow from "./ItineraryStopRow";
 const EMPTY_TRIP_DESTINATIONS: TripDestination[] = [];
 
 type TripItinerarySectionProps = {
-  canEditTripDestinations: boolean;
+  canEditItinerary: boolean;
   tripId: string;
+  tripStartDate: string;
+  tripEndDate: string;
 };
 
 type GroupedActivities = {
@@ -147,8 +150,10 @@ function ItineraryActivityGroup({
 }
 
 export default function TripItinerarySection({
-  canEditTripDestinations,
+  canEditItinerary,
   tripId,
+  tripStartDate,
+  tripEndDate,
 }: TripItinerarySectionProps) {
   const {
     currentData: tripDestinationsResponse,
@@ -219,6 +224,7 @@ export default function TripItinerarySection({
   const [selectedTripDestinationId, setSelectedTripDestinationId] = useState<
     string | null
   >(null);
+  const [isCreatingActivity, setIsCreatingActivity] = useState(false);
 
   useEffect(() => {
     setSelectedTripDestinationId((currentId) =>
@@ -243,6 +249,11 @@ export default function TripItinerarySection({
   const hasActiveTripDestinationConfirmation = tripDestinations.some(
     (tripDestination) => tripDestination.id === confirmingTripDestinationId,
   );
+  const canCreateActivity = canEditItinerary && hasTripDestinationsResponse;
+  const shouldShowItinerarySummary =
+    hasTripDestinationsResponse &&
+    (tripDestinations.length > 0 ||
+      (hasActivitiesResponse && activities.length > 0));
 
   return (
     <section
@@ -263,22 +274,53 @@ export default function TripItinerarySection({
           </p>
         </div>
 
-        {hasTripDestinationsResponse &&
-        (tripDestinations.length > 0 ||
-          (hasActivitiesResponse && activities.length > 0)) ? (
-          <p className="text-sm font-medium text-slate-600">
-            {tripDestinations.length}{" "}
-            {tripDestinations.length === 1 ? "parada" : "paradas"}
-            {hasActivitiesResponse ? (
-              <>
-                {" · "}
-                {activities.length}{" "}
-                {activities.length === 1 ? "actividad" : "actividades"}
-              </>
+        {shouldShowItinerarySummary || canCreateActivity ? (
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            {shouldShowItinerarySummary ? (
+              <p className="text-sm font-medium text-slate-600">
+                {tripDestinations.length}{" "}
+                {tripDestinations.length === 1 ? "parada" : "paradas"}
+                {hasActivitiesResponse ? (
+                  <>
+                    {" · "}
+                    {activities.length}{" "}
+                    {activities.length === 1 ? "actividad" : "actividades"}
+                  </>
+                ) : null}
+              </p>
             ) : null}
-          </p>
+
+            {canCreateActivity ? (
+              <button
+                aria-controls="create-activity-form-region"
+                aria-expanded={isCreatingActivity}
+                className="inline-flex items-center justify-center rounded-lg border border-teal-200 bg-teal-50 px-4 py-2 text-sm font-semibold text-teal-900 transition-colors hover:bg-teal-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+                onClick={() =>
+                  setIsCreatingActivity((currentValue) => !currentValue)
+                }
+                type="button"
+              >
+                {isCreatingActivity
+                  ? "Cerrar formulario"
+                  : "Agregar actividad"}
+              </button>
+            ) : null}
+          </div>
         ) : null}
       </div>
+
+      {canCreateActivity && isCreatingActivity ? (
+        <div className="mt-5" id="create-activity-form-region">
+          <CreateActivityForm
+            onCancel={() => setIsCreatingActivity(false)}
+            onCreated={() => setIsCreatingActivity(false)}
+            tripDestinations={tripDestinations}
+            tripEndDate={tripEndDate}
+            tripId={tripId}
+            tripStartDate={tripStartDate}
+          />
+        </div>
+      ) : null}
 
       {showTripDestinationsLoading ? (
         <div role="status">
@@ -448,7 +490,7 @@ export default function TripItinerarySection({
                     activitiesByTripDestinationId.get(tripDestination.id) ?? []
                   }
                   activityGroupState={activityGroupState}
-                  canEditTripDestinations={canEditTripDestinations}
+                  canEditTripDestinations={canEditItinerary}
                   hasAnotherConfirmationOpen={
                     hasActiveTripDestinationConfirmation &&
                     confirmingTripDestinationId !== tripDestination.id
