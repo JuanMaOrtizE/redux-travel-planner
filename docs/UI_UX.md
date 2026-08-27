@@ -222,9 +222,15 @@ responsive.
 - Si una actividad referencia temporalmente una parada ausente en la cache, no
   se oculta: aparece en un bloque de relacion pendiente hasta que las consultas
   vuelvan a estar sincronizadas.
-- La primera version del bloque muestra titulo, estado y ubicacion. La fecha y
-  hora se incorporaran despues de resolver explicitamente la zona IANA de cada
-  grupo; no se mostraran cadenas ISO crudas.
+- Cada actividad muestra su fecha y hora en la zona IANA de la parada. Las
+  actividades generales usan UTC de forma explicita y no se muestran cadenas
+  ISO crudas.
+- Las actividades se agrupan bajo encabezados de dia local como
+  `jueves, 3 de diciembre`. Una linea horizontal fina completa el encabezado y
+  separa jornadas sin crear tarjetas dentro de las filas.
+- Cuando la zona de una relacion todavia no puede resolverse, la lista permanece
+  plana y muestra `Horario pendiente`; la interfaz no supone silenciosamente
+  que el horario sea UTC.
 
 ## Creacion de actividades dentro del itinerario
 

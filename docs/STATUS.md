@@ -8209,6 +8209,95 @@ Probar visual y funcionalmente la cancelacion, el error y el exito del DELETE
 en una actividad general y otra asociada a una parada, incluyendo el bloqueo
 cruzado con la confirmacion para quitar paradas.
 
+## Microtarea actual: clave de dia local para actividades
+
+- Completar solamente
+  `client/src/features/activities/activity.formatters.ts`.
+- Importar `formatInTimeZone` desde `date-fns-tz`.
+- Exportar `getActivityDayKey(value, timeZone)` con parametros `string` y
+  retorno `string`.
+- Interpretar `value` como el instante ISO recibido del backend y formatearlo
+  en la zona IANA mediante el patron `yyyy-MM-dd`.
+- No usar `value.slice(0, 10)`: esa porcion representa el dia UTC, que puede ser
+  distinto del dia local de la parada.
+- No modificar todavia `ActivityGroupList`; la agrupacion y los encabezados de
+  dia se incorporaran despues de revisar esta derivacion aislada.
+
+## Criterios de aceptacion
+
+- `2026-12-04T04:30:00.000Z` produce `2026-12-03` en `America/Bogota`.
+- El mismo instante produce `2026-12-04` en `UTC`.
+- La funcion no modifica el valor original ni cambia datos de cache.
+- `fromZonedTime` permanece reservado para convertir el formulario local a UTC;
+  `formatInTimeZone` se usa para leer ese instante en una zona al presentarlo.
+- `npm run lint`, `npm run build` y `git diff --check` pasan.
+
+## Clave de dia local para actividades completada
+
+- `getActivityDayKey(value, timeZone)` usa `formatInTimeZone` y devuelve una
+  clave estable `yyyy-MM-dd` sin modificar el instante recibido.
+- Una prueba dirigida confirma que `2026-12-04T04:30:00.000Z` pertenece a
+  `2026-12-03` en `America/Bogota` y a `2026-12-04` en UTC.
+- La funcion permanece aislada en `activity.formatters.ts`; la lista todavia no
+  cambia su estructura visual ni agrupa elementos.
+- `npm run lint`, `npm run build` y `git diff --check` pasan. Permanece la
+  advertencia conocida sobre el tamano del bundle.
+
+## Proximo paso
+
+Crear una derivacion que agrupe las actividades cronologicas por
+`getActivityDayKey` y definir la etiqueta legible de cada dia antes de cambiar
+el JSX de `ActivityGroupList`.
+
+## Agrupacion de actividades por dia local completada
+
+- `activity.groups.ts` define `ActivityDayGroup` y
+  `groupActivitiesByLocalDay(activities, timeZone)` en el modulo de
+  actividades.
+- La derivacion ordena una copia por `startsAt`, agrupa mediante la clave local
+  `yyyy-MM-dd` y no modifica el arreglo recibido desde la cache de RTK Query.
+- `formatActivityDayLabel(dayKey)` transforma la clave interna en una etiqueta
+  legible como `jueves, 3 de diciembre`. Usa UTC solamente para interpretar la
+  fecha civil ya calculada y evitar que el navegador desplace nuevamente el
+  dia.
+- Una prueba dirigida confirma dos grupos locales ordenados, las etiquetas en
+  espanol y la conservación del orden del arreglo original.
+- `npm run lint`, `npm run build` y `git diff --check` pasan. Permanece la
+  advertencia conocida sobre el tamano del bundle.
+
+## Proximo paso
+
+Integrar `groupActivitiesByLocalDay` y `formatActivityDayLabel` en
+`ActivityGroupList`, manteniendo las acciones de eliminacion dentro de cada
+actividad y definiendo encabezados de dia accesibles sin alterar los estados de
+carga, error o lista vacia.
+
+## Encabezados de dia local integrados
+
+- `ActivityGroupList` deriva los grupos durante el renderizado cuando recibe
+  una zona IANA conocida; no crea estado local ni modifica la cache de RTK
+  Query.
+- Cada grupo muestra una fecha legible y una linea horizontal fina para separar
+  jornadas sin introducir tarjetas anidadas.
+- Cada `ul` conserva un nombre accesible que combina el nombre del grupo y su
+  fecha local.
+- Las actividades cuya zona todavia es desconocida conservan la lista plana y
+  el texto `Horario pendiente`; no se les asigna UTC como suposicion visual.
+- La fila mantiene el estado, el horario, la ubicacion, la descripcion y la
+  confirmacion de eliminacion existentes mediante un unico renderizador.
+- Se corrigieron los caracteres visibles del separador horario y de `UTC` que
+  estaban codificados incorrectamente.
+- `npm run lint`, `npm run build`, el detector de interfaz y
+  `git diff --check` pasan. El navegador integrado no estuvo disponible para la
+  comprobacion visual; permanece la advertencia conocida del tamano del bundle.
+
+## Proximo paso
+
+Comprobar manualmente en el detalle de un viaje una parada con actividades en
+dos dias locales distintos, una actividad general y la confirmacion de
+eliminacion. Despues de esa evidencia se cerrara la presentacion cronologica del
+itinerario.
+
 ## Integracion de CreateActivityForm completada
 
 - `TripDetailPage` usa el permiso semantico `canEditItinerary` y entrega a la
