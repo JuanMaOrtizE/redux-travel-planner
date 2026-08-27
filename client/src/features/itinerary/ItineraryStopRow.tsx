@@ -12,11 +12,16 @@ type ActivityGroupState = "loading" | "error" | "ready";
 type ItineraryStopRowProps = {
   activities: Activity[];
   activityGroupState: ActivityGroupState;
+  canEditActivities: boolean;
   canEditTripDestinations: boolean;
+  confirmingActivityId: string | null;
   hasAnotherConfirmationOpen: boolean;
+  hasTripDestinationConfirmationOpen: boolean;
   isConfirming: boolean;
   isSelected: boolean;
+  onCloseActivityConfirmation: () => void;
   onCloseConfirmation: () => void;
+  onOpenActivityConfirmation: (activityId: string) => void;
   onOpenConfirmation: () => void;
   onToggleSelection: () => void;
   tripDestination: TripDestination;
@@ -38,11 +43,16 @@ function ActivityGroupSkeleton() {
 export default function ItineraryStopRow({
   activities,
   activityGroupState,
+  canEditActivities,
   canEditTripDestinations,
+  confirmingActivityId,
   hasAnotherConfirmationOpen,
+  hasTripDestinationConfirmationOpen,
   isConfirming,
   isSelected,
+  onCloseActivityConfirmation,
   onCloseConfirmation,
+  onOpenActivityConfirmation,
   onOpenConfirmation,
   onToggleSelection,
   tripDestination,
@@ -126,9 +136,17 @@ export default function ItineraryStopRow({
         {activityGroupState === "ready" ? (
           <ActivityGroupList
             activities={activities}
+            canEditActivities={canEditActivities}
+            confirmingActivityId={confirmingActivityId}
             emptyMessage="Sin actividades para esta parada."
+            hasTripDestinationConfirmationOpen={
+              hasTripDestinationConfirmationOpen
+            }
             label={`Actividades de ${destinationName}`}
+            onCloseActivityConfirmation={onCloseActivityConfirmation}
+            onOpenActivityConfirmation={onOpenActivityConfirmation}
             timeZone={tripDestination.destination.timezone ?? "UTC"}
+            tripId={tripId}
           />
         ) : null}
       </div>

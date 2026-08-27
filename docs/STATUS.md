@@ -8162,6 +8162,53 @@ invalidacion del tag `Activities` del viaje.
 - `npm run lint`, `npm run build`, detector de interfaz y `git diff --check`
   pasan despues de la implementacion.
 
+## DeleteActivityAction completado
+
+- `DeleteActivityAction.tsx` es un componente controlado: recibe la actividad
+  confirmada y no crea estado local para elegirla.
+- Usa `Trash2`, conserva un objetivo tactil de 44 px y proporciona un nombre
+  accesible con el titulo de la actividad.
+- La confirmacion inline distingue reposo, error, carga y exito; carga y exito
+  bloquean ambas acciones.
+- Cancelar limpia la mutation, cierra y devuelve el foco al boton de apertura.
+  Un error conserva la confirmacion para reintentar.
+- El exito espera a que la invalidacion y el refetch retiren la fila, evitando
+  cerrar sobre datos todavia presentes en cache.
+- `npm run lint`, `npm run build`, el detector de interfaz y
+  `git diff --check` pasan. Permanece la advertencia conocida sobre el tamano
+  del bundle.
+
+## Proximo paso
+
+Integrar `DeleteActivityAction` en `ActivityGroupList` y transportar desde
+`TripItinerarySection` el permiso y el identificador de la unica actividad cuya
+confirmacion esta abierta.
+
+## Eliminacion de actividades integrada
+
+- `ActivityGroupList` convierte cada actividad en una fila `relative grid`,
+  reserva espacio para la papelera y superpone la confirmacion solo sobre el
+  detalle de esa actividad.
+- La lista recibe el permiso, el viaje, `confirmingActivityId` y callbacks; no
+  crea una fuente de verdad independiente para cada grupo.
+- `TripItinerarySection` mantiene el identificador coordinador y lo limpia si la
+  actividad deja de existir tras el refetch.
+- La coordinacion alcanza agenda general, relacion pendiente y actividades de
+  cada parada. Una confirmacion activa bloquea las demas actividades.
+- Las eliminaciones de parada y actividad tambien se bloquean entre si, de modo
+  que solo exista una confirmacion destructiva activa en el itinerario.
+- Los viajes finalizados no renderizan papeleras; el backend conserva la regla
+  409 como proteccion final.
+- `npm run lint`, `npm run build`, el detector de interfaz y
+  `git diff --check` pasan. Permanece la advertencia conocida sobre el tamano
+  del bundle.
+
+## Proximo paso
+
+Probar visual y funcionalmente la cancelacion, el error y el exito del DELETE
+en una actividad general y otra asociada a una parada, incluyendo el bloqueo
+cruzado con la confirmacion para quitar paradas.
+
 ## Integracion de CreateActivityForm completada
 
 - `TripDetailPage` usa el permiso semantico `canEditItinerary` y entrega a la
@@ -8186,3 +8233,73 @@ invalidacion del tag `Activities` del viaje.
 Probar en el navegador la apertura, cancelacion, error y creacion exitosa de una
 actividad general y otra asociada a una parada. Despues, revisar el resultado y
 definir la siguiente capacidad del modulo de actividades.
+
+## Microtarea actual: mutation para eliminar una actividad
+
+- Completar solamente `client/src/features/activities/activitiesApi.ts`.
+- Importar el tipo existente `DeleteActivityRequest`.
+- Crear `deleteActivity` como `builder.mutation<void, DeleteActivityRequest>`.
+- Construir `DELETE /trips/:tripId/activities/:activityId` sin body.
+- Invalidar `{ type: "Activities", id: tripId }` unicamente cuando el DELETE
+  tenga exito.
+- Exportar `useDeleteActivityMutation` junto con los hooks existentes.
+- No crear todavia la confirmacion ni modificar `ActivityGroupList`; primero se
+  revisara el contrato de cache de forma aislada.
+
+## Criterios de aceptacion
+
+- La mutation recibe ambos identificadores dentro de un solo objeto.
+- El tipo de respuesta es `void` porque el servidor responde `204` sin body.
+- Un exito actualiza la query activa del mismo viaje; un error conserva la lista
+  actual y no provoca un GET innecesario.
+- Las actividades de otros viajes no quedan invalidadas.
+- `npm run lint`, `npm run build` y `git diff --check` pasan.
+
+## Mutation para eliminar actividades completada
+
+- `deleteActivity` recibe `DeleteActivityRequest`, construye el DELETE con los
+  identificadores del viaje y de la actividad y no envia body.
+- El retorno es `void`, de acuerdo con la respuesta HTTP 204 del backend.
+- La mutation invalida el tag `Activities` del viaje solo cuando tiene exito;
+  un error conserva la cache actual sin provocar un refetch innecesario.
+- `useDeleteActivityMutation` queda exportado para el futuro componente de
+  confirmacion.
+- `npm run lint`, `npm run build` y `git diff --check` pasan. Permanece la
+  advertencia conocida sobre el tamano del bundle.
+
+## Proximo paso
+
+Disenar el contrato de `DeleteActivityAction.tsx` y la coordinacion de una sola
+confirmacion abierta en todo el itinerario antes de conectarlo a
+`ActivityGroupList`.
+
+## Microtarea actual: componente DeleteActivityAction aislado
+
+- Crear `client/src/features/activities/DeleteActivityAction.tsx` en su
+  ubicacion definitiva.
+- Recibir `tripId`, `activityId`, `activityTitle`, `isConfirming`, `isDisabled`,
+  `onOpenConfirmation` y `onCloseConfirmation`.
+- Consumir `useDeleteActivityMutation` y derivar `isActionLocked` desde
+  `isLoading || isSuccess`.
+- Reutilizar el patron de foco de la eliminacion de paradas: recordar el boton
+  de apertura y devolverle el foco al cerrar sin eliminar.
+- Mostrar un boton compacto con `Trash2` cuando no se confirma y una
+  confirmacion inline cuando `isConfirming` es verdadero.
+- Enviar `{ tripId, activityId }` mediante `.unwrap()`. En exito no cerrar la
+  confirmacion manualmente: el refetch eliminara la fila; en error mantenerla
+  abierta.
+- No modificar aun `ActivityGroupList` ni crear el estado coordinador del
+  itinerario; primero revisar el componente aislado.
+
+## Criterios de aceptacion
+
+- Abrir limpia un error anterior y respeta `isDisabled`.
+- Cancelar limpia el estado de la mutation, cierra y restaura el foco.
+- Carga y exito bloquean ambas acciones para impedir repeticiones.
+- Error mantiene la confirmacion abierta y muestra un mensaje accesible.
+- El icono no es el unico nombre de la accion: existe texto para lectores de
+  pantalla y texto visible en la confirmacion.
+- El componente no contiene estado local para decidir que actividad confirma;
+  esa decision pertenecera al coordinador del itinerario.
+- `npm run lint`, `npm run build`, detector de interfaz y `git diff --check`
+  pasan despues de la implementacion.

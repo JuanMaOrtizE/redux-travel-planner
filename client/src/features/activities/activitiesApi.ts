@@ -2,6 +2,7 @@ import { api } from "../../services/api";
 import type {
   CreateActivityRequest,
   CreateActivityResponse,
+  DeleteActivityRequest,
   ListActivitiesResponse,
 } from "./activity.types";
 
@@ -23,8 +24,19 @@ export const activitiesApi = api.injectEndpoints({
       invalidatesTags: (_result, error, { tripId }) =>
         error ? [] : [{ type: "Activities", id: tripId }],
     }),
+    deleteActivity: builder.mutation<void, DeleteActivityRequest>({
+      query: ({ tripId, activityId }) => ({
+        url: `trips/${tripId}/activities/${activityId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, error, { tripId }) =>
+        error ? [] : [{ type: "Activities", id: tripId }],
+    }),
   }),
 });
 
-export const { useGetActivitiesQuery, useCreateActivityMutation } =
-  activitiesApi;
+export const {
+  useGetActivitiesQuery,
+  useCreateActivityMutation,
+  useDeleteActivityMutation,
+} = activitiesApi;

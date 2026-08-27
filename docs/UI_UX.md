@@ -239,3 +239,23 @@ responsive.
   solo le proporcionara viaje, rango de fechas y opciones de parada.
 - Los viajes completados o cancelados no mostraran la accion de creacion; el
   backend conservara la regla de negocio como autoridad final.
+
+## Eliminacion de una actividad
+
+- La accion usara `Trash2`, porque en este caso el registro de actividad si se
+  elimina definitivamente; se diferencia de `MapPinMinus`, usado para quitar
+  una parada sin borrar el destino reutilizable.
+- La confirmacion sera inline y ocupara solamente la fila de la actividad
+  afectada. Mantendra visible y desenfocado su contenido como referencia, sin
+  cubrir el grupo, la parada ni la ventana completa.
+- El texto principal sera `¿Eliminar {titulo}?` y aclarara que la accion no se
+  puede deshacer.
+- El boton compacto tendra un objetivo tactil minimo de 44 px, foco visible y
+  texto accesible con el titulo de la actividad.
+- Durante el DELETE, cancelar y confirmar quedaran bloqueados. En exito se
+  mostrara `Actualizando...` hasta que el refetch retire la fila; en error la
+  confirmacion permanecera abierta para permitir otro intento.
+- Solo una confirmacion destructiva podra estar activa dentro del itinerario;
+  las acciones restantes quedaran deshabilitadas mientras exista una abierta.
+- Los viajes finalizados no mostraran controles de eliminacion, aunque el
+  backend mantendra la proteccion 409 como autoridad final.

@@ -9,6 +9,7 @@ import { useGetTripDestinationsQuery } from "../trip-destinations/tripDestinatio
 import ItineraryStopRow from "./ItineraryStopRow";
 
 const EMPTY_TRIP_DESTINATIONS: TripDestination[] = [];
+const EMPTY_ACTIVITIES: Activity[] = [];
 
 type TripItinerarySectionProps = {
   canEditItinerary: boolean;
@@ -103,18 +104,30 @@ function ItinerarySkeleton() {
 
 type ItineraryActivityGroupProps = {
   activities: Activity[];
+  canEditActivities: boolean;
+  confirmingActivityId: string | null;
   description: string;
+  hasTripDestinationConfirmationOpen: boolean;
   isWarning?: boolean;
+  onCloseActivityConfirmation: () => void;
+  onOpenActivityConfirmation: (activityId: string) => void;
   timeZone: string | null;
   title: string;
+  tripId: string;
 };
 
 function ItineraryActivityGroup({
   activities,
+  canEditActivities,
+  confirmingActivityId,
   description,
+  hasTripDestinationConfirmationOpen,
   isWarning = false,
+  onCloseActivityConfirmation,
+  onOpenActivityConfirmation,
   timeZone,
   title,
+  tripId,
 }: ItineraryActivityGroupProps) {
   return (
     <section
@@ -140,9 +153,17 @@ function ItineraryActivityGroup({
       <div className="min-w-0 border-t border-slate-200 p-4 sm:p-5 lg:col-span-8 lg:border-l lg:border-t-0 lg:p-6">
         <ActivityGroupList
           activities={activities}
+          canEditActivities={canEditActivities}
+          confirmingActivityId={confirmingActivityId}
           emptyMessage="No hay actividades en este grupo."
+          hasTripDestinationConfirmationOpen={
+            hasTripDestinationConfirmationOpen
+          }
           label={title}
+          onCloseActivityConfirmation={onCloseActivityConfirmation}
+          onOpenActivityConfirmation={onOpenActivityConfirmation}
           timeZone={timeZone}
+          tripId={tripId}
         />
       </div>
     </section>
@@ -175,7 +196,7 @@ export default function TripItinerarySection({
 
   const tripDestinations =
     tripDestinationsResponse?.data.tripDestinations ?? EMPTY_TRIP_DESTINATIONS;
-  const activities = activitiesResponse?.data.activities ?? [];
+  const activities = activitiesResponse?.data.activities ?? EMPTY_ACTIVITIES;
   const hasTripDestinationsResponse = tripDestinationsResponse !== undefined;
   const hasActivitiesResponse = activitiesResponse !== undefined;
 
@@ -221,6 +242,9 @@ export default function TripItinerarySection({
 
   const [confirmingTripDestinationId, setConfirmingTripDestinationId] =
     useState<string | null>(null);
+  const [confirmingActivityId, setConfirmingActivityId] = useState<
+    string | null
+  >(null);
   const [selectedTripDestinationId, setSelectedTripDestinationId] = useState<
     string | null
   >(null);
@@ -246,9 +270,24 @@ export default function TripItinerarySection({
     );
   }, [tripDestinations]);
 
+  useEffect(() => {
+    setConfirmingActivityId((currentId) =>
+      currentId !== null &&
+      !activities.some((activity) => activity.id === currentId)
+        ? null
+        : currentId,
+    );
+  }, [activities]);
+
   const hasActiveTripDestinationConfirmation = tripDestinations.some(
     (tripDestination) => tripDestination.id === confirmingTripDestinationId,
   );
+  const activeConfirmingActivityId = activities.some(
+    (activity) => activity.id === confirmingActivityId,
+  )
+    ? confirmingActivityId
+    : null;
+  const hasActiveActivityConfirmation = activeConfirmingActivityId !== null;
   const canCreateActivity = canEditItinerary && hasTripDestinationsResponse;
   const shouldShowItinerarySummary =
     hasTripDestinationsResponse &&
@@ -300,9 +339,7 @@ export default function TripItinerarySection({
                 }
                 type="button"
               >
-                {isCreatingActivity
-                  ? "Cerrar formulario"
-                  : "Agregar actividad"}
+                {isCreatingActivity ? "Cerrar formulario" : "Agregar actividad"}
               </button>
             ) : null}
           </div>
@@ -449,23 +486,39 @@ export default function TripItinerarySection({
           {hasActivitiesResponse && generalActivities.length > 0 ? (
             <ItineraryActivityGroup
               activities={generalActivities}
+              canEditActivities={canEditItinerary}
+              confirmingActivityId={activeConfirmingActivityId}
               description="Planes que no pertenecen a una parada específica."
+              hasTripDestinationConfirmationOpen={
+                hasActiveTripDestinationConfirmation
+              }
+              onCloseActivityConfirmation={() => setConfirmingActivityId(null)}
+              onOpenActivityConfirmation={setConfirmingActivityId}
               timeZone="UTC"
               title="Agenda general"
+              tripId={tripId}
             />
           ) : null}
 
           {hasActivitiesResponse && unmatchedActivities.length > 0 ? (
             <ItineraryActivityGroup
               activities={unmatchedActivities}
+              canEditActivities={canEditItinerary}
+              confirmingActivityId={activeConfirmingActivityId}
               description={
                 areActivitiesFetching || areTripDestinationsFetching
                   ? "Estamos actualizando la relación con sus paradas."
                   : "No pudimos relacionarlas con una parada disponible."
               }
+              hasTripDestinationConfirmationOpen={
+                hasActiveTripDestinationConfirmation
+              }
               isWarning={!areActivitiesFetching && !areTripDestinationsFetching}
+              onCloseActivityConfirmation={() => setConfirmingActivityId(null)}
+              onOpenActivityConfirmation={setConfirmingActivityId}
               timeZone={null}
               title="Relación de parada pendiente"
+              tripId={tripId}
             />
           ) : null}
 
@@ -490,19 +543,29 @@ export default function TripItinerarySection({
                     activitiesByTripDestinationId.get(tripDestination.id) ?? []
                   }
                   activityGroupState={activityGroupState}
+                  canEditActivities={canEditItinerary}
                   canEditTripDestinations={canEditItinerary}
+                  confirmingActivityId={activeConfirmingActivityId}
                   hasAnotherConfirmationOpen={
-                    hasActiveTripDestinationConfirmation &&
-                    confirmingTripDestinationId !== tripDestination.id
+                    hasActiveActivityConfirmation ||
+                    (hasActiveTripDestinationConfirmation &&
+                      confirmingTripDestinationId !== tripDestination.id)
+                  }
+                  hasTripDestinationConfirmationOpen={
+                    hasActiveTripDestinationConfirmation
                   }
                   isConfirming={
                     confirmingTripDestinationId === tripDestination.id
                   }
                   isSelected={selectedTripDestinationId === tripDestination.id}
                   key={tripDestination.id}
+                  onCloseActivityConfirmation={() =>
+                    setConfirmingActivityId(null)
+                  }
                   onCloseConfirmation={() =>
                     setConfirmingTripDestinationId(null)
                   }
+                  onOpenActivityConfirmation={setConfirmingActivityId}
                   onOpenConfirmation={() =>
                     setConfirmingTripDestinationId(tripDestination.id)
                   }
