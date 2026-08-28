@@ -253,7 +253,7 @@ Decisiones para la primera version:
 
 ### BudgetItem
 
-Campos previstos:
+Campos implementados en Prisma y PostgreSQL:
 
 - `id`;
 - `tripId`;
@@ -267,6 +267,38 @@ Campos previstos:
 
 Los importes usarán un tipo decimal para evitar errores de precisión. Un
 elemento siempre pertenece a un viaje y puede relacionarse con una actividad.
+
+Decisiones implementadas en el esquema:
+
+- `category` usara un enum con `ACCOMMODATION`, `TRANSPORT`, `FOOD`,
+  `ACTIVITIES`, `SHOPPING` y `OTHER`; las etiquetas en espanol perteneceran al
+  cliente y no a la base de datos;
+- `description` sera obligatoria y usara `VarChar(200)`;
+- `estimatedAmount` sera obligatorio y `actualAmount` opcional; ambos usaran
+  `Decimal(12, 2)` y se expondran como strings en el contrato HTTP;
+- cada elemento heredara la moneda de `Trip`; no se admitiran monedas mezcladas
+  dentro de un mismo viaje en esta version;
+- `tripId` sera obligatorio con `onDelete: Cascade`;
+- `activityId` sera opcional con `onDelete: SetNull`, de modo que eliminar una
+  actividad conserve el registro presupuestario como gasto general;
+- el servicio comprobara que una actividad opcional pertenezca al mismo viaje,
+  porque las dos claves foraneas por separado no garantizan esa coincidencia;
+- se indexaran `tripId + category` para listados y metricas por viaje, y
+  `activityId` para la relacion opcional.
+
+Contrato de creacion implementado:
+
+- `tripId` no forma parte del body porque procede del parametro de ruta;
+- `activityId` puede omitirse o enviarse como `null`, pero una cadena vacia no
+  representa un UUID valido;
+- `estimatedAmount` viaja como string decimal, admite hasta diez enteros y dos
+  decimales y debe ser mayor que cero;
+- `actualAmount` puede omitirse, enviarse como `null` o contener un decimal
+  mayor o igual que cero; `null` significa valor real aun desconocido y `"0"`
+  significa costo real conocido igual a cero;
+- el body no recibe moneda: cada partida hereda `Trip.currency`;
+- el esquema Zod valida forma y contenido; la pertenencia de la actividad al
+  mismo viaje sera responsabilidad del servicio.
 
 ## Datos no persistidos inicialmente
 

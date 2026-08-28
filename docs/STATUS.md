@@ -8298,6 +8298,109 @@ dos dias locales distintos, una actividad general y la confirmacion de
 eliminacion. Despues de esa evidencia se cerrara la presentacion cronologica del
 itinerario.
 
+## Fase 10 continua: presupuesto
+
+- La comprobacion manual de los encabezados locales permanece recomendada; el
+  usuario solicito continuar con el siguiente bloque funcional.
+- La primera entrega de presupuesto comenzara por `BudgetItem` en Prisma, antes
+  de contratos HTTP, servicios, RTK Query o interfaz.
+- Cada elemento pertenecera obligatoriamente a un viaje y podra relacionarse de
+  forma opcional con una actividad del mismo viaje.
+- Los importes usaran decimal y heredaran la moneda del viaje.
+- Se usara un enum cerrado de categorias para permitir agrupaciones y metricas
+  estables sin normalizar texto libre.
+- Eliminar el viaje aplicara `Cascade`; eliminar la actividad aplicara
+  `SetNull` para conservar el gasto.
+
+## Microtarea actual: modelo Prisma BudgetItem
+
+- Agregar `BudgetCategory` y `BudgetItem` a
+  `server/prisma/schema.prisma`.
+- Completar las relaciones inversas en `Trip` y `Activity`.
+- Todavia no crear la migracion: primero se revisaran campos, relaciones,
+  acciones de borrado, tipos nativos e indices en el schema.
+
+## Criterios de aceptacion
+
+- Los ids y claves foraneas usan UUID como el resto del modelo.
+- `estimatedAmount` es obligatorio y `actualAmount` nullable, ambos con
+  `Decimal(12, 2)`.
+- `activityId` y la relacion `activity` son opcionales de forma coherente.
+- Prisma puede navegar `Trip -> BudgetItem[]` y `Activity -> BudgetItem[]`.
+- Existen los indices de `tripId + category` y `activityId`.
+- `npx prisma format` y `npx prisma validate` pasan antes de crear una
+  migracion.
+
+## Modelo Prisma BudgetItem completado
+
+- `BudgetCategory` limita las categorias a alojamiento, transporte, comida,
+  actividades, compras y otros mediante valores estables.
+- `BudgetItem` pertenece obligatoriamente a `Trip` y se relaciona opcionalmente
+  con `Activity`.
+- `Trip.budgetItems` y `Activity.budgetItems` completan las relaciones inversas
+  sin crear columnas adicionales.
+- `estimatedAmount` usa `Decimal(12, 2)` obligatorio y `actualAmount` conserva
+  `Decimal(12, 2)` nullable.
+- El viaje aplica `Cascade`; la actividad aplica `SetNull`, por lo que el gasto
+  sobrevive como partida general si su actividad desaparece.
+- Los indices cubren `tripId + category` y `activityId`.
+- `npx prisma format`, `npx prisma validate`, `npm run typecheck` y
+  `git diff --check` pasan.
+- La tabla todavia no existe en PostgreSQL porque no se ha creado la migracion.
+
+## Proximo paso
+
+Crear la migracion `add_budget_item`, revisar el SQL generado y comprobar que
+el enum, la tabla, las dos claves foraneas, las acciones de borrado y los
+indices coincidan con el esquema antes de comenzar los contratos Zod.
+
+## Migracion add_budget_item completada
+
+- La migracion `20260828170525_add_budget_item` crea el enum
+  `BudgetCategory` y la tabla `budget_items`.
+- `estimatedAmount` se crea como `DECIMAL(12,2) NOT NULL`; `actualAmount` y
+  `activityId` permiten `NULL`.
+- La clave foranea hacia `trips` usa `ON DELETE CASCADE` y la clave hacia
+  `activities` usa `ON DELETE SET NULL`.
+- El SQL incluye los indices compuestos y simples previstos para
+  `tripId + category` y `activityId`.
+- `npx prisma migrate status` informa cinco migraciones y una base de datos
+  actualizada.
+- Prisma Client fue regenerado y una consulta real
+  `prisma.budgetItem.count()` devolvio `0`, confirmando que la tabla existe.
+- `npm run typecheck` y `git diff --check` pasan.
+
+## Proximo paso
+
+Definir el contrato Zod de creacion de una partida presupuestaria. Primero se
+acordaran la representacion decimal, la nulabilidad de `activityId` y
+`actualAmount`, y las reglas de importes antes de escribir el servicio.
+
+## Esquema Zod de creacion de BudgetItem completado
+
+- `budget-item.schemas.ts` se creo en la ubicacion definitiva del feature de
+  presupuesto.
+- `createBudgetItemSchema` usa `strictObject`, por lo que rechaza `tripId`,
+  moneda y cualquier otra propiedad controlada fuera del body.
+- `category` reutiliza el enum generado `BudgetCategory`.
+- `description` se normaliza con `trim` y exige entre 2 y 200 caracteres.
+- Los importes se transportan como strings con hasta diez enteros y dos
+  decimales; no se aceptan numeros de punto flotante, negativos ni notacion
+  cientifica.
+- `estimatedAmount` debe ser mayor que cero; `actualAmount` permite cero,
+  `null` o ausencia.
+- `activityId` permite UUID, `null` o ausencia. La comprobacion de que esa
+  actividad pertenece al viaje queda reservada al servicio.
+- `CreateBudgetItemInput` se infiere directamente desde el esquema.
+- Ocho pruebas dirigidas y `npm run typecheck` pasan; `git diff --check` no
+  reporta errores.
+
+## Proximo paso
+
+Definir `BudgetItemResponse` y `toBudgetItemResponse` en un mapper propio. Los
+dos campos `Decimal` deberan convertirse a strings con dos decimales antes de
+salir por HTTP.
+
 ## Integracion de CreateActivityForm completada
 
 - `TripDetailPage` usa el permiso semantico `canEditItinerary` y entrega a la
