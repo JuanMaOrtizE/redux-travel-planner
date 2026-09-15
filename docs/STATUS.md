@@ -8401,6 +8401,32 @@ Definir `BudgetItemResponse` y `toBudgetItemResponse` en un mapper propio. Los
 dos campos `Decimal` deberan convertirse a strings con dos decimales antes de
 salir por HTTP.
 
+## Mapper y servicio de presupuesto completados
+
+- El mapper convierte decimales a strings y fechas a ISO, conservando los
+  valores `null`.
+- `createBudgetItem` valida propiedad, estado del viaje y actividad opcional
+  antes de realizar una unica escritura.
+- Pruebas reales, `typecheck`, `build` y `git diff --check` pasan.
+
+## Proximo paso
+
+Crear el controlador HTTP para `POST /trips/:tripId/budget-items`.
+
+## Controlador de presupuesto completado
+
+- Valida autenticacion, `tripId` y body; responde `201` con
+  `{ data: { budgetItem } }`.
+- Prueba real, `typecheck`, `build` y `git diff --check` pasan.
+- Proximo paso: registrar la ruta protegida en `trip.routes.ts`.
+
+## Ruta POST de presupuesto registrada
+
+- `POST /api/trips/:tripId/budget-items` ejecuta `requireAuth` antes del
+  controlador; sin cookie responde `401`.
+- `typecheck`, `build` y `git diff --check` pasan.
+- Proximo paso: probar una creacion autenticada en Postman.
+
 ## Integracion de CreateActivityForm completada
 
 - `TripDetailPage` usa el permiso semantico `canEditItinerary` y entrega a la

@@ -5,6 +5,7 @@ import {
   listActivitiesController,
 } from "../activities/activity.controller.js";
 import { requireAuth } from "../auth/auth.middleware.js";
+import { createBudgetItemController } from "../budget-items/budget-item.controller.js";
 import {
   createTripDestinationController,
   deleteTripDestinationController,
@@ -27,6 +28,11 @@ tripRouter.delete(
   "/:tripId/activities/:activityId",
   requireAuth,
   deleteActivityController,
+);
+tripRouter.post(
+  "/:tripId/budget-items",
+  requireAuth,
+  createBudgetItemController,
 );
 tripRouter.post(
   "/:tripId/destinations",
