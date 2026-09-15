@@ -5,7 +5,12 @@ import {
   listActivitiesController,
 } from "../activities/activity.controller.js";
 import { requireAuth } from "../auth/auth.middleware.js";
-import { createBudgetItemController } from "../budget-items/budget-item.controller.js";
+import {
+  createBudgetItemController,
+  deleteBudgetItemController,
+  listBudgetItemsController,
+  updateBudgetItemController,
+} from "../budget-items/budget-item.controller.js";
 import {
   createTripDestinationController,
   deleteTripDestinationController,
@@ -33,6 +38,21 @@ tripRouter.post(
   "/:tripId/budget-items",
   requireAuth,
   createBudgetItemController,
+);
+tripRouter.get(
+  "/:tripId/budget-items",
+  requireAuth,
+  listBudgetItemsController,
+);
+tripRouter.patch(
+  "/:tripId/budget-items/:budgetItemId",
+  requireAuth,
+  updateBudgetItemController,
+);
+tripRouter.delete(
+  "/:tripId/budget-items/:budgetItemId",
+  requireAuth,
+  deleteBudgetItemController,
 );
 tripRouter.post(
   "/:tripId/destinations",

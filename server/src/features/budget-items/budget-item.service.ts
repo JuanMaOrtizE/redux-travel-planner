@@ -5,7 +5,10 @@ import {
   toBudgetItemResponse,
   type BudgetItemResponse,
 } from "./budget-item.mapper.js";
-import type { CreateBudgetItemInput } from "./budget-item.schemas.js";
+import type {
+  CreateBudgetItemInput,
+  UpdateBudgetItemInput,
+} from "./budget-item.schemas.js";
 
 async function getOwnedTripOrThrow(userId: string, tripId: string) {
   const trip = await prisma.trip.findFirst({
@@ -65,6 +68,28 @@ async function resolveActivityId(
   return activity.id;
 }
 
+async function getBudgetItemOrThrow(tripId: string, budgetItemId: string) {
+  const budgetItem = await prisma.budgetItem.findFirst({
+    where: {
+      id: budgetItemId,
+      tripId,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!budgetItem) {
+    throw new AppError(
+      404,
+      "BUDGET_ITEM_NOT_FOUND",
+      "Partida presupuestaria no encontrada",
+    );
+  }
+
+  return budgetItem;
+}
+
 export async function createBudgetItem(
   userId: string,
   tripId: string,
@@ -88,4 +113,86 @@ export async function createBudgetItem(
   });
 
   return toBudgetItemResponse(budgetItem);
+}
+
+export async function listBudgetItems(
+  userId: string,
+  tripId: string,
+): Promise<BudgetItemResponse[]> {
+  const trip = await getOwnedTripOrThrow(userId, tripId);
+
+  const budgetItems = await prisma.budgetItem.findMany({
+    where: {
+      tripId: trip.id,
+    },
+    orderBy: [{ category: "asc" }, { createdAt: "asc" }],
+  });
+
+  return budgetItems.map(toBudgetItemResponse);
+}
+
+export async function updateBudgetItem(
+  userId: string,
+  tripId: string,
+  budgetItemId: string,
+  input: UpdateBudgetItemInput,
+): Promise<BudgetItemResponse> {
+  const trip = await getOwnedTripOrThrow(userId, tripId);
+
+  assertTripAllowsBudgetChanges(trip.status);
+
+  const existingBudgetItem = await getBudgetItemOrThrow(
+    trip.id,
+    budgetItemId,
+  );
+  const activityId =
+    input.activityId === undefined
+      ? undefined
+      : await resolveActivityId(trip.id, input.activityId);
+
+  const updatedBudgetItem = await prisma.budgetItem.update({
+    where: {
+      id: existingBudgetItem.id,
+    },
+    data: {
+      ...(activityId !== undefined && { activityId }),
+      ...(input.category !== undefined && { category: input.category }),
+      ...(input.description !== undefined && {
+        description: input.description,
+      }),
+      ...(input.estimatedAmount !== undefined && {
+        estimatedAmount: input.estimatedAmount,
+      }),
+      ...(input.actualAmount !== undefined && {
+        actualAmount: input.actualAmount,
+      }),
+    },
+  });
+
+  return toBudgetItemResponse(updatedBudgetItem);
+}
+
+export async function deleteBudgetItem(
+  userId: string,
+  tripId: string,
+  budgetItemId: string,
+): Promise<void> {
+  const trip = await getOwnedTripOrThrow(userId, tripId);
+
+  assertTripAllowsBudgetChanges(trip.status);
+
+  const deleteResult = await prisma.budgetItem.deleteMany({
+    where: {
+      id: budgetItemId,
+      tripId: trip.id,
+    },
+  });
+
+  if (deleteResult.count === 0) {
+    throw new AppError(
+      404,
+      "BUDGET_ITEM_NOT_FOUND",
+      "Partida presupuestaria no encontrada",
+    );
+  }
 }

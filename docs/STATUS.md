@@ -8427,6 +8427,27 @@ Crear el controlador HTTP para `POST /trips/:tripId/budget-items`.
 - `typecheck`, `build` y `git diff --check` pasan.
 - Proximo paso: probar una creacion autenticada en Postman.
 
+## Listado de presupuesto en servicio
+
+- `listBudgetItems` permite leer viajes finalizados y ordena por categoria y
+  creacion.
+- Prueba real, `typecheck`, `build` y `git diff --check` pasan.
+- Proximo paso: crear el controlador GET del listado.
+
+## Endpoint GET de presupuesto completado
+
+- `GET /api/trips/:tripId/budget-items` devuelve `200` con
+  `{ data: { budgetItems } }` y esta protegido por `requireAuth`.
+- Prueba real, `typecheck`, `build` y `git diff --check` pasan.
+- Proximo paso: probar el listado autenticado en Postman.
+
+## PATCH y DELETE de presupuesto completados
+
+- Ambos endpoints validan propiedad, estado, parametros y relaciones; PATCH
+  devuelve `200` y DELETE `204`.
+- Pruebas reales, `typecheck`, `build` y `git diff --check` pasan.
+- Proximo paso: probarlos en Postman y comenzar los tipos del frontend.
+
 ## Integracion de CreateActivityForm completada
 
 - `TripDetailPage` usa el permiso semantico `canEditItinerary` y entrega a la
