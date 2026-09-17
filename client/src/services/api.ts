@@ -7,6 +7,12 @@ export const api = createApi({
     baseUrl: API_URL,
     credentials: "include",
   }),
-  tagTypes: ["Auth", "Trips", "TripDestinations", "Activities"],
+  tagTypes: [
+    "Auth",
+    "Trips",
+    "TripDestinations",
+    "Activities",
+    "BudgetItems",
+  ],
   endpoints: (_builder) => ({}),
 });

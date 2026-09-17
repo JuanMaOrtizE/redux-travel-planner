@@ -8448,6 +8448,12 @@ Crear el controlador HTTP para `POST /trips/:tripId/budget-items`.
 - Pruebas reales, `typecheck`, `build` y `git diff --check` pasan.
 - Proximo paso: probarlos en Postman y comenzar los tipos del frontend.
 
+## Tipos frontend de presupuesto completados
+
+- Se definieron contratos para listar, crear, actualizar y eliminar partidas.
+- `lint`, `build` y `git diff --check` pasan.
+- Proximo paso: registrar `BudgetItems` y crear los endpoints de RTK Query.
+
 ## Integracion de CreateActivityForm completada
 
 - `TripDetailPage` usa el permiso semantico `canEditItinerary` y entrega a la
@@ -8506,39 +8512,12 @@ definir la siguiente capacidad del modulo de actividades.
 - `npm run lint`, `npm run build` y `git diff --check` pasan. Permanece la
   advertencia conocida sobre el tamano del bundle.
 
+## Presupuesto: RTK Query frontend en progreso
+
+- Tipos, tag y endpoints RTK Query de presupuesto completados.
+- Las cache e invalidaciones se separan por `tripId`.
+- Verificacion: lint, build y `git diff --check` correctos.
+
 ## Proximo paso
 
-Disenar el contrato de `DeleteActivityAction.tsx` y la coordinacion de una sola
-confirmacion abierta en todo el itinerario antes de conectarlo a
-`ActivityGroupList`.
-
-## Microtarea actual: componente DeleteActivityAction aislado
-
-- Crear `client/src/features/activities/DeleteActivityAction.tsx` en su
-  ubicacion definitiva.
-- Recibir `tripId`, `activityId`, `activityTitle`, `isConfirming`, `isDisabled`,
-  `onOpenConfirmation` y `onCloseConfirmation`.
-- Consumir `useDeleteActivityMutation` y derivar `isActionLocked` desde
-  `isLoading || isSuccess`.
-- Reutilizar el patron de foco de la eliminacion de paradas: recordar el boton
-  de apertura y devolverle el foco al cerrar sin eliminar.
-- Mostrar un boton compacto con `Trash2` cuando no se confirma y una
-  confirmacion inline cuando `isConfirming` es verdadero.
-- Enviar `{ tripId, activityId }` mediante `.unwrap()`. En exito no cerrar la
-  confirmacion manualmente: el refetch eliminara la fila; en error mantenerla
-  abierta.
-- No modificar aun `ActivityGroupList` ni crear el estado coordinador del
-  itinerario; primero revisar el componente aislado.
-
-## Criterios de aceptacion
-
-- Abrir limpia un error anterior y respeta `isDisabled`.
-- Cancelar limpia el estado de la mutation, cierra y restaura el foco.
-- Carga y exito bloquean ambas acciones para impedir repeticiones.
-- Error mantiene la confirmacion abierta y muestra un mensaje accesible.
-- El icono no es el unico nombre de la accion: existe texto para lectores de
-  pantalla y texto visible en la confirmacion.
-- El componente no contiene estado local para decidir que actividad confirma;
-  esa decision pertenecera al coordinador del itinerario.
-- `npm run lint`, `npm run build`, detector de interfaz y `git diff --check`
-  pasan despues de la implementacion.
+Definir el esquema Zod del formulario para crear partidas.
