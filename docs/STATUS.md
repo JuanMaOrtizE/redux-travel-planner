@@ -8516,9 +8516,83 @@ definir la siguiente capacidad del modulo de actividades.
 
 - Tipos, tag y endpoints RTK Query de presupuesto completados.
 - Esquema Zod de creacion completado.
+- Mapper de creacion completado; omite actividad e importe real vacios.
 - Las cache e invalidaciones se separan por `tripId`.
 - Verificacion: lint, build y `git diff --check` correctos.
 
+## Modal de creacion de actividades completado
+
+- El formulario usa `<dialog>`, agrupa los campos y muestra la zona horaria.
+- `Agregar actividad` aparece despues del contenido del itinerario.
+- Lint, build y detector de layout correctos.
+
 ## Proximo paso
 
-Crear el mapper del formulario al body de creacion.
+Crear `CreateBudgetItemForm` aislado y conectarlo a la mutation.
+
+## Formulario de presupuesto completado
+
+- `CreateBudgetItemForm` valida con Zod, transforma con el mapper y crea la
+  partida mediante RTK Query.
+- Permite asociarla opcionalmente a una actividad y muestra los importes en la
+  moneda del viaje.
+- Las categorias visibles se centralizaron en `budgetItem.constants.ts`.
+- Lint, build y detector de interfaz correctos.
+
+## Proximo paso
+
+Crear la seccion de presupuesto: consultar las partidas y presentar estados de
+carga, error y lista vacia antes de integrar el formulario en un dialogo.
+
+## Microtarea actual: seccion de presupuesto
+
+- Crear `features/budget-items/TripBudgetSection.tsx` y montarla en el detalle
+  del viaje antes de la zona de peligro.
+- Recibir `tripId` y `currency`; consultar con `useGetBudgetItemsQuery(tripId)`.
+- Diferenciar carga inicial, error inicial, actualizacion con datos previos y
+  error de actualizacion.
+- Mostrar una lista responsive con descripcion, categoria, estimado y real;
+  todavia sin crear, editar, eliminar ni calcular resumenes.
+- Usar un estado vacio explicativo cuando la respuesta no tenga partidas.
+
+## Criterios de aceptacion
+
+- Cambiar de viaje no muestra partidas del anterior.
+- Carga, error, vacio y datos tienen una representacion visible y accesible.
+- Un refetch conserva los datos visibles y solo informa la actualizacion.
+- Los importes muestran la moneda del viaje y `actualAmount: null` como
+  pendiente.
+- Lint, build, detector de interfaz y `git diff --check` pasan.
+
+## Seccion de presupuesto completada
+
+- `TripBudgetSection` consulta por `tripId` y distingue carga, error, vacio,
+  datos, actualizacion y fallo de actualizacion.
+- La lista traduce categorias y muestra estimado, real o `Pendiente` con la
+  moneda del viaje.
+- La seccion esta montada antes de la zona de peligro y permanece visible en
+  viajes finalizados.
+- Lint, build, detector de interfaz y `git diff --check` pasan.
+
+## Proximo paso
+
+Crear el dialogo de presupuesto e integrar `CreateBudgetItemForm` en esta
+seccion, reutilizando la consulta cacheada de actividades y ocultando la accion
+de creacion en viajes finalizados.
+
+## Creacion de partidas integrada
+
+- `CreateBudgetItemDialog` abre el formulario en un `<dialog>`, impide cerrarlo
+  durante el envio y devuelve el foco al disparador.
+- El selector reutiliza la cache `getActivities + tripId`; una segunda
+  suscripcion no duplica los datos ni crea estado manual.
+- El boton aparece despues de las partidas solo tras una primera respuesta y
+  se oculta en viajes completados o cancelados.
+- Un exito cierra el dialogo; la invalidacion de `BudgetItems` actualiza la
+  lista activa.
+- Lint, build, detector de interfaz y `git diff --check` pasan.
+
+## Proximo paso
+
+Crear el resumen derivado del presupuesto: limite, total estimado, total real
+y saldo disponible, definiendo antes como tratar partidas sin importe real.

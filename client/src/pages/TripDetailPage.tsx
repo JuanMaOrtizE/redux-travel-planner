@@ -1,5 +1,6 @@
 import { skipToken } from "@reduxjs/toolkit/query";
 import { Link, useParams } from "react-router-dom";
+import TripBudgetSection from "../features/budget-items/TripBudgetSection";
 import TripItinerarySection from "../features/itinerary/TripItinerarySection";
 import { useGetTripQuery } from "../features/trips/tripsApi";
 import DeleteTripAction from "../features/trips/DeleteTripAction";
@@ -82,7 +83,7 @@ export default function TripDetailPage() {
     );
   }
 
-  const canEditItinerary =
+  const canEditTrip =
     trip.status === "PLANNING" || trip.status === "CONFIRMED";
 
   return (
@@ -155,14 +156,19 @@ export default function TripDetailPage() {
         </div>
 
         <TripItinerarySection
-          canEditItinerary={canEditItinerary}
+          canEditItinerary={canEditTrip}
           tripId={trip.id}
           tripStartDate={trip.startDate}
           tripEndDate={trip.endDate}
         />
-        {canEditItinerary ? (
+        {canEditTrip ? (
           <AddTripDestinationSection tripId={trip.id} />
         ) : null}
+        <TripBudgetSection
+          canEditBudgetItems={canEditTrip}
+          currency={trip.currency}
+          tripId={trip.id}
+        />
         <div className="mt-10 border-t border-slate-200 pt-6">
           <h2 className="text-base font-semibold text-slate-900">
             Zona de peligro

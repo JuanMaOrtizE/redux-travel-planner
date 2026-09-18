@@ -236,8 +236,13 @@ responsive.
 
 - Existira un unico formulario reutilizable, no uno repetido dentro de cada
   fila de parada.
-- Se abrira desde la seccion de itinerario mediante divulgacion progresiva para
-  no aumentar permanentemente la verticalidad del detalle.
+- Se abrira en un `<dialog>` modal para no desplazar el mapa ni las paradas.
+- El disparador se ubicara despues de las actividades y paradas: asi comunica
+  con claridad que agrega contenido al itinerario ya presentado.
+- El dialogo agrupara actividad, horario y detalles opcionales; tendra cuerpo
+  desplazable y acciones estables en pantallas de poca altura.
+- La zona horaria efectiva permanecera visible dentro del formulario porque el
+  backdrop oculta temporalmente el contexto geografico.
 - Un selector permitira elegir `Actividad general` o una parada existente. La
   seleccion determina la relacion y la zona con la que se interpretara el
   horario local introducido.
@@ -245,6 +250,21 @@ responsive.
   solo le proporcionara viaje, rango de fechas y opciones de parada.
 - Los viajes completados o cancelados no mostraran la accion de creacion; el
   backend conservara la regla de negocio como autoridad final.
+
+## Presupuesto en el detalle del viaje
+
+- Se presenta como una lista financiera con divisores, no como una cuadricula
+  de tarjetas repetidas.
+- En movil cada importe conserva su etiqueta; desde escritorio se alinean
+  descripcion, categoria, estimado y real en columnas.
+- Un refetch mantiene visibles las partidas. La carga inicial usa skeleton y
+  el estado vacio explica que alli se compararan importes planeados y reales.
+- El presupuesto sigue visible en viajes finalizados; solo se restringen sus
+  acciones de modificacion.
+- `Agregar gasto` aparece despues de la lista y abre un unico dialogo, evitando
+  desplazar el contenido financiero existente.
+- El dialogo conserva acciones estables, cuerpo desplazable y restauracion de
+  foco; no puede cerrarse mientras la creacion esta pendiente.
 
 ## Eliminacion de una actividad
 

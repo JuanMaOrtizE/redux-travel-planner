@@ -177,244 +177,294 @@ export default function CreateActivityForm({
   return (
     <form
       aria-busy={isLoading}
-      className="space-y-5 rounded-xl border border-slate-200 bg-white p-4 sm:p-6"
+      className="flex max-h-[calc(100dvh-2rem)] flex-col"
       noValidate
       onSubmit={handleSubmit(handleCreateActivitySubmit)}
     >
-      <div>
-        <h3 className="text-base font-semibold text-slate-900">
+      <header className="shrink-0 border-b border-slate-200 px-4 py-4 sm:px-6">
+        <h2
+          className="text-xl font-semibold tracking-tight text-slate-900"
+          id="create-activity-dialog-title"
+        >
           Nueva actividad
-        </h3>
-        <p className="mt-1 max-w-prose text-sm leading-6 text-slate-600">
-          Define cuándo ocurrirá y, si corresponde, relaciónala con una parada.
+        </h2>
+        <p
+          className="mt-1 max-w-prose text-sm leading-6 text-slate-600"
+          id="create-activity-dialog-description"
+        >
+          Organiza el plan, su horario y la parada a la que pertenece.
         </p>
+      </header>
+
+      <div className="min-h-0 overflow-y-auto px-4 py-5 sm:px-6">
+        {isError ? (
+          <p
+            className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-900"
+            role="alert"
+          >
+            {getCreateActivityErrorMessage(error)}
+          </p>
+        ) : null}
+
+        <fieldset className="space-y-6" disabled={isLoading}>
+          <section aria-labelledby="activity-details-title">
+            <h3
+              className="text-sm font-semibold text-slate-900"
+              id="activity-details-title"
+            >
+              Actividad
+            </h3>
+
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label
+                  className="block text-sm font-medium text-slate-700"
+                  htmlFor="activity-title"
+                >
+                  Título
+                </label>
+                <input
+                  aria-describedby={
+                    errors.title ? "activity-title-error" : undefined
+                  }
+                  aria-invalid={Boolean(errors.title)}
+                  autoComplete="off"
+                  className={getFieldClassName(Boolean(errors.title))}
+                  id="activity-title"
+                  type="text"
+                  {...register("title")}
+                />
+                {errors.title?.message ? (
+                  <p
+                    className="text-sm text-red-700"
+                    id="activity-title-error"
+                    role="alert"
+                  >
+                    {errors.title.message}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  className="block text-sm font-medium text-slate-700"
+                  htmlFor="activity-trip-destination"
+                >
+                  Parada
+                </label>
+                <select
+                  aria-describedby={
+                    errors.tripDestinationId
+                      ? "activity-trip-destination-hint activity-trip-destination-error"
+                      : "activity-trip-destination-hint"
+                  }
+                  aria-invalid={Boolean(errors.tripDestinationId)}
+                  className={getFieldClassName(
+                    Boolean(errors.tripDestinationId),
+                  )}
+                  id="activity-trip-destination"
+                  {...register("tripDestinationId")}
+                >
+                  <option value="">Actividad general</option>
+                  {tripDestinations.map((tripDestination) => (
+                    <option key={tripDestination.id} value={tripDestination.id}>
+                      {tripDestination.destination.name}
+                    </option>
+                  ))}
+                </select>
+                <p
+                  className="text-sm leading-5 text-slate-600"
+                  id="activity-trip-destination-hint"
+                >
+                  Elige una parada o conserva la actividad como general.
+                </p>
+                {errors.tripDestinationId?.message ? (
+                  <p
+                    className="text-sm text-red-700"
+                    id="activity-trip-destination-error"
+                    role="alert"
+                  >
+                    {errors.tripDestinationId.message}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          </section>
+
+          <section aria-labelledby="activity-schedule-title">
+            <h3
+              className="text-sm font-semibold text-slate-900"
+              id="activity-schedule-title"
+            >
+              Cuándo
+            </h3>
+
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label
+                  className="block text-sm font-medium text-slate-700"
+                  htmlFor="activity-starts-at"
+                >
+                  Inicio
+                </label>
+                <input
+                  aria-describedby={
+                    errors.startsAt
+                      ? "activity-date-range-hint activity-timezone-hint activity-starts-at-error"
+                      : "activity-date-range-hint activity-timezone-hint"
+                  }
+                  aria-invalid={Boolean(errors.startsAt)}
+                  className={getFieldClassName(Boolean(errors.startsAt))}
+                  id="activity-starts-at"
+                  max={maximumDateTime}
+                  min={minimumDateTime}
+                  type="datetime-local"
+                  {...register("startsAt")}
+                />
+                {errors.startsAt?.message ? (
+                  <p
+                    className="text-sm text-red-700"
+                    id="activity-starts-at-error"
+                    role="alert"
+                  >
+                    {errors.startsAt.message}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  className="block text-sm font-medium text-slate-700"
+                  htmlFor="activity-ends-at"
+                >
+                  Final{" "}
+                  <span className="font-normal text-slate-500">
+                    (opcional)
+                  </span>
+                </label>
+                <input
+                  aria-describedby={
+                    errors.endsAt
+                      ? "activity-date-range-hint activity-timezone-hint activity-ends-at-error"
+                      : "activity-date-range-hint activity-timezone-hint"
+                  }
+                  aria-invalid={Boolean(errors.endsAt)}
+                  className={getFieldClassName(Boolean(errors.endsAt))}
+                  id="activity-ends-at"
+                  max={maximumDateTime}
+                  min={minimumDateTime}
+                  type="datetime-local"
+                  {...register("endsAt")}
+                />
+                {errors.endsAt?.message ? (
+                  <p
+                    className="text-sm text-red-700"
+                    id="activity-ends-at-error"
+                    role="alert"
+                  >
+                    {errors.endsAt.message}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="mt-3 space-y-1 rounded-lg bg-slate-100 px-3 py-2.5">
+              <p
+                className="text-sm font-medium text-slate-800"
+                id="activity-timezone-hint"
+              >
+                {timeZoneLabel}
+              </p>
+              <p
+                className="text-sm leading-5 text-slate-600"
+                id="activity-date-range-hint"
+              >
+                Debe ocurrir entre {tripStartDate} y {tripEndDate}.
+              </p>
+            </div>
+          </section>
+
+          <details className="rounded-lg bg-slate-50 px-4 py-3">
+            <summary className="cursor-pointer text-sm font-semibold text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700">
+              Agregar ubicación y descripción
+            </summary>
+
+            <div className="mt-4 space-y-4">
+              <div className="space-y-2">
+                <label
+                  className="block text-sm font-medium text-slate-700"
+                  htmlFor="activity-location-name"
+                >
+                  Ubicación{" "}
+                  <span className="font-normal text-slate-500">
+                    (opcional)
+                  </span>
+                </label>
+                <input
+                  aria-describedby={
+                    errors.locationName
+                      ? "activity-location-name-error"
+                      : undefined
+                  }
+                  aria-invalid={Boolean(errors.locationName)}
+                  autoComplete="off"
+                  className={getFieldClassName(Boolean(errors.locationName))}
+                  id="activity-location-name"
+                  placeholder="Museo, restaurante o dirección"
+                  type="text"
+                  {...register("locationName")}
+                />
+                {errors.locationName?.message ? (
+                  <p
+                    className="text-sm text-red-700"
+                    id="activity-location-name-error"
+                    role="alert"
+                  >
+                    {errors.locationName.message}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  className="block text-sm font-medium text-slate-700"
+                  htmlFor="activity-description"
+                >
+                  Descripción{" "}
+                  <span className="font-normal text-slate-500">
+                    (opcional)
+                  </span>
+                </label>
+                <textarea
+                  aria-describedby={
+                    errors.description
+                      ? "activity-description-error"
+                      : undefined
+                  }
+                  aria-invalid={Boolean(errors.description)}
+                  className={`${getFieldClassName(Boolean(errors.description))} resize-y`}
+                  id="activity-description"
+                  rows={3}
+                  {...register("description")}
+                />
+                {errors.description?.message ? (
+                  <p
+                    className="text-sm text-red-700"
+                    id="activity-description-error"
+                    role="alert"
+                  >
+                    {errors.description.message}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          </details>
+        </fieldset>
       </div>
 
-      {isError ? (
-        <p
-          className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-900"
-          role="alert"
-        >
-          {getCreateActivityErrorMessage(error)}
-        </p>
-      ) : null}
-
-      <fieldset className="space-y-5" disabled={isLoading}>
-        <div className="space-y-2">
-          <label
-            className="block text-sm font-medium text-slate-700"
-            htmlFor="activity-trip-destination"
-          >
-            Parada
-          </label>
-
-          <select
-            className={getFieldClassName(Boolean(errors.tripDestinationId))}
-            id="activity-trip-destination"
-            aria-invalid={Boolean(errors.tripDestinationId)}
-            aria-describedby={
-              errors.tripDestinationId
-                ? "activity-trip-destination-hint activity-trip-destination-error"
-                : "activity-trip-destination-hint"
-            }
-            {...register("tripDestinationId")}
-          >
-            <option value="">Actividad general</option>
-
-            {tripDestinations.map((tripDestination) => (
-              <option key={tripDestination.id} value={tripDestination.id}>
-                {tripDestination.destination.name}
-              </option>
-            ))}
-          </select>
-
-          <p
-            className="text-sm leading-5 text-slate-600"
-            id="activity-trip-destination-hint"
-          >
-            Las actividades generales no pertenecen a una parada específica.
-          </p>
-
-          {errors.tripDestinationId?.message && (
-            <p
-              className="text-sm text-red-700"
-              id="activity-trip-destination-error"
-              role="alert"
-            >
-              {errors.tripDestinationId.message}
-            </p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <label
-            className="block text-sm font-medium text-slate-700"
-            htmlFor="activity-title"
-          >
-            Título
-          </label>
-
-          <input
-            aria-describedby={
-              errors.title ? "activity-title-error" : undefined
-            }
-            aria-invalid={Boolean(errors.title)}
-            autoComplete="off"
-            className={getFieldClassName(Boolean(errors.title))}
-            id="activity-title"
-            type="text"
-            {...register("title")}
-          />
-
-          {errors.title?.message && (
-            <p
-              className="text-sm text-red-700"
-              id="activity-title-error"
-              role="alert"
-            >
-              {errors.title.message}
-            </p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <label
-            className="block text-sm font-medium text-slate-700"
-            htmlFor="activity-description"
-          >
-            Descripción{" "}
-            <span className="font-normal text-slate-500">(opcional)</span>
-          </label>
-          <textarea
-            aria-describedby={
-              errors.description ? "activity-description-error" : undefined
-            }
-            aria-invalid={Boolean(errors.description)}
-            className={`${getFieldClassName(Boolean(errors.description))} resize-y`}
-            id="activity-description"
-            rows={3}
-            {...register("description")}
-          />
-          {errors.description?.message ? (
-            <p
-              className="text-sm text-red-700"
-              id="activity-description-error"
-              role="alert"
-            >
-              {errors.description.message}
-            </p>
-          ) : null}
-        </div>
-
-        <div className="space-y-2">
-          <label
-            className="block text-sm font-medium text-slate-700"
-            htmlFor="activity-location-name"
-          >
-            Ubicación{" "}
-            <span className="font-normal text-slate-500">(opcional)</span>
-          </label>
-          <input
-            aria-describedby={
-              errors.locationName ? "activity-location-name-error" : undefined
-            }
-            aria-invalid={Boolean(errors.locationName)}
-            autoComplete="off"
-            className={getFieldClassName(Boolean(errors.locationName))}
-            id="activity-location-name"
-            placeholder="Museo, restaurante o dirección"
-            type="text"
-            {...register("locationName")}
-          />
-          {errors.locationName?.message ? (
-            <p
-              className="text-sm text-red-700"
-              id="activity-location-name-error"
-              role="alert"
-            >
-              {errors.locationName.message}
-            </p>
-          ) : null}
-        </div>
-
-        <div className="grid gap-5 sm:grid-cols-2">
-          <div className="space-y-2">
-            <label
-              className="block text-sm font-medium text-slate-700"
-              htmlFor="activity-starts-at"
-            >
-              Inicio
-            </label>
-            <input
-              aria-describedby={
-                errors.startsAt
-                  ? "activity-date-range-hint activity-starts-at-error"
-                  : "activity-date-range-hint"
-              }
-              aria-invalid={Boolean(errors.startsAt)}
-              className={getFieldClassName(Boolean(errors.startsAt))}
-              id="activity-starts-at"
-              max={maximumDateTime}
-              min={minimumDateTime}
-              type="datetime-local"
-              {...register("startsAt")}
-            />
-            {errors.startsAt?.message ? (
-              <p
-                className="text-sm text-red-700"
-                id="activity-starts-at-error"
-                role="alert"
-              >
-                {errors.startsAt.message}
-              </p>
-            ) : null}
-          </div>
-
-          <div className="space-y-2">
-            <label
-              className="block text-sm font-medium text-slate-700"
-              htmlFor="activity-ends-at"
-            >
-              Final{" "}
-              <span className="font-normal text-slate-500">(opcional)</span>
-            </label>
-            <input
-              aria-describedby={
-                errors.endsAt
-                  ? "activity-date-range-hint activity-ends-at-error"
-                  : "activity-date-range-hint"
-              }
-              aria-invalid={Boolean(errors.endsAt)}
-              className={getFieldClassName(Boolean(errors.endsAt))}
-              id="activity-ends-at"
-              max={maximumDateTime}
-              min={minimumDateTime}
-              type="datetime-local"
-              {...register("endsAt")}
-            />
-            {errors.endsAt?.message ? (
-              <p
-                className="text-sm text-red-700"
-                id="activity-ends-at-error"
-                role="alert"
-              >
-                {errors.endsAt.message}
-              </p>
-            ) : null}
-          </div>
-        </div>
-
-        <p
-          className="text-sm leading-5 text-slate-600"
-          id="activity-date-range-hint"
-        >
-          La actividad debe ocurrir entre {tripStartDate} y {tripEndDate}.
-        </p>
-      </fieldset>
-
-      <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
+      <div className="flex shrink-0 flex-col gap-3 border-t border-slate-200 px-4 py-4 sm:flex-row sm:justify-end sm:px-6">
         <button
-          className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+          className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
           disabled={isLoading}
           onClick={handleCancel}
           type="button"
@@ -422,7 +472,7 @@ export default function CreateActivityForm({
           Cancelar
         </button>
         <button
-          className="inline-flex items-center justify-center rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:bg-teal-700 disabled:text-white disabled:opacity-50"
+          className="inline-flex min-h-11 items-center justify-center rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:bg-teal-700 disabled:text-white disabled:opacity-50"
           disabled={isLoading}
           type="submit"
         >
