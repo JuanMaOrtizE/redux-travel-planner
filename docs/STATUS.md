@@ -8512,12 +8512,13 @@ definir la siguiente capacidad del modulo de actividades.
 - `npm run lint`, `npm run build` y `git diff --check` pasan. Permanece la
   advertencia conocida sobre el tamano del bundle.
 
-## Presupuesto: RTK Query frontend en progreso
+## Presupuesto frontend en progreso
 
 - Tipos, tag y endpoints RTK Query de presupuesto completados.
+- Esquema Zod de creacion completado.
 - Las cache e invalidaciones se separan por `tripId`.
 - Verificacion: lint, build y `git diff --check` correctos.
 
 ## Proximo paso
 
-Definir el esquema Zod del formulario para crear partidas.
+Crear el mapper del formulario al body de creacion.

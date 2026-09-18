@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import type { TripDestination } from "../trip-destinations/tripDestination.types";
 import type { CreateActivityBody } from "./activity.types";
@@ -61,6 +62,7 @@ type CreateActivityFormProps = {
   tripDestinations: TripDestination[];
   onCancel: () => void;
   onCreated: () => void;
+  onSubmittingChange: (isSubmitting: boolean) => void;
 };
 
 export default function CreateActivityForm({
@@ -70,6 +72,7 @@ export default function CreateActivityForm({
   tripDestinations,
   onCancel,
   onCreated,
+  onSubmittingChange,
 }: CreateActivityFormProps) {
   const [
     createActivity,
@@ -80,6 +83,7 @@ export default function CreateActivityForm({
     register,
     handleSubmit,
     setError,
+    watch,
     reset: resetForm,
     formState: { errors },
   } = useForm<CreateActivityFormValues>({
@@ -96,6 +100,27 @@ export default function CreateActivityForm({
 
   const minimumDateTime = `${tripStartDate}T00:00`;
   const maximumDateTime = `${tripEndDate}T23:59`;
+  const selectedTripDestinationId = watch("tripDestinationId");
+  const selectedTripDestination = tripDestinations.find(
+    (tripDestination) =>
+      tripDestination.id === selectedTripDestinationId,
+  );
+  const selectedTimeZone =
+    selectedTripDestination?.destination.timezone ?? "UTC";
+  const timeZoneLabel = selectedTripDestination
+    ? `Hora local de ${selectedTripDestination.destination.name} · ${selectedTimeZone}`
+    : "Actividad general · horario UTC";
+
+  useEffect(() => {
+    onSubmittingChange(isLoading);
+  }, [isLoading, onSubmittingChange]);
+
+  useEffect(
+    () => () => {
+      onSubmittingChange(false);
+    },
+    [onSubmittingChange],
+  );
 
   async function handleCreateActivitySubmit(
     values: CreateActivityFormValues,
@@ -145,6 +170,7 @@ export default function CreateActivityForm({
 
   function handleCancel(): void {
     resetMutation();
+    resetForm();
     onCancel();
   }
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import ActivityGroupList from "../activities/ActivityGroupList";
-import CreateActivityForm from "../activities/CreateActivityForm";
+import CreateActivityDialog from "../activities/CreateActivityDialog";
 import type { Activity } from "../activities/activity.types";
 import { useGetActivitiesQuery } from "../activities/activitiesApi";
 import TripDestinationsMap from "../trip-destinations/TripDestinationsMap";
@@ -248,7 +248,6 @@ export default function TripItinerarySection({
   const [selectedTripDestinationId, setSelectedTripDestinationId] = useState<
     string | null
   >(null);
-  const [isCreatingActivity, setIsCreatingActivity] = useState(false);
 
   useEffect(() => {
     setSelectedTripDestinationId((currentId) =>
@@ -313,7 +312,7 @@ export default function TripItinerarySection({
           </p>
         </div>
 
-        {shouldShowItinerarySummary || canCreateActivity ? (
+        {shouldShowItinerarySummary ? (
           <div className="flex flex-wrap items-center justify-end gap-3">
             {shouldShowItinerarySummary ? (
               <p className="text-sm font-medium text-slate-600">
@@ -329,35 +328,9 @@ export default function TripItinerarySection({
               </p>
             ) : null}
 
-            {canCreateActivity ? (
-              <button
-                aria-controls="create-activity-form-region"
-                aria-expanded={isCreatingActivity}
-                className="inline-flex items-center justify-center rounded-lg border border-teal-200 bg-teal-50 px-4 py-2 text-sm font-semibold text-teal-900 transition-colors hover:bg-teal-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
-                onClick={() =>
-                  setIsCreatingActivity((currentValue) => !currentValue)
-                }
-                type="button"
-              >
-                {isCreatingActivity ? "Cerrar formulario" : "Agregar actividad"}
-              </button>
-            ) : null}
           </div>
         ) : null}
       </div>
-
-      {canCreateActivity && isCreatingActivity ? (
-        <div className="mt-5" id="create-activity-form-region">
-          <CreateActivityForm
-            onCancel={() => setIsCreatingActivity(false)}
-            onCreated={() => setIsCreatingActivity(false)}
-            tripDestinations={tripDestinations}
-            tripEndDate={tripEndDate}
-            tripId={tripId}
-            tripStartDate={tripStartDate}
-          />
-        </div>
-      ) : null}
 
       {showTripDestinationsLoading ? (
         <div role="status">
@@ -582,6 +555,19 @@ export default function TripItinerarySection({
               ))}
             </ol>
           )}
+
+          {canCreateActivity ? (
+            <CreateActivityDialog
+              isDisabled={
+                hasActiveTripDestinationConfirmation ||
+                hasActiveActivityConfirmation
+              }
+              tripDestinations={tripDestinations}
+              tripEndDate={tripEndDate}
+              tripId={tripId}
+              tripStartDate={tripStartDate}
+            />
+          ) : null}
         </>
       ) : null}
     </section>
