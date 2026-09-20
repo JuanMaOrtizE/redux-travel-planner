@@ -41,7 +41,6 @@ Los conceptos no explorados en el proyecto anterior sí deben explicarse con má
 - Buscar ciudades mediante API externa.
 - Mostrar destinos en un mapa.
 - Usar marcadores y popups para mostrar información rápida.
-- Consultar clima del destino.
 - Organizar actividades por día.
 - Registrar presupuesto por categorías.
 - Manejar autenticación simple.
@@ -63,6 +62,9 @@ Tailwind se usará desde las primeras fases para construir una UI más cuidada q
 - Permisos complejos por organización.
 - Testing avanzado desde el inicio.
 - TypeScript estricto en todo el proyecto desde la primera fase.
+- Pronóstico meteorológico; la integración externa demostrada en el alcance
+  final es la búsqueda geográfica mediante Open-Meteo.
+- Métricas presupuestarias avanzadas y edición visual de partidas.
 
 ## Nivel esperado
 
@@ -72,4 +74,3 @@ El proyecto debe quedar en nivel intermedio guiado:
 - más profesional en estado, formularios y UI/UX;
 - suficientemente claro para portfolio;
 - sin complejidad innecesaria.
-

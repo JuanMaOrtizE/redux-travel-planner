@@ -1,41 +1,28 @@
-# Redux Travel Planner — Planificador de viajes full-stack
+# Redux Travel Planner
 
-Aplicación de planificación de viajes construida como proyecto de portfolio para practicar Redux Toolkit, RTK Query y una arquitectura full-stack con React y Express.
+Planificador de viajes full-stack creado para demostrar Redux Toolkit, RTK
+Query y una arquitectura con React, Express y PostgreSQL.
 
-Permite administrar viajes, buscar destinos externos, organizar paradas y visualizarlas en un mapa. El itinerario de actividades, presupuesto y clima se encuentran en desarrollo.
-
-## Funcionalidades principales
+## Funcionalidades
 
 - Autenticación con JWT en cookie `httpOnly`.
-- Creación, consulta, actualización de estado y eliminación de viajes.
-- Búsqueda de ciudades mediante Open-Meteo Geocoding.
-- Gestión ordenada de paradas por viaje.
-- Mapa con marcadores, popups y enfoque de paradas.
-- Creación de actividades generales o asociadas a una parada.
-- Validación de fechas, estados del viaje y zonas horarias.
-- Caché y sincronización de datos con RTK Query.
+- Gestión de viajes, estados, paradas y destinos externos.
+- Mapas con marcadores, popups y selección de paradas.
+- Actividades generales o asociadas a destinos, agrupadas por día local.
+- Presupuesto estimado y real organizado por categorías.
+- Formularios con React Hook Form y Zod; caché sincronizada con RTK Query.
 
 ## Tecnologías
 
-**Frontend:** React, TypeScript, Vite, Redux Toolkit, RTK Query, React Router, React Hook Form, Zod, Tailwind CSS y React Leaflet.
+**Frontend:** React, TypeScript, Vite, Redux Toolkit, RTK Query, React Router,
+React Hook Form, Zod, Tailwind CSS y React Leaflet.
 
-**Backend:** Node.js, Express, TypeScript, Prisma, PostgreSQL, Zod, JWT y cookies `httpOnly`.
+**Backend:** Node.js, Express, TypeScript, Prisma, PostgreSQL y JWT.
 
-## Cómo ejecutar el proyecto
+## Ejecución local
 
-### Backend
-
-Crea `server/.env`:
-
-```env
-DATABASE_URL="postgresql://postgres:tu_password@localhost:5432/redux_travel_planner"
-JWT_SECRET="un_secreto_de_desarrollo_con_al_menos_64_caracteres_de_longitud"
-CLIENT_URL="http://localhost:5173"
-PORT=4000
-NODE_ENV="development"
-```
-
-Luego ejecuta:
+Configura `server/.env` y `client/.env` siguiendo
+[`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md).
 
 ```bash
 cd server
@@ -45,15 +32,7 @@ npx prisma generate
 npm run dev
 ```
 
-### Frontend
-
-Crea `client/.env`:
-
-```env
-VITE_API_URL="http://localhost:4000/api"
-```
-
-En otra terminal ejecuta:
+En otra terminal:
 
 ```bash
 cd client
@@ -61,8 +40,12 @@ npm install
 npm run dev
 ```
 
-El frontend estará disponible normalmente en `http://localhost:5173` y el backend en `http://localhost:4000`.
+Cliente: `http://localhost:5173` · API: `http://localhost:4000/api`
 
-## Documentación
+## Estado
 
-Las decisiones técnicas, el modelo de datos, el roadmap y el estado actual se encuentran en [`docs/`](docs/).
+Alcance funcional finalizado. Clima, métricas avanzadas y edición visual de
+partidas presupuestarias quedan como mejoras futuras.
+
+Las decisiones técnicas, el modelo de datos y el historial del proyecto están
+en [`docs/`](docs/).

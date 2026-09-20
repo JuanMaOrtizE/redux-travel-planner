@@ -8596,3 +8596,23 @@ de creacion en viajes finalizados.
 
 Crear el resumen derivado del presupuesto: limite, total estimado, total real
 y saldo disponible, definiendo antes como tratar partidas sin importe real.
+
+## Alcance funcional cerrado
+
+- El usuario decidio finalizar el proyecto con viajes, destinos, mapa,
+  itinerario, actividades y creacion/listado de presupuesto.
+- Clima, metricas avanzadas y edicion/eliminacion visual de partidas pasan a
+  mejoras futuras y ya no bloquean la entrega.
+- Cliente: lint y build correctos. Servidor: typecheck y build correctos.
+- La portada y el README ya describen solamente capacidades implementadas.
+
+## Proyecto finalizado
+
+- Alcance funcional y documentacion cerrados.
+- README reducido y alineado con las capacidades implementadas.
+- No hay tareas de implementacion activas.
+- El recorrido manual y las capturas quedan como comprobacion de presentacion,
+  no como funcionalidades pendientes.
+- Verificacion final correcta: lint y build del cliente, typecheck y build del
+  servidor, esquema Prisma valido y cinco migraciones aplicadas.
+- Permanece solo la advertencia no bloqueante del tamano del bundle del cliente.

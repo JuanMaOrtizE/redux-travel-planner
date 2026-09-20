@@ -93,12 +93,10 @@ Resultado: datos externos integrados de forma controlada.
 
 Resultado: experiencia visual más profesional.
 
-## Fase 10 — Itinerario, presupuesto y clima
+## Fase 10 — Itinerario y presupuesto
 
 - Agregar actividades por día.
 - Agregar presupuesto.
-- Consultar clima desde Open-Meteo.
-- Mostrar métricas derivadas.
 
 Resultado: planificación de viaje completa.
 
@@ -113,3 +111,8 @@ Resultado: planificación de viaje completa.
 
 Resultado: versión presentable para portfolio.
 
+## Mejoras futuras fuera del alcance final
+
+- Consultar pronósticos mediante Open-Meteo.
+- Mostrar métricas presupuestarias avanzadas.
+- Editar y eliminar partidas desde la interfaz.

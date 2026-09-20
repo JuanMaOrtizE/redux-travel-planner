@@ -37,8 +37,8 @@ export default function HomePage() {
           </h1>
 
           <p className="mt-5 max-w-xl text-lg leading-8 text-slate-600 text-pretty">
-            Organiza destinos, itinerarios, actividades, presupuesto y clima
-            para preparar cada viaje con más claridad.
+            Organiza destinos, itinerarios, actividades y presupuesto para
+            preparar cada viaje con más claridad.
           </p>
 
           <div className="mt-8">
